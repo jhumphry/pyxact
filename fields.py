@@ -51,6 +51,11 @@ class SQLField:
                                       self._sql_name,
                                       self.sql_type())
 
+    def get_context(self, instance, context):
+        try:
+            return instance.__getattribute__(self._slot_name)
+        except AttributeError:
+            return None
 
     @property
     def sql_name(self):
@@ -72,6 +77,30 @@ class SQLField:
 
 class IntegerField(SQLField):
 
-
     def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER", **kwargs)
+
+class RowEnumField(SQLField):
+
+    def __init__(self, context_name, starting_number=1, **kwargs):
+        super().__init__(py_type=int, sql_type="INTEGER",
+                         nullable=False, **kwargs)
+        self._context_name=context_name
+        self._starting_number=starting_number
+
+    def __set__(self, instance, value):
+        pass
+
+    def __get__(self, instance, owner):
+        if instance:
+            return None
+        else:
+            return self
+
+    def get_context(self, instance, context):
+        if self._context_name in context:
+            context[self._context_name]+=1
+            return context[self._context_name]
+        else:
+            context[self._context_name]=self._starting_number
+            return self._starting_number
