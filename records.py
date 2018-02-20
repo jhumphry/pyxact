@@ -62,6 +62,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             raise ValueError('{0} is not a valid field name.'.format(key))
         setattr(self, key, value)
 
+    @classmethod
     def fields(self):
         for k in self._fields.keys():
             yield self._fields[k]
@@ -70,6 +71,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         for k in self._fields.keys():
             yield self.get(k)
 
+    @classmethod
     def items(self):
         for k in self._fields.keys():
             yield k, self._fields[k]
