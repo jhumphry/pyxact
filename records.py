@@ -67,6 +67,24 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         for k in self._fields.keys():
             yield k, self.__getattribute__(self._fields[k]._slot_name)
 
+    @classmethod
+    def generate_sql(cls, dialect=None):
+        result='CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
+        if cls._field_count==0:
+            pass
+        else:
+            c=1
+            for k in cls._fields.keys():
+                result += cls._fields[k]._sql_name + ' ' + \
+                          cls._fields[k].sql_type()
+                if c == cls._field_count:
+                    result += '\n'
+                else:
+                    result += ',\n    '
+                c+=1
+        result += ');'
+        return result
+
     def __str__(self):
         result = self.__class__.__name__ + ' with fields {\n'
         for k in self._fields.keys():
