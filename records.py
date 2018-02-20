@@ -52,13 +52,23 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(result, v, getattr(self, v))
         return result
 
+    def get(self, key):
+        if key not in self._fields:
+            raise ValueError('{0} is not a valid field name.'.format(key))
+        return getattr(self, key)
+
+    def set(self, key, value):
+        if key not in self._fields:
+            raise ValueError('{0} is not a valid field name.'.format(key))
+        setattr(self, key, value)
+
     def fields(self):
         for k in self._fields.keys():
             yield self._fields[k]
 
     def values(self):
         for k in self._fields.keys():
-            yield self.__getattribute__(self._fields[k]._slot_name)
+            yield self.get(k)
 
     def items(self):
         for k in self._fields.keys():
@@ -66,7 +76,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     def item_values(self):
         for k in self._fields.keys():
-            yield k, self.__getattribute__(self._fields[k]._slot_name)
+            yield k, self.get(k)
 
     @classmethod
     def column_names_sql(cls, dialect=None):
@@ -94,7 +104,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         else:
             c=1
             for k in self._fields.keys():
-                value = self.__getattribute__(self._fields[k]._slot_name)
+                value = self.get(k)
                 result += self._fields[k].sql_string(value, dialect)
                 if c < self._field_count:
                     result += ', '
