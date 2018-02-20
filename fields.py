@@ -48,11 +48,14 @@ class SQLField:
                                       self._sql_name,
                                       self.sql_type())
 
-    def sql_type(self):
+    def sql_type(self, dialect=None):
         if self._nullable:
             return self._sql_type
         else:
             return self._sql_type + ' NOT NULL'
+
+    def sql_string(self, value, dialect=None):
+        return str(value)
 
 
 class IntegerField(SQLField):
