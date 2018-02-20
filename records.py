@@ -21,6 +21,7 @@ class SQLRecordMetaClass(type):
         namespace['_fields'] = _fields
         namespace['_field_count'] = len(slots)
         namespace['_table_name'] = table_name
+        namespace['_column_names'] = None # Not yet known
 
         return type.__new__(mcs, name, bases, namespace)
 
@@ -69,18 +70,22 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def column_names_sql(cls, dialect=None):
-        result='('
-        if cls._field_count==0:
-            pass
+        if cls._column_names:
+            return cls._column_names
         else:
-            c=1
-            for k in cls._fields.keys():
-                result += cls._fields[k]._sql_name
-                if c < cls._field_count:
-                    result += ', '
-                c+=1
-        result+=')'
-        return result
+            result='('
+            if cls._field_count==0:
+                pass
+            else:
+                c=1
+                for k in cls._fields.keys():
+                    result += cls._fields[k]._sql_name
+                    if c < cls._field_count:
+                        result += ', '
+                    c+=1
+            result+=')'
+            cls._column_names = result
+            return result
 
     def values_sql(self, dialect=None):
         result='('
