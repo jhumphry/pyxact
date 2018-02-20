@@ -38,10 +38,13 @@ class SQLField:
 
 
     def __get__(self, instance, owner):
-        try:
-            return instance.__getattribute__(self._slot_name)
-        except AttributeError:
-            return None
+        if instance:
+            try:
+                return instance.__getattribute__(self._slot_name)
+            except AttributeError:
+                return None
+        else:
+            return self
 
     def __str__(self):
         return '{0} ({1} {2})'.format(self.__class__.__name__,
