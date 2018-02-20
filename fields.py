@@ -49,7 +49,10 @@ class SQLField:
                                       self.sql_type())
 
     def sql_type(self):
-        return self._sql_type
+        if self._nullable:
+            return self._sql_type
+        else:
+            return self._sql_type + ' NOT NULL'
 
 
 class IntegerField(SQLField):
