@@ -45,6 +45,12 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                     raise ValueError('{0} is not a valid attribute name.'.format(key))
                 setattr(self, key, value)
 
+    def copy(self):
+        result = self.__class__()
+        for v in self.__slots__:
+            setattr(result, v, getattr(self, v))
+        return result
+
     def fields(self):
         for k in self._fields.keys():
             yield self._fields[k]
