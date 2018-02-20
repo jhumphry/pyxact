@@ -51,6 +51,15 @@ class SQLField:
                                       self._sql_name,
                                       self.sql_type())
 
+
+    @property
+    def sql_name(self):
+        return self._sql_name
+
+    @property
+    def nullable(self):
+        return self._nullable
+
     def sql_type(self, dialect=None):
         if self._nullable:
             return self._sql_type
