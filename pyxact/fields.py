@@ -71,7 +71,7 @@ class SQLField:
         else:
             return self._sql_type + ' NOT NULL'
 
-    def sql_string(self, value, dialect=None):
+    def sql_string_unsafe(self, value, dialect=None):
         return str(value)
 
 

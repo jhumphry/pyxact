@@ -75,11 +75,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         for k in self._fields.keys():
             yield self.get(k)
 
-    def values_sql_string(self, context, dialect=None):
+    def values_sql_string_unsafe(self, context, dialect=None):
         result=[]
         for k in self._fields.keys():
             value = self._fields[k].get_context(self, context)
-            result.append(self._fields[k].sql_string(value, dialect))
+            result.append(self._fields[k].sql_string_unsafe(value, dialect))
         return result
 
     @classmethod
@@ -127,18 +127,18 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ');'
         return result
 
-    def insert_sql(self, context=None, dialect=None):
+    def insert_sql_unsafe(self, context=None, dialect=None):
         if context==None:
             context={}
         result='INSERT INTO ' + self._table_name + ' ('
         result+=self.column_names_sql(dialect)
         result+=') VALUES ('
-        result+=', '.join(self.values_sql_string(context, dialect))
+        result+=', '.join(self.values_sql_string_unsafe(context, dialect))
         result+=');'
         return result
 
     @classmethod
-    def simple_select_sql(cls, **kwargs):
+    def simple_select_sql_unsafe(cls, **kwargs):
         result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result+=' WHERE '
@@ -147,7 +147,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 if not f in cls._fields:
                     raise ValueError('Specified field {0} is not valid'.format(f))
                 result+=cls._fields[f].sql_name+'='
-                result+=cls._fields[f].sql_string(v)
+                result+=cls._fields[f].sql_string_unsafe(v)
                 if c<len(kwargs):
                     result+=' AND '
                 c+=1
