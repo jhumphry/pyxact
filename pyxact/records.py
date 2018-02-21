@@ -1,6 +1,6 @@
 
 
-import fields
+from . import fields
 
 class SQLRecordMetaClass(type):
 
