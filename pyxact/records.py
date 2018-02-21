@@ -108,8 +108,24 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ');'
         return result
 
+    @classmethod
+    def insert_sql(cls, context=None, dialect=None):
+        if not context:
+            context={}
+        if dialect:
+            placeholder=dialect.placeholder
+        else:
+            placeholder='?'
+        result='INSERT INTO ' + cls._table_name + ' ('
+        result+=cls.column_names_sql(dialect)
+        result+=') VALUES ('
+        if cls._field_count>0:
+            result+=(placeholder+', ')*(cls._field_count-1)+placeholder
+        result+=');'
+        return result
+
     def insert_sql_unsafe(self, context=None, dialect=None):
-        if context==None:
+        if not context:
             context={}
         result='INSERT INTO ' + self._table_name + ' ('
         result+=self.column_names_sql(dialect)
@@ -119,7 +135,28 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return result
 
     @classmethod
-    def simple_select_sql_unsafe(cls, **kwargs):
+    def simple_select_sql(cls, dialect=None, **kwargs):
+        if dialect:
+            placeholder=dialect.placeholder
+        else:
+            placeholder='?'
+        result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        if kwargs:
+            result+=' WHERE '
+            c=1
+            for f,v in kwargs.items():
+                if not f in cls._fields:
+                    raise ValueError('Specified field {0} is not valid'.format(f))
+                result+=cls._fields[f].sql_name+'='
+                result+=placeholder
+                if c<len(kwargs):
+                    result+=' AND '
+                c+=1
+        result+=';'
+        return (result, list(kwargs.values()))
+
+    @classmethod
+    def simple_select_sql_unsafe(cls, dialect=None, **kwargs):
         result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result+=' WHERE '
