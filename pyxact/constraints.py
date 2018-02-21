@@ -22,7 +22,16 @@ class CustomConstraint(SQLConstraint):
         self._constraint_sql = constraint_sql
 
      def sql_ddl(self, dialect=None):
-         return 'CONSTRAINT '+self._sql_name+' '+self._constraint_sql+' '
+         return 'CONSTRAINT '+self._sql_name+' '+self._constraint_sql
+
+class CheckConstraint(SQLConstraint):
+
+     def __init__(self, check_sql, **kwargs):
+        super().__init__(**kwargs)
+        self._check_sql = check_sql
+
+     def sql_ddl(self, dialect=None):
+         return 'CONSTRAINT '+self._sql_name+' CHECK ('+self._check_sql+')'
 
 class ColumnsConstraint(SQLConstraint):
 
@@ -46,3 +55,21 @@ class PrimaryKeyConstraint(ColumnsConstraint):
          result += ', '.join(self._sql_column_names)
          result += ') ' + self._sql_options
          return result
+
+class ForeignKeyConstraint(SQLConstraint):
+
+    def __init__(self, sql_column_names, foreign_table, sql_reference_names, sql_options='', **kwargs):
+        super().__init__(**kwargs)
+        self._sql_column_names = sql_column_names
+        self._foreign_table = foreign_table
+        self._sql_reference_names = sql_reference_names
+        self._sql_options = sql_options
+
+    def sql_ddl(self, dialect=None):
+        result = 'CONSTRAINT ' + self._sql_name + ' FOREIGN KEY ('
+        result += ', '.join(self._sql_column_names)
+        result += ') REFERENCES '+self._foreign_table + ' ('
+        result += ', '.join(self._sql_reference_names)
+        result += ') ' + self._sql_options
+        return result
+
