@@ -4,4 +4,3 @@ class SQLDialect:
 
 class sqliteDialect(SQLDialect):
     placeholder = '?'
-

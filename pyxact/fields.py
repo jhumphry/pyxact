@@ -31,7 +31,8 @@ class SQLField:
                 raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
 
         elif not isinstance(value, self._py_type):
-            raise ValueError('''Field '{0}' can only be set to values of type '{1}'.'''.format(self._name, str(self._py_type)))
+            raise ValueError('''Field '{0}' can only be set to values of type '{1}'.'''
+                             .format(self._name, str(self._py_type)))
 
         else:
             instance.__setattr__(self._slot_name, value)
@@ -68,8 +69,7 @@ class SQLField:
     def sql_type(self, dialect=None):
         if self._nullable:
             return self._sql_type
-        else:
-            return self._sql_type + ' NOT NULL'
+        return self._sql_type + ' NOT NULL'
 
     def sql_string_unsafe(self, value, dialect=None):
         return str(value)
@@ -85,8 +85,8 @@ class RowEnumField(SQLField):
     def __init__(self, context_name, starting_number=1, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
                          nullable=False, **kwargs)
-        self._context_name=context_name
-        self._starting_number=starting_number
+        self._context_name = context_name
+        self._starting_number = starting_number
 
     def __set__(self, instance, value):
         pass
@@ -94,13 +94,12 @@ class RowEnumField(SQLField):
     def __get__(self, instance, owner):
         if instance:
             return None
-        else:
-            return self
+        return self
 
     def get_context(self, instance, context):
         if self._context_name in context:
-            context[self._context_name]+=1
+            context[self._context_name] += 1
             return context[self._context_name]
-        else:
-            context[self._context_name]=self._starting_number
-            return self._starting_number
+
+        context[self._context_name] = self._starting_number
+        return self._starting_number

@@ -73,7 +73,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [self._fields[k].get_context(self, context) for k in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
-        result=[]
+        result = []
         for k in self._fields.keys():
             value = self._fields[k].get_context(self, context)
             result.append(self._fields[k].sql_string_unsafe(value, dialect))
@@ -81,7 +81,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def items(cls):
-        return [(k, self._fields[k]) for k in self._fields.keys()]
+        return [(k, cls._fields[k]) for k in cls._fields.keys()]
 
     def item_values(self):
         return [(k, self.get(k)) for k in self._fields.keys()]
@@ -92,11 +92,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def create_table_sql(cls, dialect=None):
-        result='CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
-        if cls._field_count==0:
+        result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
+        if cls._field_count == 0:
             pass
         else:
-            c=1
+            c = 1
             for k in cls._fields.keys():
                 result += cls._fields[k]._sql_name + ' ' + \
                           cls._fields[k].sql_type()
@@ -104,72 +104,72 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                     result += '\n'
                 else:
                     result += ',\n    '
-                c+=1
+                c += 1
         result += ');'
         return result
 
     @classmethod
     def insert_sql(cls, context=None, dialect=None):
         if not context:
-            context={}
+            context = {}
         if dialect:
-            placeholder=dialect.placeholder
+            placeholder = dialect.placeholder
         else:
-            placeholder='?'
-        result='INSERT INTO ' + cls._table_name + ' ('
-        result+=cls.column_names_sql(dialect)
-        result+=') VALUES ('
-        if cls._field_count>0:
-            result+=(placeholder+', ')*(cls._field_count-1)+placeholder
-        result+=');'
+            placeholder = '?'
+        result = 'INSERT INTO ' + cls._table_name + ' ('
+        result += cls.column_names_sql(dialect)
+        result += ') VALUES ('
+        if cls._field_count > 0:
+            result += (placeholder+', ')*(cls._field_count-1)+placeholder
+        result += ');'
         return result
 
     def insert_sql_unsafe(self, context=None, dialect=None):
         if not context:
-            context={}
-        result='INSERT INTO ' + self._table_name + ' ('
-        result+=self.column_names_sql(dialect)
-        result+=') VALUES ('
-        result+=', '.join(self.values_sql_string_unsafe(context, dialect))
-        result+=');'
+            context = {}
+        result = 'INSERT INTO ' + self._table_name + ' ('
+        result += self.column_names_sql(dialect)
+        result += ') VALUES ('
+        result += ', '.join(self.values_sql_string_unsafe(context, dialect))
+        result += ');'
         return result
 
     @classmethod
     def simple_select_sql(cls, dialect=None, **kwargs):
         if dialect:
-            placeholder=dialect.placeholder
+            placeholder = dialect.placeholder
         else:
-            placeholder='?'
-        result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+            placeholder = '?'
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
-            result+=' WHERE '
-            c=1
-            for f,v in kwargs.items():
+            result += ' WHERE '
+            c = 1
+            for f, v in kwargs.items():
                 if not f in cls._fields:
                     raise ValueError('Specified field {0} is not valid'.format(f))
-                result+=cls._fields[f].sql_name+'='
-                result+=placeholder
-                if c<len(kwargs):
-                    result+=' AND '
-                c+=1
-        result+=';'
+                result += cls._fields[f].sql_name+'='
+                result += placeholder
+                if c < len(kwargs):
+                    result += ' AND '
+                c += 1
+        result += ';'
         return (result, list(kwargs.values()))
 
     @classmethod
     def simple_select_sql_unsafe(cls, dialect=None, **kwargs):
-        result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
-            result+=' WHERE '
-            c=1
-            for f,v in kwargs.items():
+            result += ' WHERE '
+            c = 1
+            for f, v in kwargs.items():
                 if not f in cls._fields:
                     raise ValueError('Specified field {0} is not valid'.format(f))
-                result+=cls._fields[f].sql_name+'='
-                result+=cls._fields[f].sql_string_unsafe(v)
-                if c<len(kwargs):
-                    result+=' AND '
-                c+=1
-        result+=';'
+                result += cls._fields[f].sql_name+'='
+                result += cls._fields[f].sql_string_unsafe(v)
+                if c < len(kwargs):
+                    result += ' AND '
+                c += 1
+        result += ';'
         return result
 
     def __str__(self):
