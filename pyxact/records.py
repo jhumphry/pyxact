@@ -66,13 +66,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return self._table_name
 
     @classmethod
-    def fields(self):
-        for k in self._fields.keys():
-            yield self._fields[k]
+    def fields(cls):
+        return [cls._fields[k] for k in cls._fields.keys()]
 
-    def values(self):
-        for k in self._fields.keys():
-            yield self.get(k)
+    def values(self, context=None):
+        return [self._fields[k].get_context(self, context) for k in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
         result=[]
@@ -82,13 +80,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return result
 
     @classmethod
-    def items(self):
-        for k in self._fields.keys():
-            yield k, self._fields[k]
+    def items(cls):
+        return [(k, self._fields[k]) for k in self._fields.keys()]
 
     def item_values(self):
-        for k in self._fields.keys():
-            yield k, self.get(k)
+        return [(k, self.get(k)) for k in self._fields.keys()]
 
     @classmethod
     def column_names_sql(cls, dialect=None):
