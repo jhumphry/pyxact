@@ -75,6 +75,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         for k in self._fields.keys():
             yield self.get(k)
 
+    def values_sql_string(self, context, dialect=None):
+        result=[]
+        for k in self._fields.keys():
+            value = self._fields[k].get_context(self, context)
+            result.append(self._fields[k].sql_string(value, dialect))
+        return result
+
     @classmethod
     def items(self):
         for k in self._fields.keys():
@@ -102,21 +109,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             cls._column_names = result
             return result
 
-    def values_sql(self, context, dialect=None):
-        result='('
-        if self._field_count==0:
-            pass
-        else:
-            c=1
-            for k in self._fields.keys():
-                value = self._fields[k].get_context(self, context)
-                result += self._fields[k].sql_string(value, dialect)
-                if c < self._field_count:
-                    result += ', '
-                c+=1
-        result+=')'
-        return result
-
     @classmethod
     def create_table_sql(cls, dialect=None):
         result='CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
@@ -140,9 +132,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             context={}
         result='INSERT INTO ' + self._table_name + ' ('
         result+=self.column_names_sql(dialect)
-        result+=') VALUES '
-        result+=self.values_sql(context, dialect)
-        result+=';'
+        result+=') VALUES ('
+        result+=', '.join(self.values_sql_string(context, dialect))
+        result+=');'
         return result
 
     @classmethod
