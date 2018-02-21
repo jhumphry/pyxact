@@ -89,17 +89,16 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if cls._column_names:
             return cls._column_names
         else:
-            result='('
             if cls._field_count==0:
                 pass
             else:
+                result=''
                 c=1
                 for k in cls._fields.keys():
                     result += cls._fields[k]._sql_name
                     if c < cls._field_count:
                         result += ', '
                     c+=1
-            result+=')'
             cls._column_names = result
             return result
 
@@ -139,10 +138,27 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
     def insert_sql(self, context=None, dialect=None):
         if context==None:
             context={}
-        result='INSERT INTO ' + self._table_name + ' '
+        result='INSERT INTO ' + self._table_name + ' ('
         result+=self.column_names_sql(dialect)
-        result+=' VALUES '
+        result+=') VALUES '
         result+=self.values_sql(context, dialect)
+        result+=';'
+        return result
+
+    @classmethod
+    def simple_select_sql(cls, **kwargs):
+        result='SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        if kwargs:
+            result+=' WHERE '
+            c=1
+            for f,v in kwargs.items():
+                if not f in cls._fields:
+                    raise ValueError('Specified field {0} is not valid'.format(f))
+                result+=cls._fields[f].sql_name+'='
+                result+=cls._fields[f].sql_string(v)
+                if c<len(kwargs):
+                    result+=' AND '
+                c+=1
         result+=';'
         return result
 
