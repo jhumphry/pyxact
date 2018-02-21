@@ -93,19 +93,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
     @classmethod
     def create_table_sql(cls, dialect=None):
         result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
-        if cls._field_count == 0:
-            pass
-        else:
-            c = 1
-            for k in cls._fields.keys():
-                result += cls._fields[k]._sql_name + ' ' + \
-                          cls._fields[k].sql_type()
-                if c == cls._field_count:
-                    result += '\n'
-                else:
-                    result += ',\n    '
-                c += 1
-        result += ');'
+        columns = [cls._fields[k]._sql_name + ' ' + cls._fields[k].sql_type()
+                   for k in cls._fields.keys()]
+        result += ',\n    '.join(columns)
+        result += '\n);'
         return result
 
     @classmethod
