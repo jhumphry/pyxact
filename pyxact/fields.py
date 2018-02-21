@@ -4,15 +4,13 @@ SQL types and Python types'''
 
 class SQLField:
 
-
-    def __init__(self, py_type=None, sql_type=None, sql_name=None, nullable=True):
-        if py_type is None:
-            raise ValueError('Field cannot be instantiated without specifying py_type')
+    def __init__(self, py_type=None, sql_name=None, sql_ddl_options='', sql_type=None, nullable=True):
         self._py_type = py_type
         if sql_type is None:
             raise ValueError('Field cannot be instantiated without specifying sql_type')
-        self._sql_type = sql_type
         self._sql_name = sql_name
+        self._sql_ddl_options = sql_ddl_options
+        self._sql_type = sql_type
         self._nullable = nullable
         self._name = None
         self._slot_name = None
@@ -67,9 +65,15 @@ class SQLField:
         return self._nullable
 
     def sql_type(self, dialect=None):
-        if self._nullable:
-            return self._sql_type
-        return self._sql_type + ' NOT NULL'
+        return self._sql_type
+
+    def sql_ddl(self, dialect=None):
+        result = self._sql_name + ' ' + self.sql_type(dialect)
+        if not self._nullable:
+            result += ' NOT NULL'
+        if self._sql_ddl_options != '':
+            result += ' '+self._sql_ddl_options
+        return result
 
     def sql_string_unsafe(self, value, dialect=None):
         return str(value)

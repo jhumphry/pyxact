@@ -97,9 +97,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
     @classmethod
     def create_table_sql(cls, dialect=None):
         result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
-        columns = [cls._fields[k]._sql_name + ' ' + cls._fields[k].sql_type()
-                   for k in cls._fields.keys()]
-        constraints = [cls._constraints[k].sql_ddl() for k in cls._constraints.keys()]
+        columns = [cls._fields[k].sql_ddl(dialect) for k in cls._fields.keys()]
+        constraints = [cls._constraints[k].sql_ddl(dialect) for k in cls._constraints.keys()]
         result += ',\n    '.join(columns+constraints)
         result += '\n);'
         return result
