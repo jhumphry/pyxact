@@ -80,7 +80,28 @@ class IntegerField(SQLField):
     def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER", **kwargs)
 
-class RowEnumField(SQLField):
+class IDIntegerField(SQLField):
+
+    def __init__(self, context_name, **kwargs):
+        super().__init__(py_type=int, sql_type="INTEGER",
+                         nullable=False, **kwargs)
+        self._context_name = context_name
+
+    def __set__(self, instance, value):
+        pass
+
+    def __get__(self, instance, owner):
+        if instance:
+            return None
+        return self
+
+    def get_context(self, instance, context):
+        if self._context_name in context:
+            return context[self._context_name]
+        raise ValueError('''Required context '{0}' is not provided'''
+                         .format(self._context_name))
+
+class RowEnumIntegerField(SQLField):
 
     def __init__(self, context_name, starting_number=1, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
