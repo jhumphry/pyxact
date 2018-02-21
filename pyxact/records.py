@@ -1,6 +1,6 @@
 
 
-from . import fields
+from . import fields, constraints
 
 class SQLRecordMetaClass(type):
 
@@ -11,15 +11,19 @@ class SQLRecordMetaClass(type):
 
         slots = []
         _fields = dict()
+        _constraints = dict()
 
         for k in namespace:
             if isinstance(namespace[k], fields.SQLField):
                 slots.append('_'+k)
                 _fields[k] = namespace[k]
+            elif isinstance(namespace[k], constraints.SQLConstraint):
+                 _constraints[k] = namespace[k]
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields'] = _fields
         namespace['_field_count'] = len(slots)
+        namespace['_constraints'] = _constraints
         namespace['_table_name'] = table_name
 
         return type.__new__(mcs, name, bases, namespace)
@@ -95,7 +99,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
         columns = [cls._fields[k]._sql_name + ' ' + cls._fields[k].sql_type()
                    for k in cls._fields.keys()]
-        result += ',\n    '.join(columns)
+        constraints = [cls._constraints[k].sql_ddl() for k in cls._constraints.keys()]
+        result += ',\n    '.join(columns+constraints)
         result += '\n);'
         return result
 
