@@ -28,13 +28,15 @@ class SQLField:
             else:
                 raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
 
-        elif not isinstance(value, self._py_type):
-            raise ValueError('''Field '{0}' can only be set to values of type '{1}'.'''
-                             .format(self._name, str(self._py_type)))
-
-        else:
+        elif isinstance(value, self._py_type):
             instance.__setattr__(self._slot_name, value)
 
+        else:
+            try:
+                instance.__setattr__(self._slot_name, self.convert(value))
+            except ValueError as ve:
+                raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
+                                .format(self._name, str(value), str(type(value)))) from ve
 
     def __get__(self, instance, owner):
         if instance:
@@ -49,6 +51,9 @@ class SQLField:
         return '{0} ({1} {2})'.format(self.__class__.__name__,
                                       self._sql_name,
                                       self.sql_type())
+
+    def convert(self, value):
+        raise ValueError
 
     def get_context(self, instance, context):
         try:
