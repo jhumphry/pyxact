@@ -188,6 +188,42 @@ class BooleanField(SQLField):
         else:
             return value
 
+class VarCharField(SQLField):
+
+    def __init__(self, max_length, silent_truncate=False, **kwargs):
+        super().__init__(py_type=str, sql_type="CHARACTER VARYING", **kwargs)
+        self._max_length = max_length
+        self._silent_truncate = silent_truncate
+
+    def __set__(self, instance, value):
+        if value is None:
+            if self._nullable:
+                instance.__setattr__(self._slot_name, None)
+            else:
+                raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
+
+        elif isinstance(value, str):
+            if len(value) > self._max_length:
+                if self._silent_truncate:
+                    instance.__setattr__(self._slot_name, value[0:self._max_length])
+                else:
+                    raise ValueError('''Field '{0}' can not accept strings longer than {1}.'''
+                                    .format(self._name, self._max_length))
+            else:
+                instance.__setattr__(self._slot_name, value)
+
+        else:
+            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
+                            .format(self._name, str(value), str(type(value))))
+
+    def sql_type(self, dialect=None):
+        return 'CHARACTER VARYING({0})'.format(self._max_length)
+
+class CharField(SQLField):
+
+    def sql_type(self, dialect=None):
+        return 'CHARACTER ({0})'.format(self._max_length)
+
 class TextField(SQLField):
 
     def __init__(self, **kwargs):
