@@ -170,6 +170,24 @@ class RealField(SQLField):
     def __init__(self, **kwargs):
         super().__init__(py_type=float, sql_type="REAL", **kwargs)
 
+class BooleanField(SQLField):
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=bool, sql_type="BOOLEAN", **kwargs)
+
+    def convert(self, value):
+        if isinstance(value, int):
+            return bool(value)
+        raise ValueError
+
+    def sql_repr(self, value, dialect):
+        if dialect is None:
+            return (1 if value else 0)
+        elif not dialect.native_booleans:
+            return (1 if value else 0)
+        else:
+            return value
+
 class TextField(SQLField):
 
     def __init__(self, **kwargs):
