@@ -7,8 +7,6 @@ class SQLField:
 
     def __init__(self, py_type=None, sql_name=None, sql_ddl_options='', sql_type=None, nullable=True):
         self._py_type = py_type
-        if sql_type is None:
-            raise ValueError('Field cannot be instantiated without specifying sql_type')
         self._sql_name = sql_name
         self._sql_ddl_options = sql_ddl_options
         self._sql_type = sql_type
@@ -142,7 +140,7 @@ class RowEnumIntField(AbstractIntField):
 class NumericField(SQLField):
 
     def __init__(self, precision, scale=0, allow_floats=False, **kwargs):
-        super().__init__(py_type=decimal.Decimal, sql_type="NUMERIC", **kwargs)
+        super().__init__(py_type=decimal.Decimal, **kwargs)
         self._precision = precision
         self._scale = scale
         self._allow_floats = allow_floats
@@ -191,7 +189,7 @@ class BooleanField(SQLField):
 class VarCharField(SQLField):
 
     def __init__(self, max_length, silent_truncate=False, **kwargs):
-        super().__init__(py_type=str, sql_type="CHARACTER VARYING", **kwargs)
+        super().__init__(py_type=str, **kwargs)
         self._max_length = max_length
         self._silent_truncate = silent_truncate
 
@@ -222,7 +220,7 @@ class VarCharField(SQLField):
 class CharField(SQLField):
 
     def sql_type(self, dialect=None):
-        return 'CHARACTER ({0})'.format(self._max_length)
+        return 'CHARACTER({0})'.format(self._max_length)
 
 class TextField(SQLField):
 
