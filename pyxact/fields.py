@@ -87,12 +87,29 @@ class SQLField:
         return str(value)
 
 
-class IntegerField(SQLField):
+class AbstractIntField(SQLField):
+
+    def convert(self, value):
+        if isinstance(value, str):
+            return int(value)
+        raise ValueError
+
+class IntField(AbstractIntField):
 
     def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER", **kwargs)
 
-class IDIntegerField(SQLField):
+class SmallIntField(AbstractIntField):
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=int, sql_type="SMALLINT", **kwargs)
+
+class BigIntField(AbstractIntField):
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=int, sql_type="BIGINT", **kwargs)
+
+class IDIntField(AbstractIntField):
 
     def __init__(self, context_name, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
@@ -105,7 +122,7 @@ class IDIntegerField(SQLField):
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_name))
 
-class RowEnumIntegerField(SQLField):
+class RowEnumIntField(AbstractIntField):
 
     def __init__(self, context_name, starting_number=1, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
