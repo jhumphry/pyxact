@@ -37,7 +37,10 @@ class ColumnsConstraint(SQLConstraint):
 
     def __init__(self, sql_column_names, sql_options='', **kwargs):
         super().__init__(**kwargs)
-        self._sql_column_names = sql_column_names
+        if isinstance(sql_column_names, str):
+            self._sql_column_names = (sql_column_names,)
+        else:
+            self._sql_column_names = sql_column_names
         self._sql_options = sql_options
 
 class UniqueConstraint(ColumnsConstraint):
@@ -60,9 +63,15 @@ class ForeignKeyConstraint(SQLConstraint):
 
     def __init__(self, sql_column_names, foreign_table, sql_reference_names, sql_options='', **kwargs):
         super().__init__(**kwargs)
-        self._sql_column_names = sql_column_names
+        if isinstance(sql_column_names, str):
+            self._sql_column_names = (sql_column_names,)
+        else:
+            self._sql_column_names = sql_column_names
         self._foreign_table = foreign_table
-        self._sql_reference_names = sql_reference_names
+        if isinstance(sql_reference_names, str):
+            self._sql_reference_names = (sql_reference_names,)
+        else:
+            self._sql_reference_names = sql_reference_names
         self._sql_options = sql_options
 
     def sql_ddl(self, dialect=None):
