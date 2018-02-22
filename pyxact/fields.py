@@ -1,6 +1,7 @@
 '''The definition of classes that represent fields in a record and map between
 SQL types and Python types'''
 
+import decimal
 
 class SQLField:
 
@@ -137,3 +138,39 @@ class RowEnumIntField(AbstractIntField):
 
         context[self._context_name] = self._starting_number
         return self._starting_number
+
+class NumericField(SQLField):
+
+    def __init__(self, precision, scale=0, allow_floats=False, **kwargs):
+        super().__init__(py_type=decimal.Decimal, sql_type="NUMERIC", **kwargs)
+        self._precision = precision
+        self._scale = scale
+        self._allow_floats = allow_floats
+
+    def convert(self, value):
+        if isinstance(value, str) or \
+            isinstance(value, int) or \
+            (isinstance(value, float) and self._allow_floats):
+            return decimal.Decimal(value)
+        raise ValueError
+
+    def sql_repr(self, value, dialect):
+        if dialect is None:
+            return str(value)
+        elif not dialect.native_decimals:
+            return str(value)
+        else:
+            return value
+
+    def sql_type(self, dialect=None):
+        return 'NUMERIC({0}, {1})'.format(self._precision, self._scale)
+
+class RealField(SQLField):
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=float, sql_type="REAL", **kwargs)
+
+class TextField(SQLField):
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=str, sql_type="TEXT", **kwargs)
