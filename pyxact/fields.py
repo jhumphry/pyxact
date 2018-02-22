@@ -55,6 +55,9 @@ class SQLField:
     def convert(self, value):
         raise ValueError
 
+    def sql_repr(self, value, dialect):
+        return value
+
     def get_context(self, instance, context):
         try:
             return instance.__getattribute__(self._slot_name)

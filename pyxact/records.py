@@ -76,6 +76,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
     def values(self, context=None):
         return [self.get(k, context) for k in self._fields.keys()]
 
+    def values_sql_repr(self, context=None, dialect=None):
+        return [self._fields[k].sql_repr(self.get(k, context), dialect)
+                for k in self._fields.keys()]
+
     def values_sql_string_unsafe(self, context, dialect=None):
         result = []
         for k in self._fields.keys():
