@@ -55,9 +55,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(result, v, getattr(self, v))
         return result
 
-    def get(self, key):
-        if key not in self._fields:
-            raise ValueError('{0} is not a valid field name.'.format(key))
+    def get(self, key, context=None):
+        if context:
+            return self._fields[key].get_context(self, context)
         return getattr(self, key)
 
     def set(self, key, value):
@@ -74,7 +74,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [cls._fields[k] for k in cls._fields.keys()]
 
     def values(self, context=None):
-        return [self._fields[k].get_context(self, context) for k in self._fields.keys()]
+        return [self.get(k, context) for k in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
         result = []
@@ -87,8 +87,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
     def items(cls):
         return [(k, cls._fields[k]) for k in cls._fields.keys()]
 
-    def item_values(self):
-        return [(k, self.get(k)) for k in self._fields.keys()]
+    def item_values(self, context=None):
+        return [(k, self.get(k, context)) for k in self._fields.keys()]
 
     @classmethod
     def column_names_sql(cls, dialect=None):

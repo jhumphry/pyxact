@@ -88,16 +88,8 @@ class IDIntegerField(SQLField):
 
     def __init__(self, context_name, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
-                         nullable=False, **kwargs)
+                         nullable=True, **kwargs)
         self._context_name = context_name
-
-    def __set__(self, instance, value):
-        pass
-
-    def __get__(self, instance, owner):
-        if instance:
-            return None
-        return self
 
     def get_context(self, instance, context):
         if self._context_name in context:
@@ -109,17 +101,9 @@ class RowEnumIntegerField(SQLField):
 
     def __init__(self, context_name, starting_number=1, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
-                         nullable=False, **kwargs)
+                         nullable=True, **kwargs)
         self._context_name = context_name
         self._starting_number = starting_number
-
-    def __set__(self, instance, value):
-        pass
-
-    def __get__(self, instance, owner):
-        if instance:
-            return None
-        return self
 
     def get_context(self, instance, context):
         if self._context_name in context:
