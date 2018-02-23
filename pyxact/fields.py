@@ -217,7 +217,7 @@ class VarCharField(SQLField):
     def sql_type(self, dialect=None):
         return 'CHARACTER VARYING({0})'.format(self._max_length)
 
-class CharField(SQLField):
+class CharField(VarCharField):
 
     def sql_type(self, dialect=None):
         return 'CHARACTER({0})'.format(self._max_length)
