@@ -1,8 +1,11 @@
-
+'''This module defines Python types that map to SQL database tables.'''
 
 from . import fields, constraints
 
 class SQLRecordMetaClass(type):
+    '''This is a metaclass that automatically identifies the SQLField and
+    SQLConstraint member attributes added to new subclasses and creates
+    additional private attributes to help order and access them.'''
 
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
@@ -18,7 +21,7 @@ class SQLRecordMetaClass(type):
                 slots.append('_'+k)
                 _fields[k] = namespace[k]
             elif isinstance(namespace[k], constraints.SQLConstraint):
-                 _constraints[k] = namespace[k]
+                _constraints[k] = namespace[k]
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields'] = _fields
@@ -29,6 +32,8 @@ class SQLRecordMetaClass(type):
         return type.__new__(mcs, name, bases, namespace)
 
 class SQLRecord(metaclass=SQLRecordMetaClass):
+    '''SQLRecord maps SQL database tables to Python class types. It is not
+    intended for direct use, but as an abstract class to be subclassed.'''
 
     def __init__(self, *args, **kwargs):
 
@@ -50,37 +55,71 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 setattr(self, key, value)
 
     def copy(self):
+        '''Create a deep copy of an instance of an SQLRecord. If normal assignment
+        is used, the copies will be shallow and changing the attributes on one instance
+        will affect the other.'''
+
         result = self.__class__()
         for v in self.__slots__:
             setattr(result, v, getattr(self, v))
         return result
 
     def get(self, key, context=None):
+        '''Get a value stored in an SQLField within this SQLRecord, given a
+        context dictionary if appropriate.'''
+
         if context:
             return self._fields[key].get_context(self, context)
         return getattr(self, key)
 
     def set(self, key, value):
+        '''Set a value stored in an SQLField within this SQLRecord.'''
+
         if key not in self._fields:
             raise ValueError('{0} is not a valid field name.'.format(key))
         setattr(self, key, value)
 
     @property
     def table_name(self):
+        '''The name of the table used in SQL.'''
+
         return self._table_name
 
     @classmethod
     def fields(cls):
+        '''Returns a list of SQLField objects in the order they were defined in
+        the SQLRecord subclass.'''
+
         return [cls._fields[k] for k in cls._fields.keys()]
 
     def values(self, context=None):
+        '''Returns a list of values stored in the SQLField attributes of a
+        particular SQLRecord instance. A context dictionary can be provided for
+        SQLField types that require one.'''
+
         return [self.get(k, context) for k in self._fields.keys()]
 
     def values_sql_repr(self, context=None, dialect=None):
+        '''Returns a list of values stored in the SQLField attributes of a
+        particular SQLRecord instance. A context dictionary can be provided for
+        SQLField types that require one. The values are in the form required by
+        the SQL database adaptor identified by dialect.'''
+
         return [self._fields[k].sql_repr(self.get(k, context), dialect)
                 for k in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
+        '''Returns a string containing a comma-separated list of values stored
+        in the SQLField attributes of a particular SQLRecord instance. A
+        context dictionary can be provided for SQLField types that require one.
+        The values are in the form required by the SQL database identified by
+        dialect.
+
+        Note that this is not safe, as it is not guaranteed that any
+        escaping performed will be sufficient to prevent SQL injection attacks.
+        Do not use it with any values supplied by the user or previously stored
+        in the database by the user.'''
+
         result = []
         for k in self._fields.keys():
             value = self._fields[k].get_context(self, context)
@@ -89,26 +128,43 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def items(cls):
+        '''Returns a list of tuples of field names and SQLField objects in the
+        order they were defined in the SQLRecord subclass.'''
+
         return [(k, cls._fields[k]) for k in cls._fields.keys()]
 
     def item_values(self, context=None):
+        '''Returns a list of tuples of field names and values stored in the
+        SQLField attributes of a particular SQLRecord instance. A context
+        dictionary can be provided for SQLField types that require one.'''
+
         return [(k, self.get(k, context)) for k in self._fields.keys()]
 
     @classmethod
     def column_names_sql(cls, dialect=None):
+        '''Returns a string containing a comma-separated list of column
+        names, using a given SQL dialect.'''
+
         return ', '.join([cls._fields[x].sql_name for x in cls._fields.keys()])
 
     @classmethod
     def create_table_sql(cls, dialect=None):
+        '''Returns a string containing the CREATE TABLE command (in the given
+        SQL dialect) that will create the table defined by the SQLRecord.'''
+
         result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
-        columns = [cls._fields[k].sql_ddl(dialect) for k in cls._fields.keys()]
-        constraints = [cls._constraints[k].sql_ddl(dialect) for k in cls._constraints.keys()]
-        result += ',\n    '.join(columns+constraints)
+        table_columns = [cls._fields[k].sql_ddl(dialect) for k in cls._fields.keys()]
+        table_constraints = [cls._constraints[k].sql_ddl(dialect) for k in cls._constraints.keys()]
+        result += ',\n    '.join(table_columns+table_constraints)
         result += '\n);'
         return result
 
     @classmethod
     def insert_sql(cls, context=None, dialect=None):
+        '''Returns a string containing the parametrised INSERT command (in the
+        given SQL dialect) required to insert data into the SQL table
+        represented by the SQLRecord.'''
+
         if not context:
             context = {}
         if dialect:
@@ -124,6 +180,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return result
 
     def insert_sql_unsafe(self, context=None, dialect=None):
+        '''Returns a string containing the INSERT command (in the given SQL
+        dialect) required to insert the values held by an SQL Record instance
+        into the SQL table.
+
+        Note that this is not safe, as it is not guaranteed that any escaping
+        performed will be sufficient to prevent SQL injection attacks. Do not
+        use it with any values supplied by the user or previously stored in the
+        database by the user.'''
+
         if not context:
             context = {}
         result = 'INSERT INTO ' + self._table_name + ' ('
@@ -135,6 +200,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def simple_select_sql(cls, dialect=None, **kwargs):
+        '''Returns a tuple of a string containing the parametrised SELECT command (in the
+        given SQL dialect) required to retrieve data from the SQL table
+        represented by the SQLRecord, and the values to pass as parameters.
+        Only the most basic form of WHERE clause is supported, with exact
+        values for columns specified in the form of keyword arguments to the
+        method.'''
+
         if dialect:
             placeholder = dialect.placeholder
         else:
@@ -156,6 +228,17 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def simple_select_sql_unsafe(cls, dialect=None, **kwargs):
+        '''Returns a string containing the SELECT command (in the given SQL
+        dialect) required to retrieve data from the SQL table represented by
+        the SQLRecord. Only the most basic form of WHERE clause is supported,
+        with exact values for columns specified in the form of keyword
+        arguments to the method.
+
+        Note that this is not safe, as it is not guaranteed that any escaping
+        performed will be sufficient to prevent SQL injection attacks. Do not
+        use it with any values supplied by the user or previously stored in the
+        database by the user.'''
+
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
