@@ -16,6 +16,10 @@ class SQLSequence:
         self._nextval_sequence_sql = None
         self._nextval_cached_dialect = None
 
+    @property
+    def name(self):
+        return self._name
+
     def create(self, cursor, dialect):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         to create the sequence in the database if it does not already exist.
