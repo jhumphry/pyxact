@@ -27,7 +27,7 @@ class SQLSequence:
 
     @property
     def sql_name(self):
-        return self.sql_name
+        return self._sql_name
 
     def create(self, cursor, dialect):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
