@@ -84,20 +84,29 @@ class PrimaryKeyConstraint(ColumnsConstraint):
 
 class ForeignKeyConstraint(SQLConstraint):
     '''This class is used to create FOREIGN KEY constraints. Depending on the
-    database, this make require the referenced columns to be indexed.'''
+    database, this make require the referenced columns to be indexed. If
+    sql_reference_names is None then it is assumed the referenced columns have
+    the same names as the columns in the current table.'''
 
-    def __init__(self, sql_column_names, foreign_table, sql_reference_names,
+    def __init__(self, sql_column_names, foreign_table, sql_reference_names=None,
                  sql_options='', **kwargs):
+
         super().__init__(**kwargs)
+
         if isinstance(sql_column_names, str):
             self._sql_column_names = (sql_column_names,)
         else:
             self._sql_column_names = sql_column_names
+
         self._foreign_table = foreign_table
+
         if isinstance(sql_reference_names, str):
             self._sql_reference_names = (sql_reference_names,)
+        elif sql_reference_names is None:
+            self._sql_reference_names = self._sql_column_names
         else:
             self._sql_reference_names = sql_reference_names
+
         self._sql_options = sql_options
 
     def sql_ddl(self, dialect=None):
