@@ -2,6 +2,7 @@
 defines and maps SQL types and values to Python types and values.'''
 
 import decimal
+from . import sequences
 
 class SQLField:
     '''SQLField is an abstract class that forms the root of a hierarchy that
@@ -164,6 +165,31 @@ class IDIntField(AbstractIntField):
             return context[self._context_name]
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_name))
+
+class SequenceIntField(AbstractIntField):
+    '''Represents an integer field in a database. This operates similarly to
+    IDIntField, but is associated with a particular SQLSequence. The precise
+    integer type is determined by the index_type of the SQLSequence. Note that
+    it will not automatically fetch the next value from the sequence if the
+    relevant value is not present in the context parameter to the get_context
+    method, as this method does not take a database cursor.'''
+
+    def __init__(self, sequence, context_name=None, **kwargs):
+        if not isinstance(sequence, sequences.SQLSequence):
+            raise ValueError('Sequence provided must be an instance of pxact.sequences.SQLSequence')
+        self._sequence = sequence
+        if context_name:
+            self._context_name = context_name
+        else:
+            self._context_name = sequence._name
+        super().__init__(py_type=int, sql_type=sequence._index_type,
+                         nullable=True,  **kwargs)
+
+    def get_context(self, instance, context):
+        if self._context_name in context:
+            return context[self._context_name]
+        raise ValueError('''Required context '{0}' from sequence '{1}' is not provided'''
+                         .format(self._context_name, self._sequence._name))
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
