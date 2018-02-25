@@ -166,24 +166,29 @@ class IDIntField(AbstractIntField):
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_name))
 
-class SequenceIntField(AbstractIntField):
-    '''Represents an integer field in a database. This operates similarly to
-    IDIntField, but is associated with a particular SQLSequence. The precise
-    integer type is determined by the index_type of the SQLSequence. Note that
-    it will not automatically fetch the next value from the sequence if the
-    relevant value is not present in the context parameter to the get_context
-    method, as this method does not take a database cursor.'''
+class AbstractSequenceField(AbstractIntField):
+    '''An abstract class that represents an integer field in the database that
+    is linked to a sequence in the database. It must be subclassed with the
+    class keyword argument sequence giving an instance of an SQLSequence. Note
+    that it will not automatically retrieve the sequence.'''
 
-    def __init__(self, sequence, context_name=None, **kwargs):
+    def __init_subclass__(cls, sequence, **kwargs):
+        super().__init_subclass__(**kwargs)
         if not isinstance(sequence, sequences.SQLSequence):
-            raise ValueError('Sequence provided must be an instance of pxact.sequences.SQLSequence')
-        self._sequence = sequence
+            raise ValueError('Sequence provided must be an instance of pyxact.sequences.SQLSequence')
+        cls._sequence = sequence
+
+    @classmethod
+    def sequence(cls):
+        return cls._sequence
+
+    def __init__(self, context_name=None, **kwargs):
         if context_name:
             self._context_name = context_name
         else:
-            self._context_name = sequence._name
-        super().__init__(py_type=int, sql_type=sequence._index_type,
-                         nullable=True,  **kwargs)
+            self._context_name = self._sequence.name
+        super().__init__(py_type=int, sql_type=self._sequence._index_type,
+                         nullable=True, **kwargs)
 
     def get_context(self, instance, context):
         if self._context_name in context:

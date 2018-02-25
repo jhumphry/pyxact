@@ -19,14 +19,17 @@ conn.execute('PRAGMA foreign_keys = ON;')
 cursor = conn.cursor()
 cursor.execute('BEGIN TRANSACTION;')
 
-# Create a persistent sequence
+# Create a persistent sequence and matching AbstractSequenceField
 trans_id_seq = sequences.SQLSequence(name='trans_id_seq')
+
+class TransIdSeqField(fields.AbstractSequenceField, sequence=trans_id_seq):
+    pass
 
 # Creation can require more than one SQL statement
 trans_id_seq.create(cursor, sqliteDialect)
 
 class TransactionRecord(records.SQLRecord, table_name='transactions'):
-    trans_id = fields.SequenceIntField(trans_id_seq)
+    trans_id = TransIdSeqField()
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
@@ -35,7 +38,7 @@ class TransactionRecord(records.SQLRecord, table_name='transactions'):
 cursor.execute(TransactionRecord.create_table_sql(sqliteDialect))
 
 class JournalRecord(records.SQLRecord, table_name='journals'):
-    trans_id = fields.SequenceIntField(trans_id_seq)
+    trans_id = TransIdSeqField()
     row_id = fields.RowEnumIntField(context_name='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=6, allow_floats=True)
