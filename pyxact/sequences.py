@@ -7,8 +7,13 @@ class SQLSequence:
     sequence and its current state will be stored in the database. Note that
     this sequence type does not guarantee a 'gapless' sequence.'''
 
-    def __init__(self, name, start=1, interval=1, index_type='BIGINT', sql_options=''):
+    def __init__(self, name, start=1, interval=1, index_type='BIGINT',
+                 sql_options='', sql_name=None):
         self._name = name
+        if sql_name:
+            self._sql_name = sql_name
+        else:
+            self._sql_name = name
         self._start = start
         self._interval = interval
         self._index_type = index_type
@@ -19,6 +24,10 @@ class SQLSequence:
     @property
     def name(self):
         return self._name
+
+    @property
+    def sql_name(self):
+        return self.sql_name
 
     def create(self, cursor, dialect):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
