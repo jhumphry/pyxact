@@ -114,5 +114,5 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
     def values(self, context=None):
         return [x.values(context) for x in self._records]
 
-    def values_sql_repr(self, context=None):
-        return [x.values_sql_repr(context) for x in self._records]
+    def values_sql_repr(self, context=None, dialect=None):
+        return [x.values_sql_repr(context, dialect) for x in self._records]
