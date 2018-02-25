@@ -43,10 +43,7 @@ class SQLField:
 
     def __get__(self, instance, owner):
         if instance:
-            try:
-                return instance.__getattribute__(self._slot_name)
-            except AttributeError:
-                return None
+            return instance.__getattribute__(self._slot_name)
         else:
             return self
 
@@ -76,10 +73,7 @@ class SQLField:
         '''Given a particular context dictionary, this method attempts to
         retrieve the associated value from a given instance of the class.'''
 
-        try:
-            return instance.__getattribute__(self._slot_name)
-        except AttributeError:
-            return None
+        return instance.__getattribute__(self._slot_name)
 
     @property
     def sql_name(self):
