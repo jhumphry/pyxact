@@ -64,6 +64,12 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(result, v, getattr(self, v))
         return result
 
+    def clear(self):
+        '''Set all fields in the SQLRecord to None.'''
+
+        for key in self._fields:
+            settattr(self, key, None)
+
     def get(self, key, context=None):
         '''Get a value stored in an SQLField within this SQLRecord, given a
         context dictionary if appropriate.'''
@@ -78,6 +84,16 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if key not in self._fields:
             raise ValueError('{0} is not a valid field name.'.format(key))
         setattr(self, key, value)
+
+    def set_values(self, values):
+        '''Set all fields within this SQLRecord.'''
+
+        if len(values) != self._field_count:
+            raise ValueError('{0} values required, {1} supplied.'
+                             .format(self._field_count, len(values)))
+
+        for field, value in zip(self._fields.keys(), values):
+            setattr(self, field, value)
 
     @property
     def table_name(self):
