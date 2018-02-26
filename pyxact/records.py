@@ -270,6 +270,40 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ';'
         return result
 
+    @classmethod
+    def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+
+        if dialect:
+            placeholder = dialect.placeholder
+        else:
+            placeholder = '?'
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+
+        column_sql_names=[]
+        column_values=[]
+
+        # This might be better with a set and intersection operation?
+
+        for field_obj in cls._fields.values():
+            field_ctxt = field_obj.context_used
+            if field_ctxt in context:
+                column_sql_names.append(field_obj.sql_name)
+                column_values.append(context[field_ctxt])
+
+        if not allow_unlimited and not column_sql_names:
+            raise ValueError('Context-based SELECT has no restrictions')
+
+        if column_sql_names:
+            result += ' WHERE '
+            c = 1
+            for column in column_sql_names:
+                result += column+'='+placeholder
+                if c < len(column_sql_names):
+                    result += ' AND '
+                c += 1
+        result += ';'
+        return (result, column_values)
+
     def __str__(self):
         result = self.__class__.__name__ + ' with fields {\n'
         for k in self._fields.keys():
