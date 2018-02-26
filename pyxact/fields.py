@@ -166,29 +166,24 @@ class IDIntField(AbstractIntField):
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_name))
 
-class AbstractSequenceField(AbstractIntField):
-    '''An abstract class that represents an integer field in the database that
-    is linked to a sequence in the database. It must be subclassed with the
-    class keyword argument sequence giving an instance of an SQLSequence. Note
-    that it will not automatically retrieve the sequence.'''
+class SequenceIntField(AbstractIntField):
 
-    def __init_subclass__(cls, sequence, **kwargs):
-        super().__init_subclass__(**kwargs)
+    def __init__(self, sequence, context_name=None, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
             raise ValueError('Sequence provided must be an instance of pyxact.sequences.SQLSequence')
-        cls._sequence = sequence
-
-    @classmethod
-    def sequence(cls):
-        return cls._sequence
-
-    def __init__(self, context_name=None, **kwargs):
+        self._sequence = sequence
         if context_name:
             self._context_name = context_name
         else:
             self._context_name = self._sequence.name
         super().__init__(py_type=int, sql_type=self._sequence._index_type,
                          nullable=True, **kwargs)
+
+    def sequence(self):
+        return self._sequence
+
+    def context_name(self):
+        return self._context_name
 
     def get_context(self, instance, context):
         if self._context_name in context:
