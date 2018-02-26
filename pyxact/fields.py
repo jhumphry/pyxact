@@ -9,10 +9,11 @@ class SQLField:
     defines the mapping between SQL types and values and their Python
     equivalents.'''
 
-    def __init__(self, py_type=None, sql_name=None, sql_ddl_options='',
-                 sql_type=None, nullable=True):
+    def __init__(self, py_type=None, sql_name=None, context_used=None,
+                 sql_ddl_options='', sql_type=None, nullable=True):
         self._py_type = py_type
         self._sql_name = sql_name
+        self._context_used = context_used
         self._sql_ddl_options = sql_ddl_options
         self._sql_type = sql_type
         self._nullable = nullable
@@ -82,6 +83,13 @@ class SQLField:
         Python.'''
 
         return self._sql_name
+
+    @property
+    def context_used(self):
+        '''This property represents the name of the context value that is used
+        when retrieving the value via get_context, or it returns None.'''
+
+        return self._context_used
 
     @property
     def nullable(self):
@@ -154,41 +162,40 @@ class IDIntField(AbstractIntField):
     picked from a sequence and then used to relate records in different
     tables.'''
 
-    def __init__(self, context_name, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
                          nullable=True, **kwargs)
-        self._context_name = context_name
 
     def get_context(self, instance, context):
-        if self._context_name in context:
-            return context[self._context_name]
+        if self._context_used in context:
+            return context[self._context_used]
         raise ValueError('''Required context '{0}' is not provided'''
-                         .format(self._context_name))
+                         .format(self._context_used))
 
 class SequenceIntField(AbstractIntField):
 
-    def __init__(self, sequence, context_name=None, **kwargs):
+    def __init__(self, sequence, context_used=None, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
             raise ValueError('Sequence provided must be an instance of pyxact.sequences.SQLSequence')
         self._sequence = sequence
-        if context_name:
-            self._context_name = context_name
+        if context_used:
+            super().__init__(py_type=int, context_used=context_used,
+                             sql_type=self._sequence._index_type,
+                             nullable=True, **kwargs)
         else:
-            self._context_name = self._sequence.name
-        super().__init__(py_type=int, sql_type=self._sequence._index_type,
-                         nullable=True, **kwargs)
+            super().__init__(py_type=int, context_used=self._sequence.name,
+                             sql_type=self._sequence._index_type,
+                             nullable=True, **kwargs)
 
+    @property
     def sequence(self):
         return self._sequence
 
-    def context_name(self):
-        return self._context_name
-
     def get_context(self, instance, context):
-        if self._context_name in context:
-            return context[self._context_name]
-        raise ValueError('''Required context '{0}' from sequence '{1}' is not provided'''
-                         .format(self._context_name, self._sequence._name))
+        if self._context_used in context:
+            return context[self._context_used]
+        raise ValueError('''Required context value '{0}' from sequence '{1}' is not provided'''
+                         .format(self._context_used, self._sequence._name))
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
@@ -198,18 +205,17 @@ class RowEnumIntField(AbstractIntField):
     updated to increment the value. This is intended to enumerate rows where
     multiple rows are being INSERTED into a table at once.'''
 
-    def __init__(self, context_name, starting_number=1, **kwargs):
+    def __init__(self, starting_number=1, **kwargs):
         super().__init__(py_type=int, sql_type="INTEGER",
                          nullable=True, **kwargs)
-        self._context_name = context_name
         self._starting_number = starting_number
 
     def get_context(self, instance, context):
-        if self._context_name in context:
-            context[self._context_name] += 1
-            return context[self._context_name]
+        if self._context_used in context:
+            context[self._context_used] += 1
+            return context[self._context_used]
 
-        context[self._context_name] = self._starting_number
+        context[self._context_used] = self._starting_number
         return self._starting_number
 
 class NumericField(SQLField):

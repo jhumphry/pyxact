@@ -109,9 +109,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = dict()
         for i in self._context_fields:
             if isinstance(self._context_fields[i], fields.SequenceIntField):
-                value = self._context_fields[i].sequence().nextval(cursor, dialect)
+                value = self._context_fields[i].sequence.nextval(cursor, dialect)
                 setattr(self, i, value)
-                result[self._context_fields[i].context_name()] = value
+                result[self._context_fields[i].context_used] = value
             else:
                 result[i] = getattr(self, i)
         return result

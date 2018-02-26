@@ -27,7 +27,7 @@ trans_id_seq = sequences.SQLSequence(name='trans_id_seq')
 trans_id_seq.create(cursor, sqliteDialect)
 
 class TransactionRecord(records.SQLRecord, table_name='transactions'):
-    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_name='trans_id')
+    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_used='trans_id')
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
@@ -36,8 +36,8 @@ class TransactionRecord(records.SQLRecord, table_name='transactions'):
 cursor.execute(TransactionRecord.create_table_sql(sqliteDialect))
 
 class JournalRecord(records.SQLRecord, table_name='journals'):
-    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_name='trans_id')
-    row_id = fields.RowEnumIntField(context_name='row_id', starting_number=1)
+    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_used='trans_id')
+    row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=6, allow_floats=True)
     cons_pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id', 'row_id'))
@@ -52,7 +52,7 @@ class JournalList(recordlists.SQLRecordList, record_class=JournalRecord):
     pass
 
 class AccountingTransaction(transactions.SQLTransaction):
-    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_name='trans_id')
+    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_used='trans_id')
     trans_details = transactions.SQLTransactionField(TransactionRecord)
     journal_list = transactions.SQLTransactionField(JournalList)
 
