@@ -147,3 +147,45 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                                recordlist.values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
+
+    def context_select(self, cursor, dialect):
+        cursor.execute('BEGIN TRANSACTION;')
+        context = self.get_context()
+
+        for record_name, record_field in self._records.items():
+            record_type = record_field._record_type
+
+            record = getattr(self, record_name)
+            if record == None:
+                record = record_type()
+                setattr(self, record_name, record)
+
+            cursor.execute(*record_type.context_select_sql(context,
+                                                           dialect,
+                                                           allow_unlimited=False))
+            nextrow = cursor.fetchone()
+            if nextrow:
+                record.set_values(nextrow)
+            else:
+                record.clear()
+
+        for recordlist_name, recordlist_field in self._recordlists.items():
+            recordlist_type = recordlist_field._record_type
+            record_type = recordlist_type._record_class
+
+            recordlist = getattr(self, recordlist_name)
+            if recordlist == None:
+                recordlist=recordlist_type()
+                setattr(self, recordlist_name, recordlist)
+
+            recordlist.clear()
+
+            cursor.execute(*record_type.context_select_sql(context,
+                                                           dialect,
+                                                           allow_unlimited=False))
+            nextrow = cursor.fetchone()
+            while nextrow:
+                recordlist.append(record_type(*nextrow))
+                nextrow = cursor.fetchone()
+
+        cursor.execute('COMMIT TRANSACTION;')
