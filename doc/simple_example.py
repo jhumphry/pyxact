@@ -8,6 +8,7 @@ import pyxact.constraints as constraints
 import pyxact.records as records
 import pyxact.recordlists as recordlists
 import pyxact.sequences as sequences
+import pyxact.transactions as transactions
 from pyxact.dialects import sqliteDialect
 
 # Create an in-memory database to work on
@@ -45,8 +46,15 @@ class JournalRecord(records.SQLRecord, table_name='journals'):
 
 cursor.execute(JournalRecord.create_table_sql(sqliteDialect))
 
+cursor.execute('COMMIT TRANSACTION;')
+
 class JournalList(recordlists.SQLRecordList, record_class=JournalRecord):
     pass
+
+class AccountingTransaction(transactions.SQLTransaction):
+    trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_name='trans_id')
+    trans_details = TransactionRecord
+    journal_list = JournalList
 
 # Note we do not supply the trans_id as we do not know it at this time
 sample_transaction = TransactionRecord(created_by='ABC',
@@ -60,20 +68,10 @@ sample_journals = JournalList(JournalRecord(None, None, 1000, D('10.5')),
 
 assert sum(sample_journals.amount) == 0
 
-cursor.execute('COMMIT TRANSACTION;')
+test_trans = AccountingTransaction(trans_details = sample_transaction,
+                                   journal_list = sample_journals)
 
-cursor.execute('BEGIN TRANSACTION;')
-
-sample_context = dict()
-sample_context[trans_id_seq.name] = trans_id_seq.nextval(cursor, sqliteDialect)
-
-cursor.execute(TransactionRecord.insert_sql(sqliteDialect),
-               sample_transaction.values_sql_repr(sample_context, sqliteDialect))
-
-cursor.executemany(JournalRecord.insert_sql(sqliteDialect),
-                   sample_journals.values_sql_repr(sample_context, sqliteDialect))
-
-cursor.execute('COMMIT TRANSACTION;')
+test_trans.insert_new(cursor, sqliteDialect)
 
 cursor.execute(*JournalRecord.simple_select_sql(sqliteDialect, trans_id=1, row_id=2))
 values = cursor.fetchone()
