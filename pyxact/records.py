@@ -215,7 +215,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if kwargs:
             result += ' WHERE '
             c = 1
-            for f, v in kwargs.items():
+            for f in kwargs:
                 if not f in cls._fields:
                     raise ValueError('Specified field {0} is not valid'.format(f))
                 result += cls._fields[f].sql_name+'='
