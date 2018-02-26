@@ -53,8 +53,8 @@ class JournalList(recordlists.SQLRecordList, record_class=JournalRecord):
 
 class AccountingTransaction(transactions.SQLTransaction):
     trans_id = fields.SequenceIntField(sequence=trans_id_seq, context_name='trans_id')
-    trans_details = TransactionRecord
-    journal_list = JournalList
+    trans_details = transactions.SQLTransactionField(TransactionRecord)
+    journal_list = transactions.SQLTransactionField(JournalList)
 
 # Note we do not supply the trans_id as we do not know it at this time
 sample_transaction = TransactionRecord(created_by='ABC',

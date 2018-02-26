@@ -36,7 +36,6 @@ class SQLTransactionMetaClass(type):
     def __new__(mcs, name, bases, namespace, **kwds):
 
         slots = []
-        _sequences = dict()
         _fields = dict()
         _context_fields = dict()
         _records = dict()
@@ -49,17 +48,14 @@ class SQLTransactionMetaClass(type):
                 _context_fields[k] = namespace[k]
                 _fields[k] = namespace[k]
 
-            if isinstance(namespace[k], type):
-                if issubclass(namespace[k], records.SQLRecord):
+            elif isinstance(namespace[k], SQLTransactionField):
+                if issubclass(namespace[k]._record_type, records.SQLRecord):
                     _records[k] = namespace[k]
-                elif issubclass(namespace[k], recordlists.SQLRecordList):
+                elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
                     _recordlists[k] = namespace[k]
 
-                if issubclass(namespace[k], (records.SQLRecord,
-                                             recordlists.SQLRecordList)):
-                    slots.append('_'+k)
-                    _fields[k] = namespace[k]
-                    namespace[k] = SQLTransactionField(namespace[k])
+                slots.append('_'+k)
+                _fields[k] = namespace[k]
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields_count'] = len(_fields)
