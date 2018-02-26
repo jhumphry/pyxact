@@ -45,8 +45,7 @@ class SQLField:
     def __get__(self, instance, owner):
         if instance:
             return instance.__getattribute__(self._slot_name)
-        else:
-            return self
+        return self
 
     def __str__(self):
         return '{0} ({1} {2})'.format(self.__class__.__name__,
