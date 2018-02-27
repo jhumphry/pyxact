@@ -173,29 +173,26 @@ class IDIntField(AbstractIntField):
                          .format(self._context_used))
 
 class SequenceIntField(AbstractIntField):
+    '''Represents an integer field in an SQLTransaction that has a link to a
+    SQLSequence. It can be retrieved and set as a normal SQLField, but when
+    get_new_context is called on the SQLTransaction, it will be updated from
+    the next value of the sequence and the name:value pair will be returned as
+    part of the context dictionary. Within SQLRecord subclasses, an IDIntField
+    can be used to represent this value. This field type has no direct use with
+    SQLRecords.'''
 
-    def __init__(self, sequence, context_used=None, **kwargs):
+    def __init__(self, sequence, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
-            raise ValueError('Sequence provided must be an instance of pyxact.sequences.SQLSequence')
+            raise ValueError('Sequence provided must be an instance of '
+                             'pyxact.sequences.SQLSequence')
         self._sequence = sequence
-        if context_used:
-            super().__init__(py_type=int, context_used=context_used,
-                             sql_type=self._sequence._index_type,
-                             nullable=True, **kwargs)
-        else:
-            super().__init__(py_type=int, context_used=self._sequence.name,
-                             sql_type=self._sequence._index_type,
-                             nullable=True, **kwargs)
+        super().__init__(py_type=int, sql_type=self._sequence._index_type,
+                         nullable=True, **kwargs)
 
     @property
     def sequence(self):
+        '''Return the associated SQLSequence instance.'''
         return self._sequence
-
-    def get_context(self, instance, context):
-        if self._context_used in context:
-            return context[self._context_used]
-        raise ValueError('''Required context value '{0}' from sequence '{1}' is not provided'''
-                         .format(self._context_used, self._sequence._name))
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
