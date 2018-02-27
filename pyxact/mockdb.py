@@ -40,7 +40,7 @@ class Cursor:
                             .format(file.name,
                                     table,
                                     repr((sep, null, size, columns)))
-                            )
+                           )
 
     def copy_expert(self, sql, file, size=8192):
         '''Log a request to execute a COPY command to upload bulk data. This
@@ -51,7 +51,7 @@ class Cursor:
                             .format(file.name,
                                     sql,
                                     repr(size))
-                            )
+                           )
 
     def close(self):
         '''Close the dummy database cursor object. Does not close the

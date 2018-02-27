@@ -14,6 +14,8 @@ class SQLTransactionField:
             raise ValueError('record_type parameter must refer to an appropriate subclass.')
 
         self._record_type = record_type
+        self._name = None
+        self._slot_name = None
 
     def __get__(self, instance, owner):
         if instance:
@@ -111,9 +113,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if isinstance(self._context_fields[i], fields.SequenceIntField):
                 value = self._context_fields[i].sequence.nextval(cursor, dialect)
                 setattr(self, i, value)
-                result[self._context_fields[i].context_used] = value
-            else:
-                result[i] = getattr(self, i)
+            result[i] = getattr(self, i)
         return result
 
     def insert_existing(self, cursor, dialect):
@@ -156,7 +156,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             record_type = record_field._record_type
 
             record = getattr(self, record_name)
-            if record == None:
+            if record is None:
                 record = record_type()
                 setattr(self, record_name, record)
 
@@ -174,8 +174,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             record_type = recordlist_type._record_class
 
             recordlist = getattr(self, recordlist_name)
-            if recordlist == None:
-                recordlist=recordlist_type()
+            if recordlist is None:
+                recordlist = recordlist_type()
                 setattr(self, recordlist_name, recordlist)
 
             recordlist.clear()

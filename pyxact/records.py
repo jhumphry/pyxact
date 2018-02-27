@@ -272,6 +272,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+        '''This method  takes a context dictionary of name:value pairs and identifies those
+        SQLFields within the SQLRecord that would use the context values provided by
+        any of those names. It then constructs an SQL statement using the column names
+        of the identified SQLFields and returns that statement and the list of relevant
+        values.'''
 
         if dialect:
             placeholder = dialect.placeholder
@@ -279,8 +284,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             placeholder = '?'
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
 
-        column_sql_names=[]
-        column_values=[]
+        column_sql_names = []
+        column_values = []
 
         # This might be better with a set and intersection operation?
 
