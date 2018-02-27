@@ -91,6 +91,25 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                     raise ValueError('{0} is not a valid attribute name.'.format(key))
                 setattr(self, key, value)
 
+    def __str__(self):
+        result = self.__class__.__name__ + ':\n'
+
+        for field_name in self._context_fields:
+            result += '* {0} ({1}) = {2}\n'.format(field_name,
+                                                   self._context_fields[field_name].__class__.__name__,
+                                                   str(getattr(self, field_name))
+                                                  )
+
+        for record_name in self._records:
+            result += '* {0} '.format(record_name)
+            result += str(getattr(self,record_name))
+
+        for recordlist_name in self._recordlists:
+            result += '* {0} '.format(recordlist_name)
+            result += str(getattr(self,recordlist_name))
+
+        return result
+
     def copy(self):
         '''Create a deep copy of an instance of an SQLTransaction. If normal
         assignment is used, the copies will be shallow and changing the

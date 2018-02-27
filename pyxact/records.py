@@ -54,6 +54,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                     raise ValueError('{0} is not a valid attribute name.'.format(key))
                 setattr(self, key, value)
 
+    def __str__(self):
+        result = self.__class__.__name__ + ':\n'
+        for k in self._fields.keys():
+            result += '- {0} ({1}) = {2}\n'.format(k,
+                                                   self._fields[k].__class__.__name__,
+                                                   str(getattr(self, k))
+                                                  )
+        return result
+
     def copy(self):
         '''Create a deep copy of an instance of an SQLRecord. If normal
         assignment is used, the copies will be shallow and changing the
@@ -320,11 +329,3 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 context[field_obj.context_used] = getattr(self, field_name)
 
         return context
-
-
-    def __str__(self):
-        result = self.__class__.__name__ + ' with fields {\n'
-        for k in self._fields.keys():
-            result += k + ' : ' + str(self._fields[k]) + ', \n'
-        result += '}'
-        return result

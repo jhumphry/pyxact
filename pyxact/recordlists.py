@@ -79,6 +79,15 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
     def __reverse__(self):
         return reversed(self._records)
 
+    def __str__(self):
+        result = self.__class__.__name__ + '('
+        result += self._record_class.__name__ + '):\n'
+        for k in self._record_class._fields.keys():
+            result += '- {0} ({1})\n'.format(k,
+                                             self._record_class._fields[k].__class__.__name__
+                                            )
+        return result
+
     def append(self, value):
         if not isinstance(value, self._record_class):
             raise ValueError('Value must be an instance of {0}'
