@@ -68,7 +68,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         '''Set all fields in the SQLRecord to None.'''
 
         for key in self._fields:
-            settattr(self, key, None)
+            setattr(self, key, None)
 
     def get(self, key, context=None):
         '''Get a value stored in an SQLField within this SQLRecord, given a
