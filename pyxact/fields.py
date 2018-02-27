@@ -72,7 +72,11 @@ class SQLField:
 
     def get_context(self, instance, context):
         '''Given a particular context dictionary, this method attempts to
-        retrieve the associated value from a given instance of the class.'''
+        retrieve the associated value,. Depending on the type of the field,
+        this will either be from the given instance of the SQLField subclass or
+        from the value in the context dictionary under the name of the field's
+        context_usage parameter. In the latter case the value will also be
+        stored in the instance.'''
 
         return instance.__getattribute__(self._slot_name)
 
@@ -168,6 +172,7 @@ class IDIntField(AbstractIntField):
 
     def get_context(self, instance, context):
         if self._context_used in context:
+            setattr(instance,self._slot_name, context[self._context_used])
             return context[self._context_used]
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_used))
@@ -210,9 +215,11 @@ class RowEnumIntField(AbstractIntField):
     def get_context(self, instance, context):
         if self._context_used in context:
             context[self._context_used] += 1
+            setattr(instance,self._slot_name, context[self._context_used])
             return context[self._context_used]
 
         context[self._context_used] = self._starting_number
+        setattr(instance,self._slot_name, self._starting_number)
         return self._starting_number
 
 class NumericField(SQLField):
