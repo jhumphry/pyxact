@@ -29,6 +29,10 @@ class SQLSequence:
     def sql_name(self):
         return self._sql_name
 
+    @property
+    def index_type(self):
+        return self._index_type
+
     def create(self, cursor, dialect):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         to create the sequence in the database if it does not already exist.

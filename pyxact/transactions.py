@@ -102,11 +102,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for record_name in self._records:
             result += '* {0} '.format(record_name)
-            result += str(getattr(self,record_name))
+            result += str(getattr(self, record_name))
 
         for recordlist_name in self._recordlists:
             result += '* {0} '.format(recordlist_name)
-            result += str(getattr(self,recordlist_name))
+            result += str(getattr(self, recordlist_name))
 
         return result
 

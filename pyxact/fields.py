@@ -39,9 +39,9 @@ class SQLField:
         else:
             try:
                 instance.__setattr__(self._slot_name, self.convert(value))
-            except ValueError as ve:
+            except ValueError as ve_raised:
                 raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                                 .format(self._name, str(value), str(type(value)))) from ve
+                                 .format(self._name, str(value), str(type(value)))) from ve_raised
 
     def __get__(self, instance, owner):
         if instance:
@@ -172,7 +172,7 @@ class IDIntField(AbstractIntField):
 
     def get_context(self, instance, context):
         if self._context_used in context:
-            setattr(instance,self._slot_name, context[self._context_used])
+            setattr(instance, self._slot_name, context[self._context_used])
             return context[self._context_used]
         raise ValueError('''Required context '{0}' is not provided'''
                          .format(self._context_used))
@@ -191,7 +191,7 @@ class SequenceIntField(AbstractIntField):
             raise ValueError('Sequence provided must be an instance of '
                              'pyxact.sequences.SQLSequence')
         self._sequence = sequence
-        super().__init__(py_type=int, sql_type=self._sequence._index_type,
+        super().__init__(py_type=int, sql_type=self._sequence.index_type,
                          nullable=True, **kwargs)
 
     @property
@@ -215,11 +215,11 @@ class RowEnumIntField(AbstractIntField):
     def get_context(self, instance, context):
         if self._context_used in context:
             context[self._context_used] += 1
-            setattr(instance,self._slot_name, context[self._context_used])
+            setattr(instance, self._slot_name, context[self._context_used])
             return context[self._context_used]
 
         context[self._context_used] = self._starting_number
-        setattr(instance,self._slot_name, self._starting_number)
+        setattr(instance, self._slot_name, self._starting_number)
         return self._starting_number
 
 class NumericField(SQLField):
