@@ -116,6 +116,39 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             result[i] = getattr(self, i)
         return result
 
+    def get_context_from_records(self):
+        '''This method makes the context dictionary by scanning the SQLRecord
+        and SQLTransactionRecord contained in SQLTransactionField attributes
+        and working out what context name:value pairs are consistent with them.
+        For example if an SQLRecord attached to the SQLTransaction has a
+        IDIntField equal to 37 that uses a context value named trans_id, then
+        the returned context dictionary should have 37 stored under the name
+        trans_id. Does NOT attempt to identify if there are inconsistencies
+        between rows.'''
+
+        context = {}
+
+        for record_name in self._records:
+            record = getattr(self, record_name)
+            context.update(record.get_context())
+
+        for recordlist_name in self._recordlists:
+            recordlist = getattr(self, recordlist_name)
+            for record in recordlist:
+                context.update(record.get_context())
+
+        return context
+
+    def set_context_from_records(self):
+        '''This method sets the context fields using the dictionary returned
+        by get_context_from_records.'''
+
+        context = self.get_context_from_records()
+
+        for field in self._context_fields:
+            if field in context:
+                setattr(self, field, context[field])
+
     def insert_existing(self, cursor, dialect):
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
