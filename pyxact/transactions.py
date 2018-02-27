@@ -92,6 +92,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 setattr(self, key, value)
 
     def copy(self):
+        '''Create a deep copy of an instance of an SQLTransaction. If normal
+        assignment is used, the copies will be shallow and changing the
+        attributes on one instance will affect the other.'''
+
         result = self.__class__()
         for attr in self.__slots__:
             value = getattr(self, attr)
@@ -102,12 +106,22 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         return result
 
     def get_context(self):
+        '''Return a context dictionary created from the values stored under the
+        names of the SQLField objects directly attached as attributes to the
+        SQLTransaction. This does not update sequences or perform any database
+        access.'''
+
         result = dict()
         for i in self._context_fields:
             result[i] = getattr(self, i)
         return result
 
     def get_new_context(self, cursor, dialect):
+        '''Return a context dictionary created from the SQLField objects
+        directly attached as attributes to the SQLTransaction. This method will
+        identify SequenceIntFields and call the database to update the
+        values.'''
+
         result = dict()
         for i in self._context_fields:
             if isinstance(self._context_fields[i], fields.SequenceIntField):
@@ -150,6 +164,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 setattr(self, field, context[field])
 
     def insert_existing(self, cursor, dialect):
+        '''Insert the contents of the SQLTransaction into the database. This
+        method stores only the existing data and will not update any values
+        that are linked to sequences in the database.'''
+
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
 
@@ -166,6 +184,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('COMMIT TRANSACTION;')
 
     def insert_new(self, cursor, dialect):
+        '''Insert the contents of the SQLTransaction into the database. This
+        method will update any values that are linked to sequences in the
+        database.'''
+
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_new_context(cursor, dialect)
 
@@ -182,6 +204,12 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('COMMIT TRANSACTION;')
 
     def context_select(self, cursor, dialect):
+        '''This method extracts the values stored in SQLField directly attached
+        to the SQLTransaction and stored them in a context dictionary under the
+        name of the attribute. It then attempts to use this dictionary to
+        retrieve all of the SQLRecord and SQLRecordList objects stored in
+        SQLTransactionField attributes.'''
+
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
 

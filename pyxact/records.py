@@ -55,9 +55,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 setattr(self, key, value)
 
     def copy(self):
-        '''Create a deep copy of an instance of an SQLRecord. If normal assignment
-        is used, the copies will be shallow and changing the attributes on one instance
-        will affect the other.'''
+        '''Create a deep copy of an instance of an SQLRecord. If normal
+        assignment is used, the copies will be shallow and changing the
+        attributes on one instance will affect the other.'''
 
         result = self.__class__()
         for v in self.__slots__:
