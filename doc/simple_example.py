@@ -73,6 +73,13 @@ test_trans = AccountingTransaction(trans_details = sample_transaction,
 
 test_trans.insert_new(cursor, sqliteDialect)
 
-cursor.execute(*JournalRecord.simple_select_sql(sqliteDialect, trans_id=1, row_id=2))
-values = cursor.fetchone()
-journal_retrieved = JournalRecord(*values)
+test_trans.trans_details.created_by = 'DEF'
+test_trans.journal_list[2].account = 1003
+test_trans.insert_new(cursor, sqliteDialect)
+
+new_trans = AccountingTransaction(trans_id = 2)
+new_trans.context_select(cursor, sqliteDialect)
+
+assert new_trans.journal_list[2].account == 1003
+assert new_trans.trans_details.narrative == 'Example usage of pyxact'
+
