@@ -121,12 +121,12 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         context = self.get_context()
 
         for record_name in self._records:
-            record = getattr(self, '_'+record_name)
+            record = getattr(self, record_name)
             cursor.execute(record.insert_sql(context, dialect),
                            record.values_sql_repr(context, dialect))
 
         for recordlist_name in self._recordlists:
-            recordlist = getattr(self, '_'+recordlist_name)
+            recordlist = getattr(self, recordlist_name)
             cursor.executemany(recordlist.record_class.insert_sql(context, dialect),
                                recordlist.values_sql_repr(context, dialect))
 
@@ -137,12 +137,12 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         context = self.get_new_context(cursor, dialect)
 
         for record_name in self._records:
-            record = getattr(self, '_'+record_name)
+            record = getattr(self, record_name)
             cursor.execute(record.insert_sql(context, dialect),
                            record.values_sql_repr(context, dialect))
 
         for recordlist_name in self._recordlists:
-            recordlist = getattr(self, '_'+recordlist_name)
+            recordlist = getattr(self, recordlist_name)
             cursor.executemany(recordlist.record_class.insert_sql(context, dialect),
                                recordlist.values_sql_repr(context, dialect))
 
