@@ -3,6 +3,9 @@
 from . import fields, records, recordlists
 
 class SQLTransactionField:
+    '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
+    incorporating into a new SQLTransaction subclass. It ensures that only the
+    correct subclass type can be assigned to the attribute.'''
 
     def __init__(self, record_type):
 
@@ -34,6 +37,9 @@ class SQLTransactionField:
                              .format(str(self._record_type.__name__)))
 
 class SQLTransactionMetaClass(type):
+    '''This metaclass identifies all of the special attributes created in an
+    SQLTransaction subclass and creates various internal dictionaries and
+    indexes to them.'''
 
     def __new__(mcs, name, bases, namespace, **kwds):
 
@@ -71,6 +77,17 @@ class SQLTransactionMetaClass(type):
 
 
 class SQLTransaction(metaclass=SQLTransactionMetaClass):
+    '''SQLTransaction is an abstract class that can be subclassed to represent
+    different types of database transaction. It groups together SQLRecord and
+    SQLRecordList subclasses (wrapped in SQLTransactionField) that represent
+    rows from different tables in the database that must all be inserted or
+    retrieved in a single transaction.
+
+    It can also contain attributes of type SQLField. These are called the
+    context fields and represent values (such as transaction numbers) that must
+    be consistent accross the appropriate fields within the SQLRecord and
+    SQLRecordList.'''
+
 
     def __init__(self, *args, **kwargs):
 

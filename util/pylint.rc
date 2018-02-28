@@ -194,7 +194,7 @@ generated-members=_fields,
                   _field_count,
                   _table_name,
                   __slots__,
-                  _record_class,
+                  _record_type,
                   _context_fields,
                   _records,
                   _recordlists

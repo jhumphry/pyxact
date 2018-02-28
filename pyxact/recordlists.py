@@ -6,6 +6,11 @@ import collections.abc
 from . import records
 
 class SQLRecordListField:
+    '''SQLRecordListField is a special descriptor which is created for each of
+    the SQLField attributes of the SQLRecord subclass that parametises the
+    SQLRecordList. Attempting to retrieve the attribute from an instance of
+    SQLRecordList returns a generator function that returns the value of the
+    relevant SQLField for each of the SQLRecord contained in the list.'''
 
     def __init__(self, field):
         self.field = field
@@ -16,14 +21,25 @@ class SQLRecordListField:
         return self
 
     def get(self, instance):
+        '''Return a generator giving the value of the SQLField for each of the
+        underlying SQLRecord in turn.'''
+
         for record in instance._records:
             yield record.get(self.field)
 
     def get_context(self, instance, context):
+        '''Return a generator giving the value of the SQLField for each of the
+        underlying SQLRecord in turn, using the given context dictionary where
+        appropriate.'''
+
         for record in instance._records:
             yield record.get(self.field, context)
 
 class SQLRecordMetaClass(type):
+    '''This metaclass ensures that SQLRecordList is only subclassed with a
+    valid SQLRecord subclass as the record_type parameter. It also adds
+    SQLRecordListField attributes for each of the SQLField attributes on the
+    SQLRecord subclass.'''
 
     def __new__(mcs, name, bases, namespace, record_type=None, **kwds):
 
@@ -39,6 +55,11 @@ class SQLRecordMetaClass(type):
         return type.__new__(mcs, name, bases, namespace)
 
 class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord):
+    '''SQLRecordList subclasses hold ordered lists of SQLRecord subclasses of a
+    specified type. They implement many of the methods of the builtin list type
+    and allow values to be retrieved in bulk. The metaclass creates attributes
+    on the SQLRecordList subclass that match those on the underlying
+    SQLRecord.'''
 
     def __init__(self, *args):
         self._records = []
@@ -89,21 +110,31 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         return result
 
     def append(self, value):
+        '''Append value to the end of the list of SQLRecords.'''
+
         if not isinstance(value, self._record_type):
             raise ValueError('Value must be an instance of {0}'
                              .format(str(self._record_type.__name__)))
         self._records.append(value)
 
     def clear(self):
+        '''Clear the list of SQLRecords.'''
+
         self._records.clear()
 
     def copy(self):
+        '''Create a deep-copy of the list by calling SQLRecord.copy() on each
+        of the underlying records and adding them to a new SQLRecordList
+        instantiation.'''
+
         result = self.__class__()
         if self._records:
             result._records.extend((x.copy() for x in self._records))
         return result
 
     def extend(self, values):
+        '''Extend the SQLRecordList with the list of records found in values.'''
+
         if all((isinstance(x, self._record_type) for x in values)):
             self._records.extend(values)
         else:
@@ -111,6 +142,8 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
                              .format(str(self._record_type.__name__)))
 
     def insert(self, index, obj):
+        '''Insert SQLRecord obj at index position index.'''
+
         if not isinstance(obj, self._record_type):
             raise ValueError('Value must be an instance of {0}'
                              .format(str(self._record_type.__name__)))
@@ -118,10 +151,22 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
 
     @property
     def record_type(self):
+        '''Return the SQLRecord subclass that this SQLRecordList can contain.'''
+
         return self._record_type
 
     def values(self, context=None):
+        '''Returns a list of lists of values stored in the SQLField attributes
+        of the underlying SQLRecord instances. A context dictionary can be
+        provided for SQLField types that require one.'''
+
         return [x.values(context) for x in self._records]
 
     def values_sql_repr(self, context=None, dialect=None):
+        '''Returns a list of lists of values stored in the SQLField attributes
+        of the underlying SQLRecord instances. A context dictionary can be
+        provided for SQLField types that require one. The values are in the
+        form required by the SQL database adaptor identified by the dialect
+        parameter.'''
+
         return [x.values_sql_repr(context, dialect) for x in self._records]
