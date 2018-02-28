@@ -25,20 +25,20 @@ class SQLRecordListField:
 
 class SQLRecordMetaClass(type):
 
-    def __new__(mcs, name, bases, namespace, record_class=None, **kwds):
+    def __new__(mcs, name, bases, namespace, record_type=None, **kwds):
 
-        if not issubclass(record_class, records.SQLRecord):
-            raise ValueError('record_class parameter must refer to an SQLRecord subclass.')
+        if not issubclass(record_type, records.SQLRecord):
+            raise ValueError('record_type parameter must refer to an SQLRecord subclass.')
 
-        for field in record_class._fields:
+        for field in record_type._fields:
             namespace[field] = SQLRecordListField(field)
 
-        namespace['_record_class'] = record_class
+        namespace['_record_type'] = record_type
         namespace['__slots__'] = ('_records',)
 
         return type.__new__(mcs, name, bases, namespace)
 
-class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord):
+class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord):
 
     def __init__(self, *args):
         self._records = []
@@ -53,9 +53,9 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
 
         if init_list:
             for record in init_list:
-                if not isinstance(record, self._record_class):
+                if not isinstance(record, self._record_type):
                     raise ValueError('Value must be an instance of {0}'
-                                     .format(str(self._record_class.__name__)))
+                                     .format(str(self._record_type.__name__)))
                 self._records.append(record)
 
     def __len__(self):
@@ -65,9 +65,9 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
         return self._records[key]
 
     def __setitem__(self, key, value):
-        if not isinstance(value, self._record_class):
+        if not isinstance(value, self._record_type):
             raise ValueError('Value must be an instance of {0}'
-                             .format(str(self._record_class.__name__)))
+                             .format(str(self._record_type.__name__)))
         self._records[key] = value
 
     def __delitem__(self, key):
@@ -81,17 +81,17 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
 
     def __str__(self):
         result = self.__class__.__name__ + '('
-        result += self._record_class.__name__ + '):\n'
-        for k in self._record_class._fields.keys():
+        result += self._record_type.__name__ + '):\n'
+        for k in self._record_type._fields.keys():
             result += '- {0} ({1})\n'.format(k,
-                                             self._record_class._fields[k].__class__.__name__
+                                             self._record_type._fields[k].__class__.__name__
                                             )
         return result
 
     def append(self, value):
-        if not isinstance(value, self._record_class):
+        if not isinstance(value, self._record_type):
             raise ValueError('Value must be an instance of {0}'
-                             .format(str(self._record_class.__name__)))
+                             .format(str(self._record_type.__name__)))
         self._records.append(value)
 
     def clear(self):
@@ -104,21 +104,21 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_class=records.SQLRecord
         return result
 
     def extend(self, values):
-        if all((isinstance(x, self._record_class) for x in values)):
+        if all((isinstance(x, self._record_type) for x in values)):
             self._records.extend(values)
         else:
             raise ValueError('Values must be instances of {0}'
-                             .format(str(self._record_class.__name__)))
+                             .format(str(self._record_type.__name__)))
 
     def insert(self, index, obj):
-        if not isinstance(obj, self._record_class):
+        if not isinstance(obj, self._record_type):
             raise ValueError('Value must be an instance of {0}'
-                             .format(str(self._record_class.__name__)))
+                             .format(str(self._record_type.__name__)))
         self._records.insert(index, obj)
 
     @property
-    def record_class(self):
-        return self._record_class
+    def record_type(self):
+        return self._record_type
 
     def values(self, context=None):
         return [x.values(context) for x in self._records]

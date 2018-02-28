@@ -197,7 +197,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist.record_class.insert_sql(context, dialect),
+            cursor.executemany(recordlist.record_type.insert_sql(context, dialect),
                                recordlist.values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
@@ -217,7 +217,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist.record_class.insert_sql(context, dialect),
+            cursor.executemany(recordlist.record_type.insert_sql(context, dialect),
                                recordlist.values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
@@ -251,7 +251,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for recordlist_name, recordlist_field in self._recordlists.items():
             recordlist_type = recordlist_field._record_type
-            record_type = recordlist_type._record_class
+            record_type = recordlist_type._record_type
 
             recordlist = getattr(self, recordlist_name)
             if recordlist is None:

@@ -48,7 +48,7 @@ cursor.execute(JournalRecord.create_table_sql(sqliteDialect))
 
 cursor.execute('COMMIT TRANSACTION;')
 
-class JournalList(recordlists.SQLRecordList, record_class=JournalRecord):
+class JournalList(recordlists.SQLRecordList, record_type=JournalRecord):
     pass
 
 class AccountingTransaction(transactions.SQLTransaction):
