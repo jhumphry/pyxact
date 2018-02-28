@@ -12,23 +12,23 @@ class SQLField:
     def __init__(self, py_type=None, sql_name=None, context_used=None,
                  sql_ddl_options='', sql_type=None, nullable=True):
         self._py_type = py_type
-        self._sql_name = sql_name
-        self._context_used = context_used
+        self.sql_name = sql_name
+        self.context_used = context_used
         self._sql_ddl_options = sql_ddl_options
         self._sql_type = sql_type
-        self._nullable = nullable
+        self.nullable = nullable
         self._name = None
         self._slot_name = None
 
     def __set_name__(self, owner, name):
         self._name = name
         self._slot_name = '_' + name
-        if self._sql_name is None:
-            self._sql_name = name
+        if self.sql_name is None:
+            self.sql_name = name
 
     def __set__(self, instance, value):
         if value is None:
-            if self._nullable:
+            if self.nullable:
                 instance.__setattr__(self._slot_name, None)
             else:
                 raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
@@ -50,7 +50,7 @@ class SQLField:
 
     def __str__(self):
         return '{0} ({1} {2})'.format(self.__class__.__name__,
-                                      self._sql_name,
+                                      self.sql_name,
                                       self.sql_type())
 
     def convert(self, value):
@@ -80,29 +80,6 @@ class SQLField:
 
         return instance.__getattribute__(self._slot_name)
 
-    @property
-    def sql_name(self):
-        '''This property represents the name used in the database SQL, which
-        does not have to be the same as the name of the SQLRecord attribute in
-        Python.'''
-
-        return self._sql_name
-
-    @property
-    def context_used(self):
-        '''This property represents the name of the context value that is used
-        when retrieving the value via get_context, or it returns None.'''
-
-        return self._context_used
-
-    @property
-    def nullable(self):
-        '''This property indicates whether this value can be set to NULL/None.
-        Note that the value may still be null if an SQLRecord has been created
-        without initialising it.'''
-
-        return self._nullable
-
     def sql_type(self, dialect=None):
         '''Returns the SQL definition of the data type of the field in the
         appropriate database dialect. It includes parameters (such as NUMERIC
@@ -113,8 +90,8 @@ class SQLField:
     def sql_ddl(self, dialect=None):
         '''Returns the SQL DDL text needed for CREATE TABLE commands'''
 
-        result = self._sql_name + ' ' + self.sql_type(dialect)
-        if not self._nullable:
+        result = self.sql_name + ' ' + self.sql_type(dialect)
+        if not self.nullable:
             result += ' NOT NULL'
         if self._sql_ddl_options != '':
             result += ' '+self._sql_ddl_options
@@ -171,11 +148,11 @@ class IDIntField(AbstractIntField):
                          nullable=True, **kwargs)
 
     def get_context(self, instance, context):
-        if self._context_used in context:
-            setattr(instance, self._slot_name, context[self._context_used])
-            return context[self._context_used]
+        if self.context_used in context:
+            setattr(instance, self._slot_name, context[self.context_used])
+            return context[self.context_used]
         raise ValueError('''Required context '{0}' is not provided'''
-                         .format(self._context_used))
+                         .format(self.context_used))
 
 class SequenceIntField(AbstractIntField):
     '''Represents an integer field in an SQLTransaction that has a link to a
@@ -190,14 +167,10 @@ class SequenceIntField(AbstractIntField):
         if not isinstance(sequence, sequences.SQLSequence):
             raise ValueError('Sequence provided must be an instance of '
                              'pyxact.sequences.SQLSequence')
-        self._sequence = sequence
-        super().__init__(py_type=int, sql_type=self._sequence.index_type,
+        self.sequence = sequence
+        super().__init__(py_type=int, sql_type=self.sequence.index_type,
                          nullable=True, **kwargs)
 
-    @property
-    def sequence(self):
-        '''Return the associated SQLSequence instance.'''
-        return self._sequence
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
@@ -213,12 +186,12 @@ class RowEnumIntField(AbstractIntField):
         self._starting_number = starting_number
 
     def get_context(self, instance, context):
-        if self._context_used in context:
-            context[self._context_used] += 1
-            setattr(instance, self._slot_name, context[self._context_used])
-            return context[self._context_used]
+        if self.context_used in context:
+            context[self.context_used] += 1
+            setattr(instance, self._slot_name, context[self.context_used])
+            return context[self.context_used]
 
-        context[self._context_used] = self._starting_number
+        context[self.context_used] = self._starting_number
         setattr(instance, self._slot_name, self._starting_number)
         return self._starting_number
 
@@ -289,7 +262,7 @@ class VarCharField(SQLField):
 
     def __set__(self, instance, value):
         if value is None:
-            if self._nullable:
+            if self.nullable:
                 instance.__setattr__(self._slot_name, None)
             else:
                 raise ValueError('''Field '{0}' can not be null.'''.format(self._name))

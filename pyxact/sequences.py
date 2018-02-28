@@ -9,29 +9,17 @@ class SQLSequence:
 
     def __init__(self, name, start=1, interval=1, index_type='BIGINT',
                  sql_options='', sql_name=None):
-        self._name = name
+        self.name = name
         if sql_name:
-            self._sql_name = sql_name
+            self.sql_name = sql_name
         else:
-            self._sql_name = name
-        self._start = start
-        self._interval = interval
-        self._index_type = index_type
-        self._sql_options = sql_options
+            self.sql_name = name
+        self.start = start
+        self.interval = interval
+        self.index_type = index_type
+        self.sql_options = sql_options
         self._nextval_sequence_sql = None
         self._nextval_cached_dialect = None
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def sql_name(self):
-        return self._sql_name
-
-    @property
-    def index_type(self):
-        return self._index_type
 
     def create(self, cursor, dialect):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
@@ -65,9 +53,9 @@ class SQLSequence:
         returns a list of strings containing the SQL commands necessary to
         create the sequence if it does not already exist in the database.'''
 
-        return [x.format(name=self._name, start=self._start,
-                         interval=self._interval, index_type=self._index_type,
-                         sql_options=self._sql_options)
+        return [x.format(name=self.name, start=self.start,
+                         interval=self.interval, index_type=self.index_type,
+                         sql_options=self.sql_options)
                 for x in dialect.create_sequence_sql]
 
     def nextval_sequence_sql(self, dialect):
@@ -78,9 +66,9 @@ class SQLSequence:
         users.'''
 
         if not self._nextval_sequence_sql or dialect != self._nextval_cached_dialect:
-            self._nextval_sequence_sql = [x.format(name=self._name, start=self._start,
-                                                   interval=self._interval,
-                                                   index_type=self._index_type)
+            self._nextval_sequence_sql = [x.format(name=self.name, start=self.start,
+                                                   interval=self.interval,
+                                                   index_type=self.index_type)
                                           for x in dialect.nextval_sequence_sql]
         return self._nextval_sequence_sql
 
@@ -91,6 +79,6 @@ class SQLSequence:
         as it goes. It should be safe for use by multiple simultaneous database
         users.'''
 
-        return [x.format(name=self._name, start=self._start,
-                         interval=self._interval, index_type=self._index_type)
+        return [x.format(name=self.name, start=self.start,
+                         interval=self.interval, index_type=self.index_type)
                 for x in dialect.reset_sequence_sql]

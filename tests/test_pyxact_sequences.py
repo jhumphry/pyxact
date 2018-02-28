@@ -20,10 +20,14 @@ def jump_seq(sqlitecur):
 
 def test_creation(sqlitecur, simple_seq, jump_seq):
     assert simple_seq.name == 'simple_seq'
+    assert simple_seq.start == 1
+    assert simple_seq.interval == 1
     assert simple_seq.sql_name == 'simple_seq'
     assert simple_seq.index_type == 'BIGINT'
 
     assert jump_seq.name == 'jump_seq'
+    assert jump_seq.start == 2
+    assert jump_seq.interval == 3
     assert jump_seq.sql_name == 'jump_seq_sql_name'
     assert jump_seq.index_type == 'SMALLINT'
 
