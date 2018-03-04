@@ -18,9 +18,15 @@ class SQLRecordMetaClass(type):
 
         for k in namespace:
             if isinstance(namespace[k], fields.SQLField):
+                if k in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
+                    raise AttributeError('SQLField {} has the same name as an SQLRecord method or '
+                                         'internal attribute'.format(k))
                 slots.append('_'+k)
                 _fields[k] = namespace[k]
             elif isinstance(namespace[k], constraints.SQLConstraint):
+                if k in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
+                    raise AttributeError('SQLConstraint has the same name as an SQLRecord method'
+                                         'or internal attribute'.format(k))
                 _constraints[k] = namespace[k]
 
         namespace['__slots__'] = tuple(slots)
@@ -329,3 +335,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 context[field_obj.context_used] = getattr(self, field_name)
 
         return context
+
+# This constant records all the method and attribute names used in SQLRecord so
+# that SQLRecordMetaClass can detect any attempts to overwrite them in subclasses.
+
+INVALID_SQLRECORD_ATTRIBUTE_NAMES = frozenset(dir(SQLRecord))
