@@ -47,6 +47,9 @@ class SQLRecordMetaClass(type):
             raise ValueError('record_type parameter must refer to an SQLRecord subclass.')
 
         for field in record_type._fields:
+            if field in INVALID_SQLRECORDLIST_ATTRIBUTE_NAMES:
+                raise AttributeError('SQLField {} has the same name as an SQLRecordList'
+                                     ' method or internal attribute'.format(field))
             namespace[field] = SQLRecordListField(field)
 
         namespace['_record_type'] = record_type
@@ -170,3 +173,9 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         parameter.'''
 
         return [x.values_sql_repr(context, dialect) for x in self._records]
+
+# This constant records all the method and attribute names used in
+# SQLRecordList so that SQLRecordListMetaClass can detect any attempts to
+# overwrite them in subclasses.
+
+INVALID_SQLRECORDLIST_ATTRIBUTE_NAMES = frozenset(dir(SQLRecordList))
