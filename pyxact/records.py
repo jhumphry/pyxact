@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-from . import fields, constraints
+from . import fields, constraints, dialects
 
 class SQLRecordMetaClass(type):
     '''This is a metaclass that automatically identifies the SQLField and
@@ -201,7 +201,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if dialect:
             placeholder = dialect.placeholder
         else:
-            placeholder = '?'
+            placeholder = dialects.DefaultDialect.placeholder
         result = 'INSERT INTO ' + cls._table_name + ' ('
         result += cls.column_names_sql(dialect)
         result += ') VALUES ('
@@ -241,7 +241,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if dialect:
             placeholder = dialect.placeholder
         else:
-            placeholder = '?'
+            placeholder = dialects.DefaultDialect.placeholder
+
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
@@ -296,7 +297,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if dialect:
             placeholder = dialect.placeholder
         else:
-            placeholder = '?'
+            placeholder = dialects.DefaultDialect.placeholder
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
 
         column_sql_names = []

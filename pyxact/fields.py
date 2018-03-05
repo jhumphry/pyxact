@@ -2,6 +2,7 @@
 defines and maps SQL types and values to Python types and values.'''
 
 import decimal
+from . import dialects
 from . import sequences
 
 class SQLField:
@@ -216,7 +217,8 @@ class NumericField(SQLField):
 
     def sql_repr(self, value, dialect):
         if dialect is None:
-            return str(value)
+            if not dialects.DefaultDialect.native_decimals:
+                return str(value)
         elif not dialect.native_decimals:
             return str(value)
         return value
@@ -244,7 +246,8 @@ class BooleanField(SQLField):
 
     def sql_repr(self, value, dialect):
         if dialect is None:
-            return 1 if value else 0
+            if not dialects.DefaultDialect.native_booleans:
+                return 1 if value else 0
         elif not dialect.native_booleans:
             return 1 if value else 0
         return value

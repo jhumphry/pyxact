@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-from . import fields, records, recordlists
+from . import fields, records, recordlists, dialects
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
@@ -158,11 +158,14 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             result[i] = getattr(self, i)
         return result
 
-    def get_new_context(self, cursor, dialect):
+    def get_new_context(self, cursor, dialect=None):
         '''Return a context dictionary created from the SQLField objects
         directly attached as attributes to the SQLTransaction. This method will
         identify SequenceIntFields and call the database to update the
         values.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
 
         result = dict()
         for i in self._context_fields:
@@ -205,10 +208,13 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if field in context:
                 setattr(self, field, context[field])
 
-    def insert_existing(self, cursor, dialect):
+    def insert_existing(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
         method stores only the existing data and will not update any values
         that are linked to sequences in the database.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
@@ -225,10 +231,13 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-    def insert_new(self, cursor, dialect):
+    def insert_new(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
         method will update any values that are linked to sequences in the
         database.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_new_context(cursor, dialect)
@@ -245,12 +254,15 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-    def context_select(self, cursor, dialect):
+    def context_select(self, cursor, dialect=None):
         '''This method extracts the values stored in SQLField directly attached
         to the SQLTransaction and stored them in a context dictionary under the
         name of the attribute. It then attempts to use this dictionary to
         retrieve all of the SQLRecord and SQLRecordList objects stored in
         SQLTransactionField attributes.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()

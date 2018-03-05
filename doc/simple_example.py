@@ -10,7 +10,6 @@ import pyxact.records as records
 import pyxact.recordlists as recordlists
 import pyxact.sequences as sequences
 import pyxact.transactions as transactions
-from pyxact.dialects import sqliteDialect
 
 # Create an in-memory database to work on
 conn = sqlite3.connect(':memory:')
@@ -25,7 +24,7 @@ cursor.execute('BEGIN TRANSACTION;')
 trans_id_seq = sequences.SQLSequence(name='trans_id_seq')
 
 # Creation can require more than one SQL statement
-trans_id_seq.create(cursor, sqliteDialect)
+trans_id_seq.create(cursor)
 
 class TransactionRecord(records.SQLRecord, table_name='transactions'):
     trans_id = fields.IDIntField(context_used='trans_id')
@@ -34,7 +33,7 @@ class TransactionRecord(records.SQLRecord, table_name='transactions'):
     narrative = fields.TextField()
     pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id'))
 
-cursor.execute(TransactionRecord.create_table_sql(sqliteDialect))
+cursor.execute(TransactionRecord.create_table_sql())
 
 class JournalRecord(records.SQLRecord, table_name='journals'):
     trans_id = fields.IDIntField(context_used='trans_id')
@@ -45,7 +44,7 @@ class JournalRecord(records.SQLRecord, table_name='journals'):
     cons_fk = constraints.ForeignKeyConstraint(sql_column_names=('trans_id',),
                                                foreign_table='transactions')
 
-cursor.execute(JournalRecord.create_table_sql(sqliteDialect))
+cursor.execute(JournalRecord.create_table_sql())
 
 cursor.execute('COMMIT TRANSACTION;')
 
@@ -72,14 +71,14 @@ assert sum(sample_journals.amount) == 0
 test_trans = AccountingTransaction(trans_details=sample_transaction,
                                    journal_list=sample_journals)
 
-test_trans.insert_new(cursor, sqliteDialect)
+test_trans.insert_new(cursor)
 
 test_trans.trans_details.created_by = 'DEF'
 test_trans.journal_list[2].account = 1003
-test_trans.insert_new(cursor, sqliteDialect)
+test_trans.insert_new(cursor)
 
 new_trans = AccountingTransaction(trans_id=2)
-new_trans.context_select(cursor, sqliteDialect)
+new_trans.context_select(cursor)
 
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'

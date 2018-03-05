@@ -27,3 +27,9 @@ CREATE TABLE IF NOT EXISTS {name}    (start {index_type},
     nextval_sequence_sql = ('''UPDATE {name} SET lastval=nextval, nextval=nextval+interval;''',
                             '''SELECT lastval FROM {name};''')
     reset_sequence_sql = ('''UPDATE {name} SET lastval=start, nextval=start;''',)
+
+
+# This will be used by routines when no dialect is specified. It is not a
+# constant as it is intended that it may be over-ridden by package users
+
+DefaultDialect = sqliteDialect
