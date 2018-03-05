@@ -1,4 +1,5 @@
-# A basic usage example for pyxact
+'''A simple usage example for pyxact, showing the creation of an set of database
+tables and the insertion and retrieval of linked records.'''
 
 import sqlite3
 from decimal import Decimal as D
@@ -68,8 +69,8 @@ sample_journals = JournalList(JournalRecord(None, None, 1000, D('10.5')),
 
 assert sum(sample_journals.amount) == 0
 
-test_trans = AccountingTransaction(trans_details = sample_transaction,
-                                   journal_list = sample_journals)
+test_trans = AccountingTransaction(trans_details=sample_transaction,
+                                   journal_list=sample_journals)
 
 test_trans.insert_new(cursor, sqliteDialect)
 
@@ -77,9 +78,8 @@ test_trans.trans_details.created_by = 'DEF'
 test_trans.journal_list[2].account = 1003
 test_trans.insert_new(cursor, sqliteDialect)
 
-new_trans = AccountingTransaction(trans_id = 2)
+new_trans = AccountingTransaction(trans_id=2)
 new_trans.context_select(cursor, sqliteDialect)
 
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'
-
