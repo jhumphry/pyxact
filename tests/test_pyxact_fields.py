@@ -1,5 +1,7 @@
 # Test pyxact.fields
 
+from decimal import Decimal, Inexact, InvalidOperation
+
 import pytest
 import pyxact.fields as fields
 import pyxact.sequences as sequences
@@ -28,6 +30,7 @@ def holder_class(field_test_seq):
         row_enum_int_field=fields.RowEnumIntField(context_used='row_context')
         numeric_field=fields.NumericField(precision=6, scale=2)
         numeric_field_from_floats=fields.NumericField(precision=6, scale=2, allow_floats=True)
+        numeric_field_inexact_quantize=fields.NumericField(precision=6, scale=2, inexact_quantize=True)
         real_field=fields.RealField()
         boolean_field=fields.BooleanField()
         text_field=fields.TextField()
@@ -118,17 +121,36 @@ def test_rowenumintfield(context, holder, holder_class):
 
 
 def test_numericfield(holder):
-    holder.numeric_field_from_floats = 1.5
-    assert holder.numeric_field_from_floats == 1.5
+
+    holder.numeric_field = Decimal('1.23')
+    assert holder.numeric_field == Decimal('1.23')
 
     with pytest.raises(ValueError, message='NumericField should not have accepted a float'):
         holder.numeric_field = 1.25
+
+    with pytest.raises(Inexact, message='NumericField should not have accepted a decimal with inexact quantization'):
+        holder.numeric_field = Decimal('1.234')
+
+    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a decimal too large for the quantization/precision'):
+        holder.numeric_field = Decimal('12345')
+
+    holder.numeric_field_from_floats = 1.5
+    assert holder.numeric_field_from_floats == 1.5
 
     holder.numeric_field_from_floats = '2.75'
     assert holder.numeric_field_from_floats == 2.75
 
     holder.numeric_field_from_floats = 5
     assert holder.numeric_field_from_floats == 5
+
+    holder.numeric_field_inexact_quantize = Decimal('1.23')
+    assert holder.numeric_field_inexact_quantize == Decimal('1.23')
+
+    holder.numeric_field_inexact_quantize = Decimal('1.234')
+    assert holder.numeric_field_inexact_quantize == Decimal('1.23')
+
+    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a decimal too large for the quantization/precision'):
+        holder.numeric_field_inexact_quantize = Decimal('12345')
 
 def test_realfield(holder, holder_class):
     # If extending this test func, make sure any floating-point constants used

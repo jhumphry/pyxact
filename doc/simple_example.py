@@ -39,7 +39,7 @@ class JournalRecord(records.SQLRecord, table_name='journals'):
     trans_id = fields.IDIntField(context_used='trans_id')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
-    amount = fields.NumericField(precision=8, scale=6, allow_floats=True)
+    amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
     cons_pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id', 'row_id'))
     cons_fk = constraints.ForeignKeyConstraint(sql_column_names=('trans_id',),
                                                foreign_table='transactions')

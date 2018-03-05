@@ -200,19 +200,51 @@ class NumericField(SQLField):
     '''Represents a NUMERIC field in a database, which maps to decimal.Decimal
     in Python. The scale and precision can be specified.'''
 
-    # TODO: enforce that the decimal.Decimal value stored in Python has the same
-    # precision & scale as the SQL NUMERIC
-
-    def __init__(self, precision, scale=0, allow_floats=False, **kwargs):
+    def __init__(self, precision, scale=0,
+                 allow_floats=False, inexact_quantize=False, rounding=None,
+                 **kwargs):
         super().__init__(py_type=decimal.Decimal, **kwargs)
-        self._precision = precision
-        self._scale = scale
-        self._allow_floats = allow_floats
+        self.precision = precision
+        self.scale = scale
+        self.quantization = decimal.Decimal(1).scaleb(-scale)
+
+        self.allow_floats = allow_floats
+        self.inexact_quantize = inexact_quantize
+        self.rounding = rounding
+
+        traps = [decimal.InvalidOperation]
+        if not allow_floats:
+            traps.append(decimal.FloatOperation)
+        if not inexact_quantize:
+            traps.append(decimal.Inexact)
+
+        self.decimal_context = decimal.Context(prec=precision,
+                                               rounding=rounding,
+                                               traps=traps)
+
+    def __set__(self, instance, value):
+        if value is None:
+            if self.nullable:
+                instance.__setattr__(self._slot_name, None)
+            else:
+                raise ValueError('''Field '{0}' cannot be null.'''.format(self._name))
+        elif isinstance(value, decimal.Decimal):
+            instance.__setattr__(self._slot_name,
+                                 value.quantize(self.quantization,
+                                                context=self.decimal_context))
+        elif isinstance(value, (int, str)) or \
+              (isinstance(value, float) and self.allow_floats):
+            new_value = decimal.Decimal(value).quantize(self.quantization,
+                                                        context=self.decimal_context)
+            instance.__setattr__(self._slot_name, new_value)
+        else:
+            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
+                             .format(self._name, str(value), str(type(value))))
 
     def convert(self, value):
         if isinstance(value, (int, str)) or \
-            (isinstance(value, float) and self._allow_floats):
-            return decimal.Decimal(value)
+            (isinstance(value, float) and self.allow_floats):
+            return decimal.Decimal(value).quantize(self.quantization, context=self.decimal_context)
         raise ValueError
 
     def sql_repr(self, value, dialect):
@@ -224,7 +256,7 @@ class NumericField(SQLField):
         return value
 
     def sql_type(self, dialect=None):
-        return 'NUMERIC({0}, {1})'.format(self._precision, self._scale)
+        return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
 
 class RealField(SQLField):
     '''Represents a REAL field in a database, which maps to float in Python.'''
