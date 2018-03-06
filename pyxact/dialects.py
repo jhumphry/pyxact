@@ -1,11 +1,22 @@
 '''This module defines classes that are used as singleton objects to define the
 various flavours of SQL used by different database adaptors.'''
 
+import decimal
+
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
     should be derived.'''
 
-    pass
+    @classmethod
+    def sql_repr(cls, value):
+        '''This method returns the value in the form expected by the particular
+        database and database adaptor specified by the dialect parameter. It
+        exists to handle cases where the database adaptor cannot accept the
+        Python type being used - for example while SQL NUMERIC types map quite
+        well to Python decimal.Decimal types, the sqlite3 database adaptor does
+        not recognise them, so string values must be stored.'''
+
+        return value
 
 class sqliteDialect(SQLDialect):
     '''This class contains information used internally to generate suitable SQL
@@ -13,10 +24,15 @@ class sqliteDialect(SQLDialect):
     database engine that usually comes supplied with Python.'''
 
     placeholder = '?' # The placeholder to use for parametised queries
-    native_decimals = False # Whether the adaptor supports decimals natively
-                            # otherwise they must be converted to strings
-    native_booleans = False # Whether the adaptor supports booleans, otherwise
-                            # they must be converted to 0/1 integers
+
+    @classmethod
+    def sql_repr(cls, value):
+        if isinstance(value, (int, float, str, bytes)) or value is None:
+            return value
+        elif isinstance(value, decimal.Decimal):
+            return str(value)
+
+        raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
     create_sequence_sql = ('''
 CREATE TABLE IF NOT EXISTS {name}    (start {index_type},

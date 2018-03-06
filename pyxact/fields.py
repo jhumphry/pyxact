@@ -61,16 +61,6 @@ class SQLField:
 
         raise ValueError
 
-    def sql_repr(self, value, dialect):
-        '''This method returns the value in the form expected by the particular
-        database and database adaptor specified by the dialect parameter. It
-        exists to handle cases where the database adaptor cannot accept the
-        Python type being used - for example while SQL NUMERIC types map quite
-        well to Python decimal.Decimal types, the sqlite3 database adaptor does
-        not recognise them, so string values must be stored.'''
-
-        return value
-
     def get_context(self, instance, context):
         '''Given a particular context dictionary, this method attempts to
         retrieve the associated value,. Depending on the type of the field,
@@ -247,14 +237,6 @@ class NumericField(SQLField):
             return decimal.Decimal(value).quantize(self.quantization, context=self.decimal_context)
         raise ValueError
 
-    def sql_repr(self, value, dialect):
-        if dialect is None:
-            if not dialects.DefaultDialect.native_decimals:
-                return str(value)
-        elif not dialect.native_decimals:
-            return str(value)
-        return value
-
     def sql_type(self, dialect=None):
         return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
 
@@ -275,14 +257,6 @@ class BooleanField(SQLField):
         if isinstance(value, int):
             return bool(value)
         raise ValueError
-
-    def sql_repr(self, value, dialect):
-        if dialect is None:
-            if not dialects.DefaultDialect.native_booleans:
-                return 1 if value else 0
-        elif not dialect.native_booleans:
-            return 1 if value else 0
-        return value
 
 class VarCharField(SQLField):
     '''Represents a VARCHAR field in a database, which maps to str in Python.

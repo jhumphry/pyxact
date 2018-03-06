@@ -136,7 +136,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         SQLField types that require one. The values are in the form required by
         the SQL database adaptor identified by dialect.'''
 
-        return [self._fields[k].sql_repr(self.get(k, context), dialect)
+        if dialect is None:
+            dialect = dialects.DefaultDialect
+
+        return [dialect.sql_repr(self.get(k, context))
                 for k in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
