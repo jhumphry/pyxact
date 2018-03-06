@@ -25,7 +25,7 @@ class SQLRecordMetaClass(type):
                 _fields[k] = namespace[k]
             elif isinstance(namespace[k], constraints.SQLConstraint):
                 if k in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLConstraint has the same name as an SQLRecord method'
+                    raise AttributeError('SQLConstraint {} has the same name as an SQLRecord method'
                                          'or internal attribute'.format(k))
                 _constraints[k] = namespace[k]
 
@@ -62,10 +62,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     def __str__(self):
         result = self.__class__.__name__ + ':\n'
-        for k in self._fields.keys():
-            result += '- {0} ({1}) = {2}\n'.format(k,
-                                                   self._fields[k].__class__.__name__,
-                                                   str(getattr(self, k))
+        for key in self._fields.keys():
+            result += '- {0} ({1}) = {2}\n'.format(key,
+                                                   self._fields[key].__class__.__name__,
+                                                   str(getattr(self, key))
                                                   )
         return result
 
@@ -75,8 +75,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         attributes on one instance will affect the other.'''
 
         result = self.__class__()
-        for v in self.__slots__:
-            setattr(result, v, getattr(self, v))
+        for attribute in self.__slots__:
+            setattr(result, attribute, getattr(self, attribute))
         return result
 
     def clear(self):
@@ -121,14 +121,14 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         '''Returns a list of SQLField objects in the order they were defined in
         the SQLRecord subclass.'''
 
-        return [cls._fields[k] for k in cls._fields.keys()]
+        return [cls._fields[key] for key in cls._fields.keys()]
 
     def values(self, context=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
         SQLField types that require one.'''
 
-        return [self.get(k, context) for k in self._fields.keys()]
+        return [self.get(key, context) for key in self._fields.keys()]
 
     def values_sql_repr(self, context=None, dialect=None):
         '''Returns a list of values stored in the SQLField attributes of a
@@ -139,8 +139,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if dialect is None:
             dialect = dialects.DefaultDialect
 
-        return [dialect.sql_repr(self.get(k, context))
-                for k in self._fields.keys()]
+        return [dialect.sql_repr(self.get(key, context))
+                for key in self._fields.keys()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
         '''Returns a string containing a comma-separated list of values stored
@@ -155,9 +155,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         in the database by the user.'''
 
         result = []
-        for k in self._fields.keys():
-            value = self._fields[k].get_context(self, context)
-            result.append(self._fields[k].sql_string_unsafe(value, dialect))
+        for key in self._fields.keys():
+            value = self._fields[key].get_context(self, context)
+            result.append(self._fields[key].sql_string_unsafe(value, dialect))
         return result
 
     @classmethod
@@ -165,21 +165,21 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         '''Returns a list of tuples of field names and SQLField objects in the
         order they were defined in the SQLRecord subclass.'''
 
-        return [(k, cls._fields[k]) for k in cls._fields.keys()]
+        return [(key, cls._fields[key]) for key in cls._fields.keys()]
 
     def item_values(self, context=None):
         '''Returns a list of tuples of field names and values stored in the
         SQLField attributes of a particular SQLRecord instance. A context
         dictionary can be provided for SQLField types that require one.'''
 
-        return [(k, self.get(k, context)) for k in self._fields.keys()]
+        return [(key, self.get(key, context)) for key in self._fields.keys()]
 
     @classmethod
     def column_names_sql(cls, dialect=None):
         '''Returns a string containing a comma-separated list of column
         names, using a given SQL dialect.'''
 
-        return ', '.join([cls._fields[x].sql_name for x in cls._fields.keys()])
+        return ', '.join([cls._fields[key].sql_name for key in cls._fields.keys()])
 
     @classmethod
     def create_table_sql(cls, dialect=None):
@@ -187,8 +187,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         SQL dialect) that will create the table defined by the SQLRecord.'''
 
         result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
-        table_columns = [cls._fields[k].sql_ddl(dialect) for k in cls._fields.keys()]
-        table_constraints = [cls._constraints[k].sql_ddl(dialect) for k in cls._constraints.keys()]
+        table_columns = [cls._fields[key].sql_ddl(dialect)
+                         for key in cls._fields.keys()]
+        table_constraints = [cls._constraints[key].sql_ddl(dialect)
+                             for key in cls._constraints.keys()]
         result += ',\n    '.join(table_columns+table_constraints)
         result += '\n);'
         return result
@@ -249,15 +251,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
-            c = 1
-            for f in kwargs:
-                if not f in cls._fields:
-                    raise ValueError('Specified field {0} is not valid'.format(f))
-                result += cls._fields[f].sql_name+'='
+            i = 1
+            for field in kwargs:
+                if not field in cls._fields:
+                    raise ValueError('Specified field {0} is not valid'.format(field))
+                result += cls._fields[field].sql_name+'='
                 result += placeholder
-                if c < len(kwargs):
+                if i < len(kwargs):
                     result += ' AND '
-                c += 1
+                i += 1
         result += ';'
         return (result, list(kwargs.values()))
 
@@ -277,15 +279,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
-            c = 1
-            for f, v in kwargs.items():
-                if not f in cls._fields:
-                    raise ValueError('Specified field {0} is not valid'.format(f))
-                result += cls._fields[f].sql_name+'='
-                result += cls._fields[f].sql_string_unsafe(v)
-                if c < len(kwargs):
+            i = 1
+            for field, value in kwargs.items():
+                if not field in cls._fields:
+                    raise ValueError('Specified field {0} is not valid'.format(field))
+                result += cls._fields[field].sql_name+'='
+                result += cls._fields[field].sql_string_unsafe(value)
+                if i < len(kwargs):
                     result += ' AND '
-                c += 1
+                i += 1
         result += ';'
         return result
 
@@ -319,12 +321,12 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         if column_sql_names:
             result += ' WHERE '
-            c = 1
+            i = 1
             for column in column_sql_names:
                 result += column+'='+placeholder
-                if c < len(column_sql_names):
+                if i < len(column_sql_names):
                     result += ' AND '
-                c += 1
+                i += 1
         result += ';'
         return (result, column_values)
 
