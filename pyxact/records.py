@@ -89,9 +89,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         '''Get a value stored in an SQLField within this SQLRecord, given a
         context dictionary if appropriate.'''
 
-        if context:
-            return self._fields[key].get_context(self, context)
-        return getattr(self, key)
+        return self._fields[key].get_context(self, context)
 
     def set(self, key, value):
         '''Set a value stored in an SQLField within this SQLRecord.'''
@@ -175,9 +173,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [(key, self.get(key, context)) for key in self._fields.keys()]
 
     @classmethod
-    def column_names_sql(cls, dialect=None):
-        '''Returns a string containing a comma-separated list of column
-        names, using a given SQL dialect.'''
+    def column_names_sql(cls):
+        '''Returns a string containing a comma-separated list of column names.'''
 
         return ', '.join([cls._fields[key].sql_name for key in cls._fields.keys()])
 
@@ -208,7 +205,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         else:
             placeholder = dialects.DefaultDialect.placeholder
         result = 'INSERT INTO ' + cls._table_name + ' ('
-        result += cls.column_names_sql(dialect)
+        result += cls.column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
             result += (placeholder+', ')*(cls._field_count-1)+placeholder
@@ -228,7 +225,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if not context:
             context = {}
         result = 'INSERT INTO ' + self._table_name + ' ('
-        result += self.column_names_sql(dialect)
+        result += self.column_names_sql()
         result += ') VALUES ('
         result += ', '.join(self.values_sql_string_unsafe(context, dialect))
         result += ');'
