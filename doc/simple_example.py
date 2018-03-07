@@ -4,12 +4,7 @@ tables and the insertion and retrieval of linked records.'''
 import sqlite3
 from decimal import Decimal as D
 
-import pyxact.fields as fields
-import pyxact.constraints as constraints
-import pyxact.records as records
-import pyxact.recordlists as recordlists
-import pyxact.sequences as sequences
-import pyxact.transactions as transactions
+from pyxact import constraints, fields, queries, records, recordlists, sequences, transactions
 
 # Create an in-memory database to work on
 conn = sqlite3.connect(':memory:')
@@ -82,3 +77,24 @@ new_trans.context_select(cursor)
 
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'
+
+JOURNAL_ROW_COUNT_QUERY = '''
+SELECT transactions.created_by, transactions.trans_id, COUNT(*) AS row_count
+FROM journals
+JOIN transactions ON journals.trans_id = transactions.trans_id
+WHERE transactions.created_by = {created_by}
+GROUP BY transactions.created_by, transactions.trans_id;
+'''
+
+class JournalRowCountResult(records.SQLRecord):
+    created_by = fields.CharField(max_length=3)
+    trans_id = fields.IntField()
+    row_count = fields.IntField()
+
+class JournalRowCountQuery(queries.SQLQuery,
+                           query=JOURNAL_ROW_COUNT_QUERY,
+                           record_type=JournalRowCountResult):
+        created_by = fields.CharField(max_length=3)
+
+test_query = JournalRowCountQuery(created_by='ABC')
+
