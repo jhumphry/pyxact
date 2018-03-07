@@ -7,6 +7,8 @@ class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
     should be derived.'''
 
+    placeholder = '?'
+
     @classmethod
     def sql_repr(cls, value):
         '''This method returns the value in the form expected by the particular
