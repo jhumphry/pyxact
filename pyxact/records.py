@@ -48,8 +48,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         if args:
             if len(args) != self._field_count:
-                raise ValueError('{0} values required, {1} supplied.'
-                                 .format(self._field_count, len(args)))
+                raise ValueError('{0} values needed to initialise a {1} with a sequence, {2} supplied.'
+                                 .format(self._field_count, self.__class__.__name__, len(args)))
 
             for field, value in zip(self._fields.keys(), args):
                 setattr(self, field, value)
@@ -57,7 +57,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         elif kwargs:
             for key, value in kwargs.items():
                 if key not in self._fields:
-                    raise ValueError('{0} is not a valid attribute name.'.format(key))
+                    raise ValueError('{0} is not a valid attribute name for {1}.'
+                                     .format(key, self.__class__.__name__))
                 setattr(self, key, value)
 
     def __str__(self):
