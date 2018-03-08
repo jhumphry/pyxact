@@ -6,27 +6,33 @@ from decimal import Decimal as D
 
 from pyxact import constraints, fields, queries, records, recordlists, sequences, transactions
 
-# Create an in-memory database to work on
-conn = sqlite3.connect(':memory:')
+# Create an in-memory sqlite3 database to work on
 
-# Must be done first if SQLite3 is to enforce foreign key constraints
-conn.execute('PRAGMA foreign_keys = ON;')
+conn = sqlite3.connect(':memory:')
+conn.execute('PRAGMA foreign_keys = ON;') # We need sqlite foreign key support
 
 cursor = conn.cursor()
 cursor.execute('BEGIN TRANSACTION;')
 
-# Create a persistent sequence
+# Create a persistent sequence for the schema we are going to build. Most
+# databases have the concept of implicit sequences/identity columns, but it can
+# then be hard to refer to the underlying sequence in a consistent manner. We
+# prefer explict sequences here.
+
 trans_id_seq = sequences.SQLSequence(name='trans_id_seq')
 
-# Creation can require more than one SQL statement
-trans_id_seq.create(cursor)
+trans_id_seq.create(cursor) # Creation can require more than one SQL statement
+
+# Now start building up a schema by subclassing records.SQLRecord, adding
+# SQLField class attributes to represent the columns and SQLConstraint class
+# attributes to represent table constraints.
 
 class TransactionRecord(records.SQLRecord, table_name='transactions'):
-    trans_id = fields.IDIntField(context_used='trans_id')
+    trans_id = fields.IDIntField(context_used='trans_id') # Context dicts are explained later
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
-    pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id'))
+    cons_pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id'))
 
 cursor.execute(TransactionRecord.create_table_sql())
 
@@ -43,15 +49,34 @@ cursor.execute(JournalRecord.create_table_sql())
 
 cursor.execute('COMMIT TRANSACTION;')
 
+# JournalList is created to be a list-type class that can hold JournalRecord. No
+# attributes need to be created explicitly, but descriptors will be added for
+# each of the SQLField on the underlying JournalRecord. These descriptors will
+# return generators giving the value for that SQLField for each record in turn.
+
 class JournalList(recordlists.SQLRecordList, record_type=JournalRecord):
     pass
+
+# AccountingTransaction ties together a single TransactionRecord, and JournalList
+# holding a variable number of JournalRecord. The trans_id SQLField is a 'context
+# field'. When the AccountingTransaction is inserted into the database, it will
+# update itself from the associated sequence and store the value in a 'context
+# dictionary' under the name 'trans_id'. This context dictionary will be passed
+# to the rows, and when the rows' values are extracted the IDIntField on both the
+# TransactionRecord and the JournalRecord will pick up the value from the context
+# dictionary rather than any value manually assigned to the field. This ensures
+# the value is consistent for the whole AcccountingTransaction and is a fresh
+# value from the sequence.
 
 class AccountingTransaction(transactions.SQLTransaction):
     trans_id = fields.SequenceIntField(sequence=trans_id_seq)
     trans_details = transactions.SQLTransactionField(TransactionRecord)
     journal_list = transactions.SQLTransactionField(JournalList)
 
-# Note we do not supply the trans_id as we do not know it at this time
+# Now we create an instance of an AccountingTransaction and insert it.
+# Note we do not need to supply the trans_id as we do not know it at this time.
+# row_id can also be ignored as they will automatically enumerate themselves.
+
 sample_transaction = TransactionRecord(created_by='ABC',
                                        trans_reversed=False,
                                        narrative='Example usage of pyxact')
@@ -68,15 +93,37 @@ test_trans = AccountingTransaction(trans_details=sample_transaction,
 
 test_trans.insert_new(cursor)
 
+# We can assign new values to the attributes of the AccountingTransaction
+# instance and re-insert it. the trans_id context field will pick up a suitable
+# new value from the sequence it is linked to.
+
 test_trans.trans_details.created_by = 'DEF'
 test_trans.journal_list[2].account = 1003
 test_trans.insert_new(cursor)
+
+# It is possible to read existing AccountingTransactions back into Python. Simply
+# set up the context fields appropriately and call context_select to fill in the
+# rest of the data.
 
 new_trans = AccountingTransaction(trans_id=2)
 new_trans.context_select(cursor)
 
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'
+
+# Complex queries can be handled by subclassing SQLQuery. Here we first write the
+# query, define an SQLRecord subclass and a matching SQLRecordList subclass to
+# handle the result. Note that it is not strictly necessary to make an SQLRecord
+# subclass if you are happy to fetch and process the data yourself - the
+# SQLRecord approach does allow for some type checking.
+
+# Any instances of '{foo}' in the text of the SQL query passed to the SQLQuery
+# will be replaced with the contents of a suitably named SQLField (i.e. 'foo')
+# added to the SQLQuery as a context field. Records can be retrieved with the
+# result_records method (which returns a generator that gives each result in
+# turn), the result_recordlist method (which downloads and returns all results at
+# once) or the result_singlevalue method which assumes the SQL query will return
+# a single value.
 
 JOURNAL_ROW_COUNT_QUERY = '''
 SELECT transactions.created_by, transactions.trans_id, COUNT(*) AS row_count
@@ -98,7 +145,12 @@ class JournalRowCountQuery(queries.SQLQuery,
                            query=JOURNAL_ROW_COUNT_QUERY,
                            record_type=JournalRowCountResult,
                            recordlist_type=JournalRowCountResultList):
-        created_by = fields.CharField(max_length=3)
+    created_by = fields.CharField(max_length=3)
 
 test_query = JournalRowCountQuery(created_by='%')
 test_query.execute(cursor)
+
+print('\nQuery result:\n')
+
+for i in test_query.result_records(cursor):
+    print(i)
