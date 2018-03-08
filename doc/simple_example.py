@@ -82,7 +82,7 @@ JOURNAL_ROW_COUNT_QUERY = '''
 SELECT transactions.created_by, transactions.trans_id, COUNT(*) AS row_count
 FROM journals
 JOIN transactions ON journals.trans_id = transactions.trans_id
-WHERE transactions.created_by = {created_by}
+WHERE transactions.created_by LIKE {created_by}
 GROUP BY transactions.created_by, transactions.trans_id;
 '''
 
@@ -91,10 +91,14 @@ class JournalRowCountResult(records.SQLRecord):
     trans_id = fields.IntField()
     row_count = fields.IntField()
 
+class JournalRowCountResultList(recordlists.SQLRecordList, record_type=JournalRowCountResult):
+    pass
+
 class JournalRowCountQuery(queries.SQLQuery,
                            query=JOURNAL_ROW_COUNT_QUERY,
-                           record_type=JournalRowCountResult):
+                           record_type=JournalRowCountResult,
+                           recordlist_type=JournalRowCountResultList):
         created_by = fields.CharField(max_length=3)
 
-test_query = JournalRowCountQuery(created_by='ABC')
-
+test_query = JournalRowCountQuery(created_by='%')
+test_query.execute(cursor)

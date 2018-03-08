@@ -1,7 +1,7 @@
 '''This module defines Python types that describe SQL queries.'''
 
 import re
-from . import dialects, fields, records
+from . import dialects, fields, records, recordlists
 
 CONTEXT_PLACEHOLDER_REGEXP = re.compile(r'\{[^\}]*\}')
 
@@ -9,14 +9,25 @@ class SQLQueryMetaClass(type):
     '''This metaclass ensures that SQLQuery is only subclassed with a
     valid SQLRecord subclass as the record_type parameter.'''
 
-    def __new__(mcs, name, bases, namespace, query='', record_type=None, **kwds):
+    def __new__(mcs, name, bases, namespace, query='',
+                record_type=None, recordlist_type=None, **kwds):
 
-        # First, establish the record type
-        if not isinstance(record_type, type):
-            raise ValueError('record_type parameter must refer to an SQLRecord subclass.')
-        if not issubclass(record_type, records.SQLRecord):
-            raise ValueError('record_type parameter must refer to an SQLRecord subclass.')
+        if record_type:
+            if not isinstance(record_type, type):
+                raise ValueError('record_type must refer to an SQLRecord subclass.')
+            if not issubclass(record_type, records.SQLRecord):
+                raise ValueError('record_type must refer to an SQLRecord subclass.')
         namespace['_record_type'] = record_type
+
+        if recordlist_type:
+            if not isinstance(recordlist_type, type):
+                raise ValueError('recordlist_type must refer to an SQLRecordList subclass.')
+            if not issubclass(recordlist_type, recordlists.SQLRecordList):
+                raise ValueError('recordlist_type must refer to an SQLRecordList subclass.')
+            if not issubclass(record_type, recordlist_type._record_type):
+                raise ValueError('recordlist_type must be able to hold instances of the '
+                                 'record_type parameter.')
+        namespace['_recordlist_type'] = recordlist_type
 
         # Now identify the SQLField attached to the new class to form the context for
         # the query
@@ -59,7 +70,8 @@ class SQLQueryMetaClass(type):
 
 class SQLQuery(metaclass=SQLQueryMetaClass,
                query='',
-               record_type=records.SQLRecord):
+               record_type=None,
+               recordlist_type=None):
     '''SQLRecord maps an SQL query to Python class types. It is not intended
     for direct use, but as an abstract class to be subclassed. The query string
     passed to it can have placeholders indicated by text such as {foo}. When
@@ -124,25 +136,50 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             dialect = dialects.DefaultDialect
         return dialect.placeholder.join(cls._segmented_query)
 
+    def execute(self, cursor, dialect=None):
+        '''Execute the query using the cursor.'''
+
+        if dialect is None:
+            dialect = dialects.DefaultDialect
+        cursor.execute(self.query_sql(dialect), self.query_values_sql_repr())
+
     @classmethod
-    def query_result(cls, cursor):
-        '''Take a database cursor with an active query and for each row returned
-        by this query, yield an instance of the SQLRecord subclass specified via
-        record_type when SQLQuery was subclassed.'''
+    def result_records(cls, cursor):
+        '''Take a database cursor with an executed query and for each row
+        returned by this query, yield an instance of the SQLRecord subclass
+        specified via record_type when SQLQuery was subclassed.'''
+
+        if not cls._record_type:
+            raise RuntimeError('This SQLQuery subclass does not have an associated SQLRecord '
+                               'result class specified.')
 
         next_row = cursor.fetchone()
         while next_row:
             yield cls._record_type(*next_row)
             next_row = cursor.fetchone()
 
-    def execute_query(self, cursor, dialect=None):
-        '''Execute the query using the cursor and return a generator that
-        yields each row of the result cast into one instance of the SQLRecord
-        subclass specified when the query class was defined.'''
+    @classmethod
+    def result_recordlist(cls, cursor):
+        '''Take a database cursor with an executed query and return an instance
+        of the SQLRecordList subclass specified when SQLQuery was
+        subclassed.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
-        cursor.execute(self.query_sql(dialect), self.query_values_sql_repr())
-        yield from self.query_result(cursor)
+        if not cls._recordlist_type:
+            raise RuntimeError('This SQLQuery subclass does not have an associated SQLRecordList '
+                               'result class specified.')
+
+        return cls._recordlist_type((cls._record_type(*x) for x in cursor.fetchall()))
+
+    @staticmethod
+    def result_singlevalue(cursor):
+        '''Take a database cursor with an executed query that returns a single
+        value and return just that value.'''
+
+        result_row = cursor.fetchone()
+
+        if len(result_row) != 1:
+            raise ValueError('The query returned more than one value.')
+
+        return result_row[0]
 
 INVALID_SQLQUERY_ATTRIBUTE_NAMES = frozenset(dir(SQLQuery))
