@@ -68,7 +68,7 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         self._records = []
 
         if len(args) == 1:
-            if issubclass(args[0], collections.abc.Iterable):
+            if isinstance(args[0], collections.abc.Iterable):
                 init_list = args[0]
         elif len(args) > 1:
             init_list = args
