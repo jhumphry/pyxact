@@ -68,10 +68,17 @@ class JournalList(recordlists.SQLRecordList, record_type=JournalRecord):
 # the value is consistent for the whole AcccountingTransaction and is a fresh
 # value from the sequence.
 
+# AccountingTransaction has a domain-specific verify method that checks for
+# internal consistency - in this case checking that the accounting journal
+# balances.
+
 class AccountingTransaction(transactions.SQLTransaction):
     trans_id = fields.SequenceIntField(sequence=trans_id_seq)
     trans_details = transactions.SQLTransactionField(TransactionRecord)
     journal_list = transactions.SQLTransactionField(JournalList)
+
+    def verify(self):
+        return super().verify() and sum(self.journal_list.amount)==D(0)
 
 # Now we create an instance of an AccountingTransaction and insert it.
 # Note we do not need to supply the trans_id as we do not know it at this time.

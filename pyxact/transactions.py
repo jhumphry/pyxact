@@ -1,5 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
+from . import VerificationError
 from . import fields, records, recordlists, dialects, queries
 
 class SQLTransactionField:
@@ -147,6 +148,28 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 setattr(result, attr, value)
         return result
 
+    def verify(self):
+        '''Return a boolean indicating whether this SQLTransaction meets
+        internal consistency requirements (i.e. those that do not require
+        database access). If True is returned, the SQLTransaction should be
+        suitable for insertion into the database (although the database may
+        still reject it based on, for example, foreign key violations). For
+        SQLTransaction itself, this method will always return true, but
+        subclasses may add conditions appropriate to the domain for which
+        SQLTransaction has been subclassed.'''
+
+        return True
+
+    def normalize(self):
+        '''Normalize a record that may have fixable inconsistencies. This
+        method is called at the end of the context_select method. After a call
+        to this method, the verify method should return True if this is at all
+        possible to achieve. The precise meaning of 'normalization' is
+        dependent on the domain for which SQLTransaction has been subclassed.
+        The default implementation for SQLTransaction does nothing.'''
+
+        pass
+
     def get_context(self):
         '''Return a context dictionary created from the values stored under the
         names of the SQLField objects directly attached as attributes to the
@@ -161,8 +184,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
     def get_new_context(self, cursor, dialect=None):
         '''Return a context dictionary created from the SQLField objects
         directly attached as attributes to the SQLTransaction. This method will
-        identify SequenceIntFields and call the database to update the
-        values.'''
+        identify SequenceIntFields and QueryFields, and call the database to
+        update the values.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -224,6 +247,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
 
+        if not self.verify():
+            raise VerificationError
+
         for record_name in self._records:
             record = getattr(self, record_name)
             cursor.execute(record.insert_sql(context, dialect),
@@ -238,14 +264,18 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
     def insert_new(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
-        method will update any values that are linked to sequences in the
-        database.'''
+        method will update any values that are linked to sequences or queries
+        in the database and then check that the verify method returns True
+        before proceeding.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_new_context(cursor, dialect)
+
+        if not self.verify():
+            raise VerificationError
 
         for record_name in self._records:
             record = getattr(self, record_name)
@@ -264,7 +294,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         to the SQLTransaction and stored them in a context dictionary under the
         name of the attribute. It then attempts to use this dictionary to
         retrieve all of the SQLRecord and SQLRecordList objects stored in
-        SQLTransactionField attributes.'''
+        SQLTransactionField attributes. The normalise method is then called,
+        followed by the verify method to check that the result meets internal
+        consistency requirements.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -309,6 +341,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 nextrow = cursor.fetchone()
 
         cursor.execute('COMMIT TRANSACTION;')
+
+        self.normalize()
+
+        if not self.verify():
+            raise VerificationError
 
 # This constant records all the method and attribute names used in
 # SQLTransaction so that SQLTransactionMetaClass can detect any attempts to
