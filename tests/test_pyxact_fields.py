@@ -25,7 +25,7 @@ def holder_class(field_test_seq):
         int_field_sqlname=fields.IntField(sql_name='not_int_field_sqlname')
         smallint_field=fields.SmallIntField()
         bigint_field=fields.BigIntField()
-        id_int_field=fields.IDIntField(context_used='int_context')
+        context_int_field=fields.ContextIntField(context_used='int_context')
         sequence_int_field=fields.SequenceIntField(sequence=field_test_seq)
         row_enum_int_field=fields.RowEnumIntField(context_used='row_context')
         numeric_field=fields.NumericField(precision=6, scale=2)
@@ -77,23 +77,23 @@ def test_int(context, holder, holder_class):
     assert holder_class.smallint_field.sql_type(sqliteDialect) == 'SMALLINT'
     assert holder_class.bigint_field.sql_type(sqliteDialect) == 'BIGINT'
 
-def test_idintfield(context, holder, holder_class):
+def test_contextintfield(context, holder, holder_class):
 
     # Can be set manually
-    holder.id_int_field = 33
-    assert holder.id_int_field == 33
+    holder.context_int_field = 33
+    assert holder.context_int_field == 33
 
     # Retrieving from context dictionary provided
-    assert holder_class.id_int_field.get_context(holder, context) == 42
+    assert holder_class.context_int_field.get_context(holder, context) == 42
 
     # Retrieving a value from a context dictionary should have over-ridden the
     # value stored manually...
-    assert holder.id_int_field == 42
+    assert holder.context_int_field == 42
 
     null_context = {}
 
-    with pytest.raises(ValueError, message='IDIntField.get_Context should complain if required context is missing'):
-        holder_class.id_int_field.get_context(holder, null_context)
+    with pytest.raises(ValueError, message='ContextIntField.get_Context should complain if required context is missing'):
+        holder_class.context_int_field.get_context(holder, null_context)
 
 def test_sequenceintfield(holder_class):
 

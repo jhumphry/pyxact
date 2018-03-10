@@ -28,7 +28,7 @@ trans_id_seq.create(cursor) # Creation can require more than one SQL statement
 # attributes to represent table constraints.
 
 class TransactionRecord(records.SQLRecord, table_name='transactions'):
-    trans_id = fields.IDIntField(context_used='trans_id') # Context dicts are explained later
+    trans_id = fields.ContextIntField(context_used='trans_id') # Context dicts are explained later
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
@@ -37,7 +37,7 @@ class TransactionRecord(records.SQLRecord, table_name='transactions'):
 cursor.execute(TransactionRecord.create_table_sql())
 
 class JournalRecord(records.SQLRecord, table_name='journals'):
-    trans_id = fields.IDIntField(context_used='trans_id')
+    trans_id = fields.ContextIntField(context_used='trans_id')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)

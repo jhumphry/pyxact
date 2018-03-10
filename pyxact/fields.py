@@ -124,7 +124,7 @@ class BigIntField(AbstractIntField):
     def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type="BIGINT", **kwargs)
 
-class IDIntField(AbstractIntField):
+class ContextIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
     get_context, the value returned will not be that stored in the SQLRecord
     instance, but will be retrieved from the context dictionary object passed
@@ -149,9 +149,9 @@ class SequenceIntField(AbstractIntField):
     SQLSequence. It can be retrieved and set as a normal SQLField, but when
     get_new_context is called on the SQLTransaction, it will be updated from
     the next value of the sequence and the name:value pair will be returned as
-    part of the context dictionary. Within SQLRecord subclasses, an IDIntField
-    can be used to represent this value. This field type has no direct use
-    inside an SQLRecord.'''
+    part of the context dictionary. Within SQLRecord subclasses, an
+    ContextIntField can be used to represent this value. This field type has no
+    direct use inside an SQLRecord.'''
 
     def __init__(self, sequence, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):

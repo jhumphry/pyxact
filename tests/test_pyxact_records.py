@@ -16,7 +16,7 @@ from pyxact.dialects import sqliteDialect
 @pytest.fixture('module')
 def sample_record(sqlitedb):
     class SampleRecord(records.SQLRecord, table_name='sample_record'):
-        trans_id=fields.IDIntField(context_used='trans_id')
+        trans_id=fields.ContextIntField(context_used='trans_id')
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
         narrative=fields.TextField()
@@ -29,8 +29,8 @@ def sample_record(sqlitedb):
 @pytest.fixture('module')
 def linked_record(sqlitedb, sample_record):
     class LinkedRecord(records.SQLRecord, table_name='linked_record'):
-        record_id=fields.IDIntField(context_used='record_id')
-        trans_id=fields.IDIntField(context_used='trans_id')
+        record_id=fields.ContextIntField(context_used='record_id')
+        trans_id=fields.ContextIntField(context_used='trans_id')
         some_data=fields.RealField()
         pk=constraints.PrimaryKeyConstraint(sql_column_names=('record_id',))
         fk=constraints.ForeignKeyConstraint(sql_column_names=('trans_id',),
