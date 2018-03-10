@@ -2,8 +2,7 @@
 defines and maps SQL types and values to Python types and values.'''
 
 import decimal
-from . import dialects
-from . import sequences
+from . import dialects, sequences
 
 class SQLField:
     '''SQLField is an abstract class that forms the root of a hierarchy that
@@ -151,17 +150,16 @@ class SequenceIntField(AbstractIntField):
     get_new_context is called on the SQLTransaction, it will be updated from
     the next value of the sequence and the name:value pair will be returned as
     part of the context dictionary. Within SQLRecord subclasses, an IDIntField
-    can be used to represent this value. This field type has no direct use with
-    SQLRecords.'''
+    can be used to represent this value. This field type has no direct use
+    inside an SQLRecord.'''
 
     def __init__(self, sequence, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
             raise ValueError('Sequence provided must be an instance of '
                              'pyxact.sequences.SQLSequence')
         self.sequence = sequence
-        super().__init__(py_type=int, sql_type=self.sequence.index_type,
+        super().__init__(py_type=int, sql_type=None,
                          nullable=True, **kwargs)
-
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
