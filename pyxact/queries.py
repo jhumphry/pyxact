@@ -183,3 +183,24 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
         return result_row[0]
 
 INVALID_SQLQUERY_ATTRIBUTE_NAMES = frozenset(dir(SQLQuery))
+
+class QueryField(fields.SQLField):
+    '''Represents an context field in an SQLTransaction that has a link to an
+    SQLQuery. It can be retrieved and set as a normal SQLField. When
+    get_new_context is called on the SQLTransaction the query will be executed
+    with the current context dictionary (i.e. the values of the context fields
+    prior to the QueryField) being used to set the parameters of the query. The
+    single value result returned will be added to the context dictionary under
+    the name of the QueryField. Within SQLRecord subclasses attached to the
+    SQLTransaction, an IDIntField can be used to mirror this value. This field
+    type has no direct use inside an SQLRecord.'''
+
+    def __init__(self, query, **kwargs):
+
+        if not issubclass(query, SQLQuery):
+            raise ValueError('Query provided must be a subclass (not instance) of '
+                             'pyxact.queries.SQLQuery')
+
+        self.query = query
+        super().__init__(py_type=int, sql_type=None,
+                         nullable=True, **kwargs)

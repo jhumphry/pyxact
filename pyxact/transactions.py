@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-from . import fields, records, recordlists, dialects
+from . import fields, records, recordlists, dialects, queries
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
@@ -168,11 +168,16 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         result = dict()
-        for i in self._context_fields:
-            if isinstance(self._context_fields[i], fields.SequenceIntField):
-                value = self._context_fields[i].sequence.nextval(cursor, dialect)
-                setattr(self, i, value)
-            result[i] = getattr(self, i)
+        for field_name, field in self._context_fields.items():
+            if isinstance(field, fields.SequenceIntField):
+                value = field.sequence.nextval(cursor, dialect)
+                setattr(self, field_name, value)
+            elif isinstance(field, queries.QueryField):
+                query = field.query(**result)
+                query.execute(cursor, dialect)
+                value = query.result_singlevalue(cursor)
+                setattr(self, field_name, value)
+            result[field_name] = getattr(self, field_name)
         return result
 
     def get_context_from_records(self):
