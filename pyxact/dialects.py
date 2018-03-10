@@ -9,6 +9,8 @@ class SQLDialect:
 
     placeholder = '?'
 
+    store_decimal_as_text = False
+
     @classmethod
     def sql_repr(cls, value):
         '''This method returns the value in the form expected by the particular
@@ -26,6 +28,8 @@ class sqliteDialect(SQLDialect):
     database engine that usually comes supplied with Python.'''
 
     placeholder = '?' # The placeholder to use for parametised queries
+
+    store_decimal_as_text = False
 
     @classmethod
     def sql_repr(cls, value):

@@ -238,7 +238,11 @@ class NumericField(SQLField):
         raise ValueError
 
     def sql_type(self, dialect=None):
-        return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
+        if (dialect and dialect.store_decimal_as_text) or \
+            (not dialect and dialects.DefaultDialect.store_decimal_as_text):
+                return "TEXT"
+        else:
+                return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
 
 class RealField(SQLField):
     '''Represents a REAL field in a database, which maps to float in Python.'''
