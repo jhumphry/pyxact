@@ -59,9 +59,7 @@ class SQLQueryMetaClass(type):
                 segmented_query.append(query[current_pos:match.start()])
                 current_pos = match.end()
                 match = CONTEXT_PLACEHOLDER_REGEXP.search(query, pos=current_pos)
-            segmented_query.append(query[current_pos:])
-        else:
-            segmented_query.append(query)
+        segmented_query.append(query[current_pos:])
         namespace['_query'] = query
         namespace['_segmented_query'] = segmented_query
         namespace['_query_fields'] = query_fields
