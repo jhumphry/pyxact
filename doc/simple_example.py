@@ -111,11 +111,22 @@ new_trans.context_select(cursor)
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'
 
-# Complex queries can be handled by subclassing SQLQuery. Here we first write the
-# query, define an SQLRecord subclass and a matching SQLRecordList subclass to
-# handle the result. Note that it is not strictly necessary to make an SQLRecord
-# subclass if you are happy to fetch and process the data yourself - the
-# SQLRecord approach does allow for some type checking.
+# This usage of SQLQuery shows a very simple usage case with no parameters
+
+class TransactionCountQuery(queries.SQLQuery,
+                            query='''SELECT COUNT(*) FROM transactions;'''):
+    pass
+
+trans_count_query = TransactionCountQuery()
+trans_count_query.execute(cursor)
+
+assert trans_count_query.result_singlevalue(cursor) == 2
+
+# Complex queries can also be handled by subclassing SQLQuery. Here we first
+# write the query, define an SQLRecord subclass and a matching SQLRecordList
+# subclass to handle the result. Note that it is not strictly necessary to make
+# an SQLRecord subclass if you are happy to fetch and process the data yourself -
+# the SQLRecord approach does allow for some type checking.
 
 # Any instances of '{foo}' in the text of the SQL query passed to the SQLQuery
 # will be replaced with the contents of a suitably named SQLField (i.e. 'foo')
