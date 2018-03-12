@@ -32,7 +32,7 @@ class TransactionRecord(records.SQLRecord, table_name='transactions'):
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
-    cons_pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id'))
+    cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
 cursor.execute(TransactionRecord.create_table_sql())
 
@@ -41,8 +41,8 @@ class JournalRecord(records.SQLRecord, table_name='journals'):
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
-    cons_pk = constraints.PrimaryKeyConstraint(sql_column_names=('trans_id', 'row_id'))
-    cons_fk = constraints.ForeignKeyConstraint(sql_column_names=('trans_id',),
+    cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id', 'row_id'))
+    cons_fk = constraints.ForeignKeyConstraint(column_names=('trans_id',),
                                                foreign_table='transactions')
 
 cursor.execute(JournalRecord.create_table_sql())

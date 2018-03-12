@@ -12,28 +12,61 @@ class SQLRecordMetaClass(type):
 
     def __new__(mcs, name, bases, namespace, table_name=None, **kwds):
 
+        namespace['_table_name'] = table_name
+
         slots = []
         _fields = dict()
         _constraints = dict()
 
-        for k in namespace:
-            if isinstance(namespace[k], fields.SQLField):
-                if k in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
+        # Make a list of the SQLField and SQLConstraints attributes attached to the class and
+        # check that the names won't be hiding any methods or attributes on the base class.
+
+        for key, value in namespace.items():
+            if isinstance(value, fields.SQLField):
+                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
                     raise AttributeError('SQLField {} has the same name as an SQLRecord method or '
-                                         'internal attribute'.format(k))
-                slots.append('_'+k)
-                _fields[k] = namespace[k]
-            elif isinstance(namespace[k], constraints.SQLConstraint):
-                if k in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
+                                         'internal attribute'.format(key))
+                slots.append('_'+key)
+                _fields[key] = value
+            elif isinstance(value, constraints.SQLConstraint):
+                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
                     raise AttributeError('SQLConstraint {} has the same name as an SQLRecord method'
-                                         'or internal attribute'.format(k))
-                _constraints[k] = namespace[k]
+                                         'or internal attribute'.format(key))
+                _constraints[key] = value
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields'] = _fields
         namespace['_field_count'] = len(slots)
         namespace['_constraints'] = _constraints
-        namespace['_table_name'] = table_name
+
+        # Now check the ColumnsConstraint for exant columns, fill out the sql_column_names
+        # attribute on the constraint (which is not available when the constraint is instantiated,
+        # check if the ColumnsConstraint might be a suitable superkey (a unique or PK constraint
+        # that only references non-nullable columns), and finally fill out the sql_reference_names
+        # to be the same as the sql_column_names (a 'natural join') if it is None on a
+        # ForeignKeyConstraint.
+
+        for key, value in _constraints.items():
+            if isinstance(value, constraints.ColumnsConstraint):
+                sql_column_names = []
+                possible_superkey = True
+                for column_name in value.column_names:
+                    if column_name not in _fields:
+                        raise AttributeError('SQLConstraint {} references non-existent column {}'
+                                             .format(key, column_name))
+
+                    if _fields[column_name].sql_name:
+                        sql_column_names.append(_fields[column_name].sql_name)
+                    else:
+                        sql_column_names.append(column_name)
+                    possible_superkey &= not _fields[column_name].nullable
+                value.sql_column_names = tuple(sql_column_names)
+                if isinstance(value, (constraints.UniqueConstraint,
+                                      constraints.PrimaryKeyConstraint)):
+                    value.superkey = possible_superkey
+                if isinstance(value, constraints.ForeignKeyConstraint) and \
+                        not value.sql_reference_names:
+                    value.sql_reference_names = value.sql_column_names
 
         return type.__new__(mcs, name, bases, namespace)
 

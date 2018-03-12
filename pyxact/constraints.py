@@ -54,13 +54,15 @@ class ColumnsConstraint(SQLConstraint):
     out the commonalities between UNIQUE constraints and PRIMARY KEY
     constraints.'''
 
-    def __init__(self, sql_column_names, sql_options='', **kwargs):
+    def __init__(self, column_names, sql_options='', **kwargs):
         super().__init__(**kwargs)
-        if isinstance(sql_column_names, str):
-            self.sql_column_names = (sql_column_names,)
+        if isinstance(column_names, str):
+            self.column_names = (column_names,)
         else:
-            self.sql_column_names = sql_column_names
+            self.column_names = column_names
+        self.sql_column_names = None # Will be filled out by SQLRecordMetaClass
         self.sql_options = sql_options
+        self.superkey = False
 
 class UniqueConstraint(ColumnsConstraint):
     '''This class is used to create UNIQUE constraints. Depending on the
@@ -76,38 +78,34 @@ class PrimaryKeyConstraint(ColumnsConstraint):
     '''This class is used to create PRIMARY KEY constraints. Depending on the
     database, this make automatically create an index covering the columns.'''
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.superkey = True
+
     def sql_ddl(self, dialect=None):
         result = 'CONSTRAINT ' + self.sql_name + ' PRIMARY KEY ('
         result += ', '.join(self.sql_column_names)
         result += ') ' + self.sql_options
         return result
 
-class ForeignKeyConstraint(SQLConstraint):
+class ForeignKeyConstraint(ColumnsConstraint):
     '''This class is used to create FOREIGN KEY constraints. Depending on the
     database, this make require the referenced columns to be indexed. If
     sql_reference_names is None then it is assumed the referenced columns have
     the same names as the columns in the current table.'''
 
-    def __init__(self, sql_column_names, foreign_table, sql_reference_names=None,
-                 sql_options='', **kwargs):
+    def __init__(self, foreign_table, sql_reference_names=None, **kwargs):
 
         super().__init__(**kwargs)
-
-        if isinstance(sql_column_names, str):
-            self.sql_column_names = (sql_column_names,)
-        else:
-            self.sql_column_names = sql_column_names
 
         self.foreign_table = foreign_table
 
         if isinstance(sql_reference_names, str):
             self.sql_reference_names = (sql_reference_names,)
-        elif sql_reference_names is None:
-            self.sql_reference_names = self.sql_column_names
         else:
             self.sql_reference_names = sql_reference_names
-
-        self.sql_options = sql_options
+        # If sql_reference_names is None it will be over-ridden by the sql_column_names
+        # in SQLRecordMetaClass
 
     def sql_ddl(self, dialect=None):
         result = 'CONSTRAINT ' + self.sql_name + ' FOREIGN KEY ('

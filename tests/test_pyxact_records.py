@@ -20,7 +20,7 @@ def sample_record(sqlitedb):
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
         narrative=fields.TextField()
-        pk=constraints.PrimaryKeyConstraint(sql_column_names=('trans_id'))
+        pk=constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
     sqlitedb.execute(SampleRecord.create_table_sql())
 
@@ -32,8 +32,8 @@ def linked_record(sqlitedb, sample_record):
         record_id=fields.ContextIntField(context_used='record_id')
         trans_id=fields.ContextIntField(context_used='trans_id')
         some_data=fields.RealField()
-        pk=constraints.PrimaryKeyConstraint(sql_column_names=('record_id',))
-        fk=constraints.ForeignKeyConstraint(sql_column_names=('trans_id',),
+        pk=constraints.PrimaryKeyConstraint(column_names=('record_id',))
+        fk=constraints.ForeignKeyConstraint(column_names=('trans_id',),
                                             foreign_table='sample_record')
 
     sqlitedb.execute(LinkedRecord.create_table_sql())
