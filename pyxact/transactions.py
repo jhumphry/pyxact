@@ -50,6 +50,19 @@ class SQLTransactionMetaClass(type):
         _records = dict()
         _recordlists = dict()
 
+        # Inherit any attributes on base classes
+
+        for i in bases:
+            if issubclass(i, SQLTransaction):
+                slots.extend(i.__slots__)
+                _fields.update(i._fields)
+                _context_fields.update(i._context_fields)
+                _records.update(i._records)
+                _recordlists.update(i._recordlists)
+
+        # Check names on attributes and add them to the appropriate internal
+        # indices
+
         for k in namespace:
 
             if isinstance(namespace[k], fields.SQLField):

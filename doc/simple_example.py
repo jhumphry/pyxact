@@ -118,6 +118,26 @@ new_trans.context_select(cursor)
 assert new_trans.journal_list[2].account == 1003
 assert new_trans.trans_details.narrative == 'Example usage of pyxact'
 
+# It is possible to subclass AccountingTransaction and change the normalize()
+# method which normalizes the data after it has been read in. It will inherit
+# all of the SQLField, SQLRecord and SQLRecordList attributes from the base
+# class
+
+class ReverseTransaction(AccountingTransaction):
+
+    def normalize(self):
+        for i in self.journal_list:
+            i.amount = -i.amount
+        self.trans_details.trans_reversed = True
+
+rev_trans = ReverseTransaction(trans_id=1)
+rev_trans.context_select(cursor)
+
+# rev_trans will be normalized at the end of the context_select - i.e. the sign
+# of the amounts will have been flipped
+
+rev_trans.insert_new(cursor)
+
 # This usage of SQLQuery shows a very simple usage case with no parameters
 
 class TransactionCountQuery(queries.SQLQuery,
@@ -127,7 +147,7 @@ class TransactionCountQuery(queries.SQLQuery,
 trans_count_query = TransactionCountQuery()
 trans_count_query.execute(cursor)
 
-assert trans_count_query.result_singlevalue(cursor) == 2
+assert trans_count_query.result_singlevalue(cursor) == 3
 
 # Complex queries can also be handled by subclassing SQLQuery. Here we first
 # write the query, define an SQLRecord subclass and a matching SQLRecordList
