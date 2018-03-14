@@ -228,13 +228,11 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return result
 
     @classmethod
-    def insert_sql(cls, context=None, dialect=None):
+    def insert_sql(cls, dialect=None):
         '''Returns a string containing the parametrised INSERT command (in the
         given SQL dialect) required to insert data into the SQL table
         represented by the SQLRecord.'''
 
-        if not context:
-            context = {}
         if dialect:
             placeholder = dialect.placeholder
         else:
