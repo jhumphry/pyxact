@@ -19,3 +19,8 @@ class VerificationError(PyxactError):
     required to pass.'''
 
     pass
+
+class UnconstrainedWhereError(PyxactError):
+    '''The WHERE clause of an SQL statement would not impose any constraints.'''
+
+    pass

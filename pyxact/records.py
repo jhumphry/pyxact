@@ -1,5 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
+from . import UnconstrainedWhereError
 from . import fields, constraints, dialects
 
 class SQLRecordMetaClass(type):
@@ -348,7 +349,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 column_values.append(context[field_ctxt])
 
         if not allow_unlimited and not column_sql_names:
-            raise ValueError('Context-based SELECT has no restrictions')
+            raise UnconstrainedWhereError('No WHERE clause generated - possible due to '
+                                          'missing/misnamed context values?')
 
         if column_sql_names:
             result += ' WHERE '
