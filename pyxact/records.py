@@ -47,6 +47,8 @@ class SQLRecordMetaClass(type):
         # to be the same as the sql_column_names (a 'natural join') if it is None on a
         # ForeignKeyConstraint.
 
+        namespace['_primary_key'] = None
+
         for key, value in _constraints.items():
             if isinstance(value, constraints.ColumnsConstraint):
                 sql_column_names = []
@@ -62,6 +64,11 @@ class SQLRecordMetaClass(type):
                         sql_column_names.append(column_name)
                     possible_superkey &= not _fields[column_name].nullable
                 value.sql_column_names = tuple(sql_column_names)
+
+                if isinstance(value, constraints.PrimaryKeyConstraint):
+                    if namespace['_primary_key']:
+                        raise AttributeError('Attempting to have multiple primary keys')
+                    namespace['_primary_key'] = value
                 if isinstance(value, (constraints.UniqueConstraint,
                                       constraints.PrimaryKeyConstraint)):
                     value.superkey = possible_superkey
@@ -102,6 +109,10 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                                                    self._fields[key].__class__.__name__,
                                                    str(getattr(self, key))
                                                   )
+        if self._primary_key:
+            result += 'Primary key ('
+            result += ', '.join(self._primary_key.column_names)
+            result += ')\n'
         return result
 
     def copy(self):
