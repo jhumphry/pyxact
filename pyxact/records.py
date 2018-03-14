@@ -275,6 +275,43 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ');'
         return result
 
+
+    def update_sql(self, context, dialect=None):
+        '''This method  takes a context dictionary of name:value pairs and identifies those
+        SQLFields within the SQLRecord that would use the context values provided by
+        any of those names. It then constructs an SQL statement using the column names
+        of the identified SQLFields and returns that statement and the list of relevant
+        values.'''
+
+        if not self._primary_key:
+            raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
+                                          'can use the update() method.')
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        pk_columns = self._primary_key.column_names
+        pk_columns_sql_names = []
+        pk_values = []
+        update_sql_names = []
+        update_values = []
+
+        for field_name, field_obj in self._fields.items():
+            if field_name in pk_columns:
+                pk_columns_sql_names.append(field_obj.sql_name)
+                pk_values.append(dialect.sql_repr(field_obj.get_context(self, context)))
+            else:
+                update_sql_names.append(field_obj.sql_name)
+                update_values.append(dialect.sql_repr(field_obj.get_context(self, context)))
+
+        result = 'UPDATE ' + self._table_name + ' SET '
+        result += ', '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in update_sql_names])
+        result += ' WHERE '
+        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in pk_columns_sql_names])
+        result += ';'
+
+        return (result, update_values + pk_values)
+
     @classmethod
     def simple_select_sql(cls, dialect=None, **kwargs):
         '''Returns a tuple of a string containing the parametrised SELECT command (in the

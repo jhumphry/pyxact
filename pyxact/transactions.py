@@ -306,6 +306,31 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
+    def update(self, cursor, dialect=None):
+        '''Insert the contents of the SQLTransaction into the database. This
+        method stores only the existing data and will not update any values
+        that are linked to sequences in the database.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        cursor.execute('BEGIN TRANSACTION;')
+        context = self.get_context()
+
+        if not self.verify():
+            raise VerificationError
+
+        for record_name in self._records:
+            record = getattr(self, record_name)
+            cursor.execute(*(record.update_sql(context, dialect)))
+
+        for recordlist_name in self._recordlists:
+            recordlist = getattr(self, recordlist_name)
+            for record in recordlist:
+                cursor.execute(*(record.update_sql(context, dialect)))
+
+        cursor.execute('COMMIT TRANSACTION;')
+
     def context_select(self, cursor, dialect=None):
         '''This method extracts the values stored in SQLField directly attached
         to the SQLTransaction and stored them in a context dictionary under the
