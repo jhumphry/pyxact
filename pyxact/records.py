@@ -325,10 +325,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         of the identified SQLFields and returns that statement and the list of relevant
         values.'''
 
-        if dialect:
-            placeholder = dialect.placeholder
-        else:
-            placeholder = dialects.DefaultDialect.placeholder
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
 
         column_sql_names = []
@@ -340,7 +339,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             field_ctxt = field_obj.context_used
             if field_ctxt in context:
                 column_sql_names.append(field_obj.sql_name)
-                column_values.append(context[field_ctxt])
+                column_values.append(dialect.sql_repr(context[field_ctxt]))
 
         if not allow_unlimited and not column_sql_names:
             raise UnconstrainedWhereError('No WHERE clause generated - possible due to '
@@ -350,7 +349,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             result += ' WHERE '
             i = 1
             for column in column_sql_names:
-                result += column+'='+placeholder
+                result += column+'=' + dialect.placeholder
                 if i < len(column_sql_names):
                     result += ' AND '
                 i += 1
