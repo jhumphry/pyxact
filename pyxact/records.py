@@ -395,12 +395,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         if column_sql_names:
             result += ' WHERE '
-            i = 1
-            for column in column_sql_names:
-                result += column+'=' + dialect.placeholder
-                if i < len(column_sql_names):
-                    result += ' AND '
-                i += 1
+            result += ' AND '.join((column+'='+dialect.placeholder for column in column_sql_names))
+
         result += ';'
         return (result, column_values)
 
