@@ -184,21 +184,23 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         pass
 
     def get_context(self):
-        '''Return a context dictionary created from the values stored under the
-        names of the SQLField objects directly attached as attributes to the
-        SQLTransaction. This does not update sequences or perform any database
-        access.'''
+        '''Return a context dictionary created from any non-None values stored
+        under the names of the SQLField objects directly attached as attributes
+        to the SQLTransaction. This does not update sequences or perform any
+        database access.'''
 
         result = dict()
         for i in self._context_fields:
-            result[i] = getattr(self, i)
+            tmp = getattr(self, i)
+            if tmp:
+                result[i] = tmp
         return result
 
     def get_new_context(self, cursor, dialect=None):
-        '''Return a context dictionary created from the SQLField objects
-        directly attached as attributes to the SQLTransaction. This method will
-        identify SequenceIntFields and QueryFields, and call the database to
-        update the values.'''
+        '''Return a context dictionary created from any non-None values of the
+        SQLField objects directly attached as attributes to the SQLTransaction.
+        This method will identify SequenceIntFields and QueryFields, and call
+        the database to update the values.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -213,7 +215,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 query.execute(cursor, dialect)
                 value = query.result_singlevalue(cursor)
                 setattr(self, field_name, value)
-            result[field_name] = getattr(self, field_name)
+            tmp = getattr(self, field_name)
+            if tmp:
+                result[field_name] = tmp
         return result
 
     def get_context_from_records(self):

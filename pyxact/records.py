@@ -362,14 +362,16 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return (result, column_values)
 
     def get_context(self):
-        '''Returns a dictionary containing all of the context values that would
-        be used by the fields in the record.'''
+        '''Returns a dictionary containing all of the (non-None) context values
+        that would be used by the fields in the record.'''
 
         context = {}
 
         for field_name, field_obj in self._fields.items():
             if field_obj.context_used:
-                context[field_obj.context_used] = getattr(self, field_name)
+                tmp = getattr(self, field_name)
+                if tmp:
+                    context[field_obj.context_used] = tmp
 
         return context
 
