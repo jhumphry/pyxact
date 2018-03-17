@@ -179,9 +179,15 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         to this method, the verify method should return True if this is at all
         possible to achieve. The precise meaning of 'normalization' is
         dependent on the domain for which SQLTransaction has been subclassed.
-        The default implementation for SQLTransaction does nothing.'''
+        The default implementation for SQLTransaction retrieves all the context
+        information from the SQLRecords attached to the class and updates the
+        context fields.'''
 
-        pass
+        context = self.get_context_from_records()
+
+        for field in self._context_fields:
+            if field in context:
+                setattr(self, field, context[field])
 
     def get_context(self):
         '''Return a context dictionary created from any non-None values stored
@@ -242,16 +248,6 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 context.update(record.get_context())
 
         return context
-
-    def set_context_from_records(self):
-        '''This method sets the context fields using the dictionary returned
-        by get_context_from_records.'''
-
-        context = self.get_context_from_records()
-
-        for field in self._context_fields:
-            if field in context:
-                setattr(self, field, context[field])
 
     def insert_existing(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This

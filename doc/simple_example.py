@@ -126,6 +126,7 @@ assert new_trans.trans_details.narrative == 'Example usage of pyxact'
 class ReverseTransaction(AccountingTransaction):
 
     def normalize(self):
+        super().normalize()
         for i in self.journal_list:
             i.amount = -i.amount
         self.trans_details.trans_reversed = True
