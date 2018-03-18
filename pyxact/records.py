@@ -276,6 +276,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return result
 
     @classmethod
+    def truncate_table_sql(cls, dialect=None):
+        '''Return an SQL string that will truncate this table.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        return dialect.truncate_table_sql.format(table_name=cls._table_name)
+
+    @classmethod
     def insert_sql(cls, dialect=None):
         '''Returns a string containing the parametrised INSERT command (in the
         given SQL dialect) required to insert data into the SQL table

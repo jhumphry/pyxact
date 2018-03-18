@@ -11,6 +11,8 @@ class SQLDialect:
 
     store_decimal_as_text = False
 
+    truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
+
     @classmethod
     def sql_repr(cls, value):
         '''This method returns the value in the form expected by the particular
@@ -30,6 +32,8 @@ class sqliteDialect(SQLDialect):
     placeholder = '?' # The placeholder to use for parametised queries
 
     store_decimal_as_text = False
+
+    truncate_table_sql = '''DELETE FROM {table_name} WHERE 1=1;'''
 
     @classmethod
     def sql_repr(cls, value):
