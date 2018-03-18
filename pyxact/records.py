@@ -89,7 +89,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         if args:
             if len(args) != self._field_count:
-                raise ValueError('{0} values needed to initialise a {1} with a sequence, {2} supplied.'
+                raise ValueError('{0} values needed to initialise a {1}, {2} supplied.'
                                  .format(self._field_count, self.__class__.__name__, len(args)))
 
             for field, value in zip(self._fields.keys(), args):
@@ -251,7 +251,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 values.append(pk_value)
             else:
                 raise UnconstrainedWhereError('Value for primary key column {0} is None.'
-                                              .format(field_name))
+                                              .format(pk_field_name))
         return (sql_names, values)
 
 

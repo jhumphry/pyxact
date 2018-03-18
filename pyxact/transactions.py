@@ -132,8 +132,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = self.__class__.__name__ + ':\n'
 
         for field_name in self._context_fields:
+            field_class_name = self._context_fields[field_name].__class__.__name__
             result += '* {0} ({1}) = {2}\n'.format(field_name,
-                                                   self._context_fields[field_name].__class__.__name__,
+                                                   field_class_name,
                                                    str(getattr(self, field_name))
                                                   )
 
