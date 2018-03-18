@@ -407,10 +407,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         values for columns specified in the form of keyword arguments to the
         method.'''
 
-        if dialect:
-            placeholder = dialect.placeholder
-        else:
-            placeholder = dialects.DefaultDialect.placeholder
+        if not dialect:
+            dialect = dialects.DefaultDialect
 
         for field in kwargs:
             if not field in cls._fields:
@@ -419,10 +417,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
-            result += ' AND '.join((cls._fields[field].sql_name+'='+placeholder
+            result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
                                     for field in kwargs))
         result += ';'
-        return (result, list(kwargs.values()))
+
+        values = [dialect.sql_repr(x) for x in kwargs.values()]
+
+        return (result, values)
 
     @classmethod
     def simple_select_sql_unsafe(cls, dialect=None, **kwargs):

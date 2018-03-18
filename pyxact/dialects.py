@@ -37,7 +37,9 @@ class sqliteDialect(SQLDialect):
 
     @classmethod
     def sql_repr(cls, value):
-        if isinstance(value, (int, float, str, bytes)) or value is None:
+        if isinstance(value, bool):
+            return 1 if value else 0
+        elif isinstance(value, (int, float, str, bytes)) or value is None:
             return value
         elif isinstance(value, decimal.Decimal):
             return str(value)
