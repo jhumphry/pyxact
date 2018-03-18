@@ -149,15 +149,23 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             raise ValueError('{0} is not a valid field name.'.format(key))
         setattr(self, key, value)
 
-    def set_values(self, values):
+    def set_values(self, values=None, **kwargs):
         '''Set all fields within this SQLRecord.'''
+        if values:
+            if len(values) != self._field_count:
+                raise ValueError('{0} values required, {1} supplied.'
+                                 .format(self._field_count, len(values)))
 
-        if len(values) != self._field_count:
-            raise ValueError('{0} values required, {1} supplied.'
-                             .format(self._field_count, len(values)))
-
-        for field, value in zip(self._fields.keys(), values):
-            setattr(self, field, value)
+            for field_name, value in zip(self._fields.keys(), values):
+                setattr(self, field_name, value)
+        elif kwargs:
+            for field_name, value in kwargs.items():
+                if field_name not in self._fields:
+                    raise ValueError('{0} is not a valid field name.'
+                                     .format(field_name))
+                setattr(self, field_name, value)
+        else:
+            raise ValueError('Must specify values')
 
     @property
     def table_name(self):
