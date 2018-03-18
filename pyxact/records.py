@@ -232,6 +232,27 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [(key, value.get(self))
                 for key, value in self._fields.items()]
 
+    def _pk_items(self, context=None):
+        '''Returns a tuple containing a list of primary key SQL column names
+        and a list of the associated values, using the context dictionary if
+        provided.'''
+
+        sql_names = []
+        values = []
+
+        for pk_field_name in self._primary_key.column_names:
+            field_obj = self._fields[pk_field_name]
+            sql_names.append(field_obj.sql_name)
+            if context:
+                pk_value = field_obj.get_context(self, context)
+            else:
+                pk_value = field_obj.get(self)
+            if pk_value:
+                values.append(pk_value)
+            else:
+                raise UnconstrainedWhereError('Value for primary key column {0} is None.'
+                                              .format(field_name))
+        return (sql_names, values)
 
 
     @classmethod
@@ -291,42 +312,48 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ');'
         return result
 
-
-    def update_sql(self, context, dialect=None):
-        '''This method  takes a context dictionary of name:value pairs and identifies those
-        SQLFields within the SQLRecord that would use the context values provided by
-        any of those names. It then constructs an SQL statement using the column names
-        of the identified SQLFields and returns that statement and the list of relevant
-        values.'''
+    def update_sql(self, context=None, dialect=None):
+        '''This method constructs an SQL UDPATE command and returns a tuple
+        containing a suitable string and list of values. It identifies the row
+        to be updated using the primary key columns, whose associated SQLField
+        attribute values must not be None. If a context dictionary is provided,
+        it will be passed to the SQLField attributes and they may use the
+        values in it in preference to their existing values.'''
 
         if not self._primary_key:
             raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
-                                          'can use the update() method.')
+                                          'can use the update_sql() method.')
 
         if not dialect:
             dialect = dialects.DefaultDialect
 
         pk_columns = self._primary_key.column_names
-        pk_columns_sql_names = []
-        pk_values = []
+        pk_columns_sql_names, pk_values = self._pk_items(context)
+        pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
+
         update_sql_names = []
         update_values = []
 
         for field_name, field_obj in self._fields.items():
-            if field_name in pk_columns:
-                pk_columns_sql_names.append(field_obj.sql_name)
-                pk_values.append(dialect.sql_repr(field_obj.get_context(self, context)))
-            else:
+            if field_name not in pk_columns:
                 update_sql_names.append(field_obj.sql_name)
-                update_values.append(dialect.sql_repr(field_obj.get_context(self, context)))
+                if context:
+                    update_values.append(dialect.sql_repr(field_obj.get_context(self, context)))
+                else:
+                    update_values.append(dialect.sql_repr(field_obj.get(self)))
 
         result = 'UPDATE ' + self._table_name + ' SET '
         result += ', '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in update_sql_names])
         result += ' WHERE '
-        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in pk_columns_sql_names])
+        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
+                                for i in pk_columns_sql_names])
         result += ';'
 
-        return (result, update_values + pk_values)
+        return (result, update_values + pk_sql_values)
+
+        result += ';'
+
+        return (result, pk_sql_values)
 
     @classmethod
     def simple_select_sql(cls, dialect=None, **kwargs):
@@ -349,7 +376,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
-            result += ' AND '.join((cls._fields[field].sql_name+'='+placeholder for field in kwargs))
+            result += ' AND '.join((cls._fields[field].sql_name+'='+placeholder
+                                    for field in kwargs))
         result += ';'
         return (result, list(kwargs.values()))
 
