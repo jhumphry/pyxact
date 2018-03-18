@@ -207,24 +207,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         return [dialect.sql_repr(field.get(self)) for field in self._fields.values()]
 
-    def values_sql_string_unsafe(self, context, dialect=None):
-        '''Returns a string containing a comma-separated list of values stored
-        in the SQLField attributes of a particular SQLRecord instance. A
-        context dictionary can be provided for SQLField types that require one.
-        The values are in the form required by the SQL database identified by
-        dialect.
-
-        Note that this is not safe, as it is not guaranteed that any
-        escaping performed will be sufficient to prevent SQL injection attacks.
-        Do not use it with any values supplied by the user or previously stored
-        in the database by the user.'''
-
-        result = []
-        for key in self._fields.keys():
-            value = self._fields[key].get_context(self, context)
-            result.append(self._fields[key].sql_string_unsafe(value, dialect))
-        return result
-
     @classmethod
     def items(cls):
         '''Returns a iterable of tuples of field names and SQLField objects in the
@@ -325,12 +307,24 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         use it with any values supplied by the user or previously stored in the
         database by the user.'''
 
-        if not context:
-            context = {}
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        values = []
+        for key in self._fields.keys():
+            if context:
+                value = dialect.sql_repr(self._fields[key].get_context(self, context))
+            else:
+                value = dialect.sql_repr(self._fields[key].get(self))
+            if isinstance(value, str):
+                values.append("'"+value+"'")
+            else:
+                values.append(str(value))
+
         result = 'INSERT INTO ' + self._table_name + ' ('
         result += self.column_names_sql()
         result += ') VALUES ('
-        result += ', '.join(self.values_sql_string_unsafe(context, dialect))
+        result += ', '.join(values)
         result += ');'
         return result
 
@@ -438,6 +432,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         use it with any values supplied by the user or previously stored in the
         database by the user.'''
 
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
             result += ' WHERE '
@@ -446,7 +443,14 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 if not field in cls._fields:
                     raise ValueError('Specified field {0} is not valid'.format(field))
                 result += cls._fields[field].sql_name+'='
-                result += cls._fields[field].sql_string_unsafe(value)
+
+                sql_value = dialect.sql_repr(value)
+
+                if isinstance(sql_value, str):
+                    result += "'" + str(sql_value) + "'"
+                else:
+                    result += str(sql_value)
+
                 if i < len(kwargs):
                     result += ' AND '
                 i += 1

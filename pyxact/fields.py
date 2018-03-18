@@ -93,16 +93,6 @@ class SQLField:
             result += ' '+self._sql_ddl_options
         return result
 
-    def sql_string_unsafe(self, value, dialect=None):
-        '''This method creates a string from the value for concatenation into
-        SQL commands. This is not safe, as it is not guaranteed that any
-        escaping performed will be sufficient to prevent SQL injection attacks.
-        Do not use it with any values supplied by the user or previously stored
-        in the database by the user.'''
-
-        return str(value)
-
-
 class AbstractIntField(SQLField):
     '''This is the root of the branch of the SQLField class hierarchy that
     represents those SQL types represented in Python by int.'''
