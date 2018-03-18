@@ -351,6 +351,27 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         return (result, update_values + pk_sql_values)
 
+    def delete_sql(self, context=None, dialect=None):
+        '''This method constructs an SQL DELETE command and returns a tuple
+        containing a suitable string and list of values. It identifies the row
+        to be deleted using the primary key columns, whose associated SQLField
+        attribute values must not be None. If a context dictionary is provided,
+        it will be passed to the SQLField attributes and they may use the
+        values in it in preference to their existing values.'''
+
+        if not self._primary_key:
+            raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
+                                          'can use the delete_sql() method.')
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        pk_columns_sql_names, pk_values = self._pk_items(context)
+        pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
+
+        result = 'DELETE FROM ' + self._table_name + ' WHERE '
+        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
+                                for i in pk_columns_sql_names])
         result += ';'
 
         return (result, pk_sql_values)
@@ -408,6 +429,28 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 i += 1
         result += ';'
         return result
+
+    def pk_select_sql(self, context=None, dialect=None):
+        '''This method returns a tuple containg an SQL SELECT statement that
+        would retrieve this record based on the primary key and a list of
+        values for the primary key columns.'''
+
+        if not self._primary_key:
+            raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
+                                          'can use the pk_select_sql() method.')
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        pk_columns_sql_names, pk_values = self._pk_items(context)
+        pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
+
+        result = 'SELECT ' + self.column_names_sql() + ' FROM ' + self._table_name + ' WHERE '
+        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
+                                for i in pk_columns_sql_names])
+        result += ';'
+
+        return (result, pk_sql_values)
 
     @classmethod
     def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
