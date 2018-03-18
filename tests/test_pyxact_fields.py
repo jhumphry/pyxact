@@ -83,6 +83,7 @@ def test_contextintfield(context, holder, holder_class):
     # Can be set manually
     holder.context_int_field = 33
     assert holder.context_int_field == 33
+    assert holder_class.context_int_field.get(holder) == 33
 
     # Retrieving from context dictionary provided
     assert holder_class.context_int_field.get_context(holder, context) == 42
