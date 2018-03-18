@@ -132,10 +132,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(self, key, None)
 
     def get(self, key, context=None):
-        '''Get a value stored in an SQLField within this SQLRecord, given a
-        context dictionary if appropriate.'''
+        '''Get a value stored in an SQLField within this SQLRecord. If a
+        context dictionary is given, it may be used to provide the value, and
+        both the context dictionary and the underlying SQLField may be
+        updated.'''
 
-        return self._fields[key].get_context(self, context)
+        if context:
+            return self._fields[key].get_context(self, context)
+        else:
+            return self._fields[key].get(self)
 
     def set(self, key, value):
         '''Set a value stored in an SQLField within this SQLRecord.'''
