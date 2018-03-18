@@ -60,13 +60,19 @@ class SQLField:
 
         raise ValueError
 
+    def get(self, instance):
+        '''This method attempts to retrieve the associated value from the given
+        instance.'''
+
+        return instance.__getattribute__(self._slot_name)
+
     def get_context(self, instance, context):
         '''Given a particular context dictionary, this method attempts to
-        retrieve the associated value,. Depending on the type of the field,
-        this will either be from the given instance of the SQLField subclass or
-        from the value in the context dictionary under the name of the field's
-        context_usage parameter. In the latter case the value will also be
-        stored in the instance.'''
+        retrieve the associated value from the given instance. Depending on the
+        type of the field, this will either be from the given instance of the
+        SQLField subclass or from the value in the context dictionary under the
+        name of the field's context_usage parameter. In the latter case the
+        value will also be stored in the instance.'''
 
         return instance.__getattribute__(self._slot_name)
 

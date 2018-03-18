@@ -162,29 +162,37 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def fields(cls):
-        '''Returns a list of SQLField objects in the order they were defined in
-        the SQLRecord subclass.'''
+        '''Returns a iterable of SQLField objects in the order they were
+        defined in the SQLRecord subclass.'''
 
-        return [cls._fields[key] for key in cls._fields.keys()]
+        return cls._fields.values()
 
     def values(self, context=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
-        SQLField types that require one.'''
+        SQLField types that may update and return a value from it, rather than
+        the previously stored value.'''
 
-        return [self.get(key, context) for key in self._fields.keys()]
+        if context is not None:
+            return [field.get_context(self, context) for field in self._fields.values()]
+
+        return [field.get(self) for field in self._fields.values()]
 
     def values_sql_repr(self, context=None, dialect=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
-        SQLField types that require one. The values are in the form required by
-        the SQL database adaptor identified by dialect.'''
+        SQLField types that may update and return a value from it, rather than
+        the previously stored value. The values are in the form required by the
+        SQL database adaptor identified by dialect.'''
 
         if dialect is None:
             dialect = dialects.DefaultDialect
 
-        return [dialect.sql_repr(self.get(key, context))
-                for key in self._fields.keys()]
+        if context is not None:
+            return [dialect.sql_repr(field.get_context(self, context))
+                    for field in self._fields.values()]
+
+        return [dialect.sql_repr(field.get(self)) for field in self._fields.values()]
 
     def values_sql_string_unsafe(self, context, dialect=None):
         '''Returns a string containing a comma-separated list of values stored
@@ -206,17 +214,25 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
     @classmethod
     def items(cls):
-        '''Returns a list of tuples of field names and SQLField objects in the
+        '''Returns a iterable of tuples of field names and SQLField objects in the
         order they were defined in the SQLRecord subclass.'''
 
-        return [(key, cls._fields[key]) for key in cls._fields.keys()]
+        return cls._fields.items()
 
     def item_values(self, context=None):
         '''Returns a list of tuples of field names and values stored in the
         SQLField attributes of a particular SQLRecord instance. A context
-        dictionary can be provided for SQLField types that require one.'''
+        dictionary can be provided for SQLField types that may update and
+        return a value from it, rather than the previously stored value.'''
 
-        return [(key, self.get(key, context)) for key in self._fields.keys()]
+        if context is not None:
+            return [(key, value.get_context(self, context))
+                    for key, value in self._fields.items()]
+
+        return [(key, value.get(self))
+                for key, value in self._fields.items()]
+
+
 
     @classmethod
     def column_names_sql(cls):
@@ -406,9 +422,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         context = {}
 
-        for field_name, field_obj in self._fields.items():
+        for field_obj in self._fields.values():
             if field_obj.context_used:
-                tmp = getattr(self, field_name)
+                tmp = field_obj.get(self)
                 if tmp:
                     context[field_obj.context_used] = tmp
 
