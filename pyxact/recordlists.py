@@ -16,7 +16,7 @@ class SQLRecordListField:
         self.field = field
 
     def __get__(self, instance, owner):
-        if instance:
+        if instance is not None:
             return self.get(instance)
         return self
 

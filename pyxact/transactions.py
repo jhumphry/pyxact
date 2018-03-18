@@ -22,7 +22,7 @@ class SQLTransactionField:
         self._slot_name = None
 
     def __get__(self, instance, owner):
-        if instance:
+        if instance is not None:
             return instance.__getattribute__(self._slot_name)
         return self
 
