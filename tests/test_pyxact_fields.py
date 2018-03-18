@@ -3,6 +3,7 @@
 from decimal import Decimal, Inexact, InvalidOperation
 
 import pytest
+from pyxact import ContextRequiredError
 import pyxact.fields as fields
 import pyxact.sequences as sequences
 from pyxact.dialects import sqliteDialect
@@ -92,7 +93,7 @@ def test_contextintfield(context, holder, holder_class):
 
     null_context = {}
 
-    with pytest.raises(ValueError, message='ContextIntField.get_Context should complain if required context is missing'):
+    with pytest.raises(ContextRequiredError, message='ContextIntField.get_Context should complain if required context is missing'):
         holder_class.context_int_field.get_context(holder, null_context)
 
 def test_sequenceintfield(holder_class):

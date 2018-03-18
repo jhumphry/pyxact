@@ -24,3 +24,9 @@ class UnconstrainedWhereError(PyxactError):
     '''The WHERE clause of an SQL statement would not impose any constraints.'''
 
     pass
+
+class ContextRequiredError(PyxactError):
+    '''An SQLField requires a context dictionary to be passed in order to
+    retrieve values.'''
+
+    pass

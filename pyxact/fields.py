@@ -2,7 +2,7 @@
 defines and maps SQL types and values to Python types and values.'''
 
 import decimal
-from . import dialects, sequences
+from . import dialects, sequences, ContextRequiredError
 
 class SQLField:
     '''SQLField is an abstract class that forms the root of a hierarchy that
@@ -144,11 +144,15 @@ class ContextIntField(AbstractIntField):
                          nullable=True, **kwargs)
 
     def get_context(self, instance, context):
+
+        if context is None:
+            raise ContextRequiredError
+
         if self.context_used in context:
             setattr(instance, self._slot_name, context[self.context_used])
             return context[self.context_used]
-        raise ValueError('''Required context '{0}' is not provided'''
-                         .format(self.context_used))
+        raise ContextRequiredError('''Required context '{0}' is not provided'''
+                                   .format(self.context_used))
 
 class SequenceIntField(AbstractIntField):
     '''Represents an integer field in an SQLTransaction that has a link to a
@@ -181,6 +185,10 @@ class RowEnumIntField(AbstractIntField):
         self._starting_number = starting_number
 
     def get_context(self, instance, context):
+
+        if context is None:
+            raise ContextRequiredError
+
         if self.context_used in context:
             context[self.context_used] += 1
             setattr(instance, self._slot_name, context[self.context_used])
