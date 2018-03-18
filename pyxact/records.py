@@ -342,9 +342,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         else:
             placeholder = dialects.DefaultDialect.placeholder
 
-        if any((not i in cls._fields for i in kwargs)):
+        for field in kwargs:
             if not field in cls._fields:
-                    raise ValueError('Specified field {0} is not valid'.format(field))
+                raise ValueError('Specified field {0} is not valid'.format(field))
 
         result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
         if kwargs:
