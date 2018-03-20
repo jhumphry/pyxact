@@ -190,7 +190,11 @@ class RowEnumIntField(AbstractIntField):
 
 class NumericField(SQLField):
     '''Represents a NUMERIC field in a database, which maps to decimal.Decimal
-    in Python. The scale and precision can be specified.'''
+    in Python. The scale and precision can be specified. Note that NUMERIC in
+    SQL represents a fixed-point decimal representation, wherease
+    decimal.Decimal in Python is a floating-point decimal representation. This
+    field tries to ensure that any unrepresentable values will be caught before
+    there is an attempt to write them to the database.'''
 
     def __init__(self, precision, scale=0,
                  allow_floats=False, inexact_quantize=False, rounding=None,
