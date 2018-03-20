@@ -174,21 +174,44 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         return True
 
-    def normalize(self):
-        '''Normalize a record that may have fixable inconsistencies. This
-        method is called at the end of the context_select method. After a call
-        to this method, the verify method should return True if this is at all
-        possible to achieve. The precise meaning of 'normalization' is
-        dependent on the domain for which SQLTransaction has been subclassed.
-        The default implementation for SQLTransaction retrieves all the context
-        information from the SQLRecords attached to the class and updates the
-        context fields.'''
+    def post_select_hook(self, context):
+        '''This method is called at the end of the context_select method. After
+        a call to this method, the a call to the verify() method should return
+        True if this is possible to achieve. The use of this hook is dependent
+        on the domain for which SQLTransaction has been subclassed. The default
+        implementation for SQLTransaction retrieves all the context information
+        from the SQLRecords attached to the class and updates the context
+        fields. This may be useful where only some of the context fields were
+        necessary to identify the records to retrieve, but having the other
+        context fields completed is useful for further processing.'''
 
         context = self.get_context_from_records()
 
         for field in self._context_fields:
             if field in context:
                 setattr(self, field, context[field])
+
+    def pre_insert_hook(self, context):
+        '''This method is called by routines that insert a transaction into the
+        database, after a context dictionary has been created but before any
+        records have been written. After a call to this method, the a call to
+        the verify() method should return True if this is possible to achieve.
+        The use of this hook is dependent on the domain for which
+        SQLTransaction has been subclassed. The default implementation does
+        nothing.'''
+
+        pass
+
+    def pre_update_hook(self, context):
+        '''This method is called by routines that update a transaction in the
+        database, after a context dictionary has been created but before any
+        records have been written. After a call to this method, the a call to
+        the verify() method should return True if this is possible to achieve.
+        The use of this hook is dependent on the domain for which
+        SQLTransaction has been subclassed. The default implementation does
+        nothing.'''
+
+        pass
 
     def get_context(self):
         '''Return a context dictionary created from any non-None values stored
@@ -261,6 +284,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
 
+        self.pre_insert_hook(context)
+
         if not self.verify():
             raise VerificationError
 
@@ -288,6 +313,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_new_context(cursor, dialect)
 
+        self.pre_insert_hook(context)
+
         if not self.verify():
             raise VerificationError
 
@@ -313,6 +340,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('BEGIN TRANSACTION;')
         context = self.get_context()
+
+        self.pre_update_hook(context)
 
         if not self.verify():
             raise VerificationError
@@ -381,7 +410,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-        self.normalize()
+        self.post_select_hook(context)
 
         if not self.verify():
             raise VerificationError
