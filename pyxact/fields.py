@@ -1,7 +1,7 @@
 '''This module defines SQLField and subclasses - the class hierarchy that
 defines and maps SQL types and values to Python types and values.'''
 
-import decimal
+import datetime, decimal
 from . import dialects, sequences, ContextRequiredError
 
 class SQLField:
@@ -318,3 +318,56 @@ class TextField(SQLField):
 
     def __init__(self, **kwargs):
         super().__init__(py_type=str, sql_type="TEXT", **kwargs)
+
+class TimestampField(SQLField):
+    '''Represents a TIMESTAMP with or without time zone.'''
+
+    def __init__(self, tz=True, **kwargs):
+        sql_type = 'TIMESTAMP WITH{} TIME ZONE'.format(('' if tz else 'OUT'))
+        super().__init__(py_type=datetime.datetime,
+                         sql_type=sql_type,
+                         **kwargs)
+        self.tz=tz
+
+    def __set__(self, instance, value):
+        if value is None:
+            if self.nullable:
+                instance.__setattr__(self._slot_name, None)
+            else:
+                raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
+
+        elif isinstance(value, datetime.datetime):
+            if (value.tzinfo is None and self.tz):
+                    raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''.format(self._name))
+            if (value.tzinfo is not None and not self.tz):
+                    raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''.format(self._name))
+            instance.__setattr__(self._slot_name, value)
+
+        elif isinstance(value, str):
+            if self.tz:
+                dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f%z')
+            else:
+                dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f')
+            instance.__setattr__(self._slot_name, dt_value)
+        else:
+            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
+                             .format(self._name, str(value), str(type(value)))) from ve_raised
+
+    def sql_type(self, dialect=None):
+        if (dialect and dialect.store_date_time_datetime_as_text) or \
+            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+            return "TEXT"
+        return self._sql_type
+
+class UTCNowTimestampField(TimestampField):
+    '''Represents a TIMESTAMP WITHOUT TIME ZONE that represents a UTC
+    timestamp. If get_context() is called on this class, the stored value will
+    be set to the current time in UTC.'''
+
+    def __init__(self, **kwargs):
+        super().__init__(tz=False,  **kwargs)
+
+    def get_context(self, instance, context):
+        now_utc = datetime.datetime.utcnow()
+        setattr(instance, self._slot_name, now_utc)
+        return now_utc

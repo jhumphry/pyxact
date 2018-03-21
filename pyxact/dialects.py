@@ -1,7 +1,7 @@
 '''This module defines classes that are used as singleton objects to define the
 various flavours of SQL used by different database adaptors.'''
 
-import decimal
+import datetime, decimal
 
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
@@ -10,6 +10,7 @@ class SQLDialect:
     placeholder = '?'
 
     store_decimal_as_text = False
+    store_date_time_datetime_as_text = False
 
     truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
 
@@ -32,6 +33,7 @@ class sqliteDialect(SQLDialect):
     placeholder = '?' # The placeholder to use for parametised queries
 
     store_decimal_as_text = False
+    store_date_time_datetime_as_text = True
 
     truncate_table_sql = '''DELETE FROM {table_name} WHERE 1=1;'''
 
@@ -43,6 +45,11 @@ class sqliteDialect(SQLDialect):
             return value
         elif isinstance(value, decimal.Decimal):
             return str(value)
+        elif isinstance(value, datetime.datetime):
+            if value.tzinfo:
+                return value.strftime('%Y-%M-%dT%H:%m:%S.%f%z')
+            else:
+                return value.strftime('%Y-%M-%dT%H:%m:%S.%f')
 
         raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
