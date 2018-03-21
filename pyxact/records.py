@@ -280,22 +280,30 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return dialect.truncate_table_sql.format(table_name=cls._table_name)
 
     @classmethod
-    def insert_sql(cls, dialect=None):
+    def insert_sql_command(cls, dialect=None):
         '''Returns a string containing the parametrised INSERT command (in the
         given SQL dialect) required to insert data into the SQL table
         represented by the SQLRecord.'''
 
-        if dialect:
-            placeholder = dialect.placeholder
-        else:
-            placeholder = dialects.DefaultDialect.placeholder
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
         result = 'INSERT INTO ' + cls._table_name + ' ('
         result += cls.column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
-            result += (placeholder+', ')*(cls._field_count-1)+placeholder
+            result += (dialect.placeholder+', ')*(cls._field_count-1)+dialect.placeholder
         result += ');'
         return result
+
+    def insert_sql(self, context=None, dialect=None):
+        '''This method constructs an SQL INSERT command and returns a tuple
+        containing a suitable string and list of values.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        return (self.insert_sql_command(dialect), self.values_sql_repr(context, dialect))
 
     def insert_sql_unsafe(self, context=None, dialect=None):
         '''Returns a string containing the INSERT command (in the given SQL

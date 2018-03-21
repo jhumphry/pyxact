@@ -320,12 +320,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for record_name in self._records:
             record = getattr(self, record_name)
-            cursor.execute(record.insert_sql(dialect),
-                           record.values_sql_repr(context, dialect))
+            cursor.execute(*record.insert_sql(context, dialect))
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist.record_type.insert_sql(dialect),
+            cursor.executemany(recordlist.record_type.insert_sql_command(dialect),
                                recordlist.values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
