@@ -219,7 +219,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         to the SQLTransaction. This does not update sequences or perform any
         database access.'''
 
-        result = dict()
+        result = { '__name__' : self.__class__.__name__ }
         for i in self._context_fields:
             tmp = getattr(self, i)
             if tmp:
@@ -235,7 +235,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = dict()
+        result = { '__name__' : self.__class__.__name__ }
+
         for field_name, field in self._context_fields.items():
             if isinstance(field, fields.SequenceIntField):
                 value = field.sequence.nextval(cursor, dialect)
