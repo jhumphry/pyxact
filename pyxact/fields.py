@@ -76,6 +76,15 @@ class SQLField:
 
         return instance.__getattribute__(self._slot_name)
 
+    def update(self, instance, context, cursor, dialect=None):
+        '''Given a (possibly partially-completed) context dictionary, a
+        database cursor and a database dialect object, this method may retrieve
+        data or do some other calculation in order to update the value in the
+        SQLField instance. It should also return the value. The default action
+        is to simply return the existing value unchanged.'''
+
+        return instance.__getattribute__(self._slot_name)
+
     def sql_type(self, dialect=None):
         '''Returns the SQL definition of the data type of the field in the
         appropriate database dialect. It includes parameters (such as NUMERIC
@@ -98,6 +107,8 @@ class AbstractIntField(SQLField):
     represents those SQL types represented in Python by int.'''
 
     def convert(self, value):
+        if isinstance(value, int):
+            return value
         if isinstance(value, str):
             return int(value)
         raise ValueError
@@ -160,6 +171,12 @@ class SequenceIntField(AbstractIntField):
         self.sequence = sequence
         super().__init__(py_type=int, sql_type=None,
                          nullable=True, **kwargs)
+
+    def update(self, instance, context, cursor, dialect=None):
+
+        value = self.sequence.nextval(cursor, dialect)
+        setattr(instance, self._slot_name, value)
+        return value
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
@@ -337,7 +354,7 @@ class UTCNowTimestampField(TimestampField):
     def __init__(self, **kwargs):
         super().__init__(tz=False,  **kwargs)
 
-    def get_context(self, instance, context):
+    def update(self, instance, context, cursor, dialect=None):
         now_utc = datetime.datetime.utcnow()
         setattr(instance, self._slot_name, now_utc)
         return now_utc

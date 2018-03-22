@@ -182,7 +182,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
 INVALID_SQLQUERY_ATTRIBUTE_NAMES = frozenset(dir(SQLQuery))
 
-class QueryField(fields.SQLField):
+class QueryIntField(fields.IntField):
     '''Represents an context field in an SQLTransaction that has a link to an
     SQLQuery. It can be retrieved and set as a normal SQLField. When
     get_new_context is called on the SQLTransaction the query will be executed
@@ -200,5 +200,12 @@ class QueryField(fields.SQLField):
                              'pyxact.queries.SQLQuery')
 
         self.query = query
-        super().__init__(py_type=int, sql_type=None,
-                         nullable=True, **kwargs)
+        super().__init__(**kwargs)
+
+    def update(self, instance, context, cursor, dialect=None):
+
+        query = self.query(**context)
+        query.execute(cursor, dialect)
+        value = query.result_singlevalue(cursor)
+        setattr(instance, self._slot_name, self.convert(value))
+        return value

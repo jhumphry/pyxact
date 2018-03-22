@@ -229,8 +229,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
     def get_new_context(self, cursor, dialect=None):
         '''Return a context dictionary created from any non-None values of the
         SQLField objects directly attached as attributes to the SQLTransaction.
-        This method will identify SequenceIntFields and QueryFields, and call
-        the database to update the values.'''
+        This method will call the update() method on each of the SQLField
+        objects.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -238,15 +238,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = { '__name__' : self.__class__.__name__ }
 
         for field_name, field in self._context_fields.items():
-            if isinstance(field, fields.SequenceIntField):
-                value = field.sequence.nextval(cursor, dialect)
-                setattr(self, field_name, value)
-            elif isinstance(field, queries.QueryField):
-                query = field.query(**result)
-                query.execute(cursor, dialect)
-                value = query.result_singlevalue(cursor)
-                setattr(self, field_name, value)
-            tmp = getattr(self, field_name)
+            tmp =  field.update(instance=self, context=result, cursor=cursor, dialect=dialect)
             if tmp:
                 result[field_name] = tmp
         return result
