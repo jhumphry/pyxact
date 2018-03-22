@@ -31,15 +31,15 @@ class SQLField:
             if self.nullable:
                 instance.__setattr__(self._slot_name, None)
             else:
-                raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
+                raise TypeError('''Field '{0}' can not be null.'''.format(self._name))
         elif self._py_type is not None and isinstance(value, self._py_type):
                 instance.__setattr__(self._slot_name, value)
         else:
             try:
                 instance.__setattr__(self._slot_name, self.convert(value))
-            except ValueError as ve_raised:
-                raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                                 .format(self._name, str(value), str(type(value)))) from ve_raised
+            except TypeError as te_raised:
+                raise TypeError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
+                                 .format(self._name, str(value), str(type(value)))) from te_raised
 
     def __get__(self, instance, owner):
         if instance is not None:
@@ -56,9 +56,9 @@ class SQLField:
         not of the type (if any) passed into the constructor under the py_type
         parameter. Subclasses may (but are not obliged to) attempt to convert
         the provided value in an appropriate type, and if they cannot they
-        should raise ValueError.'''
+        should raise TypeError.'''
 
-        raise ValueError
+        raise TypeError
 
     def get(self, instance):
         '''This method attempts to retrieve the associated value from the given
@@ -111,7 +111,7 @@ class AbstractIntField(SQLField):
             return value
         if isinstance(value, str):
             return int(value)
-        raise ValueError
+        raise TypeError
 
 class IntField(AbstractIntField):
     '''Represents an INTEGER field in a database.'''
@@ -166,7 +166,7 @@ class SequenceIntField(AbstractIntField):
 
     def __init__(self, sequence, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
-            raise ValueError('Sequence provided must be an instance of '
+            raise TypeError('Sequence provided must be an instance of '
                              'pyxact.sequences.SQLSequence')
         self.sequence = sequence
         super().__init__(py_type=int, sql_type=None,
@@ -242,7 +242,7 @@ class NumericField(SQLField):
               (isinstance(value, float) and self.allow_floats):
             return decimal.Decimal(value).quantize(self.quantization, context=self.decimal_context)
         else:
-            raise ValueError
+            raise TypeError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_decimal_as_text) or \
@@ -266,7 +266,7 @@ class BooleanField(SQLField):
     def convert(self, value):
         if isinstance(value, int):
             return bool(value)
-        raise ValueError
+        raise TypeError
 
 class VarCharField(SQLField):
     '''Represents a VARCHAR field in a database, which maps to str in Python.
@@ -291,7 +291,7 @@ class VarCharField(SQLField):
                 return value
 
         else:
-            raise ValueError
+            raise TypeError
 
     def sql_type(self, dialect=None):
         return 'CHARACTER VARYING({0})'.format(self._max_length)
@@ -338,7 +338,7 @@ class TimestampField(SQLField):
                 dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f')
             return dt_value
         else:
-            raise ValueError
+            raise TypeError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
@@ -373,7 +373,7 @@ class DateField(SQLField):
         elif isinstance(value, str):
             return datetime.datetime.strptime(value, '%Y-%M-%d').date()
         else:
-            raise ValueError
+            raise TypeError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
@@ -414,7 +414,7 @@ class TimeField(SQLField):
             dt_value = datetime.datetime.strptime(value, '%H:%m:%S.%f')
             return datetime.datetime.strptime(value, '%H:%m:%S.%f').time()
         else:
-            raise ValueError
+            raise TypeError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \

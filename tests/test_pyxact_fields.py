@@ -65,7 +65,7 @@ def test_int(context, holder, holder_class):
     with pytest.raises(ValueError, message='IntField should not have accepted a float in a string value'):
         holder.int_field = '1.2'
 
-    with pytest.raises(ValueError, message='SQLField should not have accepted a None value'):
+    with pytest.raises(TypeError, message='SQLField should not have accepted a None value'):
         holder.int_field = None
 
     holder.int_field_nullable = None
@@ -127,7 +127,7 @@ def test_numericfield(holder):
     holder.numeric_field = Decimal('1.23')
     assert holder.numeric_field == Decimal('1.23')
 
-    with pytest.raises(ValueError, message='NumericField should not have accepted a float'):
+    with pytest.raises(TypeError, message='NumericField should not have accepted a float'):
         holder.numeric_field = 1.25
 
     with pytest.raises(Inexact, message='NumericField should not have accepted a decimal with inexact quantization'):
@@ -190,7 +190,7 @@ def test_char_varcharfield(holder):
     assert holder.char_field == "ABC"
 
     with pytest.raises(ValueError,
-                        message='VarChar field with silent_truncate=False should reject long string'):
+                       message='VarChar field with silent_truncate=False should reject long string'):
         holder.varchar_field = "Lorem Ipsum"
 
     holder.varchar_field_truncate = "Lorem Ipsum"
