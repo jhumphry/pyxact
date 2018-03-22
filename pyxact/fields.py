@@ -1,7 +1,8 @@
 '''This module defines SQLField and subclasses - the class hierarchy that
 defines and maps SQL types and values to Python types and values.'''
 
-import datetime, decimal
+import datetime
+import decimal
 from . import dialects, sequences, ContextRequiredError
 
 class SQLField:
@@ -33,13 +34,13 @@ class SQLField:
             else:
                 raise TypeError('''Field '{0}' can not be null.'''.format(self._name))
         elif self._py_type is not None and isinstance(value, self._py_type):
-                instance.__setattr__(self._slot_name, value)
+            instance.__setattr__(self._slot_name, value)
         else:
             try:
                 instance.__setattr__(self._slot_name, self.convert(value))
             except TypeError as te_raised:
                 raise TypeError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                                 .format(self._name, str(value), str(type(value)))) from te_raised
+                                .format(self._name, str(value), str(type(value)))) from te_raised
 
     def __get__(self, instance, owner):
         if instance is not None:
@@ -167,7 +168,7 @@ class SequenceIntField(AbstractIntField):
     def __init__(self, sequence, **kwargs):
         if not isinstance(sequence, sequences.SQLSequence):
             raise TypeError('Sequence provided must be an instance of '
-                             'pyxact.sequences.SQLSequence')
+                            'pyxact.sequences.SQLSequence')
         self.sequence = sequence
         super().__init__(py_type=int, sql_type=None,
                          nullable=True, **kwargs)
@@ -321,15 +322,17 @@ class TimestampField(SQLField):
         super().__init__(py_type=None,
                          sql_type=sql_type,
                          **kwargs)
-        self.tz=tz
+        self.tz = tz
 
     def convert(self, value):
 
         if isinstance(value, datetime.datetime):
             if (value.tzinfo is None and self.tz):
-                    raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''.format(self._name))
+                    raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''
+                                     .format(self._name))
             if (value.tzinfo is not None and not self.tz):
-                    raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''.format(self._name))
+                    raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''
+                                     .format(self._name))
             return value
         elif isinstance(value, str):
             if self.tz:
@@ -348,11 +351,12 @@ class TimestampField(SQLField):
 
 class UTCNowTimestampField(TimestampField):
     '''Represents a TIMESTAMP WITHOUT TIME ZONE that represents a UTC
-    timestamp. If get_context() is called on this class, the stored value will
-    be set to the current time in UTC.'''
+    timestamp. If update() is called on an instance of this class, the stored
+    value in the associated SQLRecord or SQLTransaction will be set to the
+    current time and date in UTC, according to the local system clock.'''
 
     def __init__(self, **kwargs):
-        super().__init__(tz=False,  **kwargs)
+        super().__init__(tz=False, **kwargs)
 
     def update(self, instance, context, cursor, dialect=None):
         now_utc = datetime.datetime.utcnow()
@@ -385,9 +389,6 @@ class TodayDateField(DateField):
     '''Represents a DATE. If update() is called on this class, the stored value
     will be set to the current date, according to the local system clock.'''
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def update(self, instance, context, cursor, dialect=None):
         today = datetime.date.today()
         setattr(instance, self._slot_name, today)
@@ -407,8 +408,8 @@ class TimeField(SQLField):
 
         if isinstance(value, datetime.time):
             if value.tzinfo is not None:
-                    raise ValueError('''Field '{0}' needs a time object without tzinfo.'''
-                                     .format(self._name))
+                raise ValueError('''Field '{0}' needs a time object without tzinfo.'''
+                                 .format(self._name))
             return value
         elif isinstance(value, str):
             dt_value = datetime.datetime.strptime(value, '%H:%m:%S.%f')
@@ -424,12 +425,9 @@ class TimeField(SQLField):
 
 class UTCNowTimeField(TimeField):
     '''Represents a TIME WITHOUT TIME ZONE that represents a UTC time. If
-    udpate() is called on an instance of this class, the stored value in the
+    update() is called on an instance of this class, the stored value in the
     associated SQLRecord or SQLTransaction will be set to the current time in
     UTC, according to the local system clock.'''
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def update(self, instance, context, cursor, dialect=None):
         now_utc = datetime.datetime.utcnow().time()

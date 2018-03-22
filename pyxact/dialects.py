@@ -1,7 +1,8 @@
 '''This module defines classes that are used as singleton objects to define the
 various flavours of SQL used by different database adaptors.'''
 
-import datetime, decimal
+import datetime
+import decimal
 
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
@@ -48,8 +49,7 @@ class sqliteDialect(SQLDialect):
         elif isinstance(value, datetime.datetime):
             if value.tzinfo:
                 return value.strftime('%Y-%M-%dT%H:%m:%S.%f%z')
-            else:
-                return value.strftime('%Y-%M-%dT%H:%m:%S.%f')
+            return value.strftime('%Y-%M-%dT%H:%m:%S.%f')
         elif isinstance(value, datetime.date):
             return value.strftime('%Y-%M-%d')
         elif isinstance(value, datetime.time):

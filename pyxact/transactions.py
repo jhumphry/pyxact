@@ -219,7 +219,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         to the SQLTransaction. This does not update sequences or perform any
         database access.'''
 
-        result = { '__name__' : self.__class__.__name__ }
+        result = {'__name__' : self.__class__.__name__}
         for i in self._context_fields:
             tmp = getattr(self, i)
             if tmp:
@@ -235,10 +235,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = { '__name__' : self.__class__.__name__ }
+        result = {'__name__' : self.__class__.__name__}
 
         for field_name, field in self._context_fields.items():
-            tmp =  field.update(instance=self, context=result, cursor=cursor, dialect=dialect)
+            tmp = field.update(instance=self, context=result, cursor=cursor, dialect=dialect)
             if tmp:
                 result[field_name] = tmp
         return result
@@ -354,9 +354,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         to the SQLTransaction and stored them in a context dictionary under the
         name of the attribute. It then attempts to use this dictionary to
         retrieve all of the SQLRecord and SQLRecordList objects stored in
-        SQLTransactionField attributes. The normalise method is then called,
-        followed by the verify method to check that the result meets internal
-        consistency requirements.'''
+        SQLTransactionField attributes. The post_select_hook method is then
+        called, followed by the verify method to check that the result meets
+        internal consistency requirements.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
