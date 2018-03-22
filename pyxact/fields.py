@@ -32,10 +32,8 @@ class SQLField:
                 instance.__setattr__(self._slot_name, None)
             else:
                 raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
-
-        elif isinstance(value, self._py_type):
-            instance.__setattr__(self._slot_name, value)
-
+        elif self._py_type is not None and isinstance(value, self._py_type):
+                instance.__setattr__(self._slot_name, value)
         else:
             try:
                 instance.__setattr__(self._slot_name, self.convert(value))
@@ -55,8 +53,10 @@ class SQLField:
 
     def convert(self, value):
         '''The convert method is called if __set__ is passed a value that is
-        not of the expected type. Subclasses may (but are not obliged to)
-        attempt to convert the provided value into the type expected.'''
+        not of the type (if any) passed into the constructor under the py_type
+        parameter. Subclasses may (but are not obliged to) attempt to convert
+        the provided value in an appropriate type, and if they cannot they
+        should raise ValueError.'''
 
         raise ValueError
 
@@ -199,7 +199,7 @@ class NumericField(SQLField):
     def __init__(self, precision, scale=0,
                  allow_floats=False, inexact_quantize=False, rounding=None,
                  **kwargs):
-        super().__init__(py_type=decimal.Decimal, **kwargs)
+        super().__init__(py_type=None, **kwargs)
         self.precision = precision
         self.scale = scale
         self.quantization = decimal.Decimal(1).scaleb(-scale)
@@ -218,30 +218,14 @@ class NumericField(SQLField):
                                                rounding=rounding,
                                                traps=traps)
 
-    def __set__(self, instance, value):
-        if value is None:
-            if self.nullable:
-                instance.__setattr__(self._slot_name, None)
-            else:
-                raise ValueError('''Field '{0}' cannot be null.'''.format(self._name))
-        elif isinstance(value, decimal.Decimal):
-            instance.__setattr__(self._slot_name,
-                                 value.quantize(self.quantization,
-                                                context=self.decimal_context))
+    def convert(self, value):
+        if isinstance(value, decimal.Decimal):
+            return value.quantize(self.quantization, context=self.decimal_context)
         elif isinstance(value, (int, str)) or \
               (isinstance(value, float) and self.allow_floats):
-            new_value = decimal.Decimal(value).quantize(self.quantization,
-                                                        context=self.decimal_context)
-            instance.__setattr__(self._slot_name, new_value)
-        else:
-            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                             .format(self._name, str(value), str(type(value))))
-
-    def convert(self, value):
-        if isinstance(value, (int, str)) or \
-            (isinstance(value, float) and self.allow_floats):
             return decimal.Decimal(value).quantize(self.quantization, context=self.decimal_context)
-        raise ValueError
+        else:
+            raise ValueError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_decimal_as_text) or \
@@ -274,30 +258,23 @@ class VarCharField(SQLField):
     or will trigger an exception.'''
 
     def __init__(self, max_length, silent_truncate=False, **kwargs):
-        super().__init__(py_type=str, **kwargs)
+        super().__init__(py_type=None, **kwargs)
         self._max_length = max_length
         self._silent_truncate = silent_truncate
 
-    def __set__(self, instance, value):
-        if value is None:
-            if self.nullable:
-                instance.__setattr__(self._slot_name, None)
-            else:
-                raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
-
-        elif isinstance(value, str):
+    def convert(self, value):
+        if isinstance(value, str):
             if len(value) > self._max_length:
                 if self._silent_truncate:
-                    instance.__setattr__(self._slot_name, value[0:self._max_length])
+                    return value[0:self._max_length]
                 else:
                     raise ValueError('''Field '{0}' can not accept strings longer than {1}.'''
                                      .format(self._name, self._max_length))
             else:
-                instance.__setattr__(self._slot_name, value)
+                return value
 
         else:
-            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                             .format(self._name, str(value), str(type(value))))
+            raise ValueError
 
     def sql_type(self, dialect=None):
         return 'CHARACTER VARYING({0})'.format(self._max_length)
@@ -324,34 +301,27 @@ class TimestampField(SQLField):
 
     def __init__(self, tz=True, **kwargs):
         sql_type = 'TIMESTAMP WITH{} TIME ZONE'.format(('' if tz else 'OUT'))
-        super().__init__(py_type=datetime.datetime,
+        super().__init__(py_type=None,
                          sql_type=sql_type,
                          **kwargs)
         self.tz=tz
 
-    def __set__(self, instance, value):
-        if value is None:
-            if self.nullable:
-                instance.__setattr__(self._slot_name, None)
-            else:
-                raise ValueError('''Field '{0}' can not be null.'''.format(self._name))
+    def convert(self, value):
 
-        elif isinstance(value, datetime.datetime):
+        if isinstance(value, datetime.datetime):
             if (value.tzinfo is None and self.tz):
                     raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''.format(self._name))
             if (value.tzinfo is not None and not self.tz):
                     raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''.format(self._name))
-            instance.__setattr__(self._slot_name, value)
-
+            return value
         elif isinstance(value, str):
             if self.tz:
                 dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f%z')
             else:
                 dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f')
-            instance.__setattr__(self._slot_name, dt_value)
+            return dt_value
         else:
-            raise ValueError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                             .format(self._name, str(value), str(type(value)))) from ve_raised
+            raise ValueError
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
