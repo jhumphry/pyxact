@@ -435,3 +435,9 @@ class UTCNowTimeField(TimeField):
         now_utc = datetime.datetime.utcnow().time()
         setattr(instance, self._slot_name, now_utc)
         return now_utc
+
+class BlobField(SQLField):
+    '''Represents a BLOB field in a database, which maps to bytes in Python.'''
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=bytes, sql_type="BLOB", **kwargs)
