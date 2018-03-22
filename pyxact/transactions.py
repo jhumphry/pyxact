@@ -213,7 +213,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         pass
 
-    def get_context(self):
+    def _get_context(self):
         '''Return a context dictionary created from any non-None values stored
         under the names of the SQLField objects directly attached as attributes
         to the SQLTransaction. This does not update sequences or perform any
@@ -226,7 +226,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 result[i] = tmp
         return result
 
-    def get_new_context(self, cursor, dialect=None):
+    def _get_updated_context(self, cursor, dialect=None):
         '''Return a context dictionary created from any non-None values of the
         SQLField objects directly attached as attributes to the SQLTransaction.
         This method will call the update() method on each of the SQLField
@@ -257,12 +257,12 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for record_name in self._records:
             record = getattr(self, record_name)
-            context.update(record.get_context())
+            context.update(record.context_values_stored())
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
             for record in recordlist:
-                context.update(record.get_context())
+                context.update(record.context_values_stored())
 
         return context
 
@@ -275,7 +275,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
-        context = self.get_context()
+        context = self._get_context()
 
         self.pre_insert_hook(context)
 
@@ -304,7 +304,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
-        context = self.get_new_context(cursor, dialect)
+        context = self._get_updated_context(cursor, dialect)
 
         self.pre_insert_hook(context)
 
@@ -331,7 +331,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
-        context = self.get_context()
+        context = self._get_context()
 
         self.pre_update_hook(context)
 
@@ -362,7 +362,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         cursor.execute('BEGIN TRANSACTION;')
-        context = self.get_context()
+        context = self._get_context()
 
         for record_name, record_field in self._records.items():
             record_type = record_field._record_type

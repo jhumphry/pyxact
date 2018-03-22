@@ -522,9 +522,9 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ';'
         return (result, column_values)
 
-    def get_context(self):
+    def context_values_stored(self):
         '''Returns a dictionary containing all of the (non-None) context values
-        that would be used by the fields in the record.'''
+        that are stored by context-sensitive fields in the record.'''
 
         context = {}
 

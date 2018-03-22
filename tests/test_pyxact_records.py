@@ -41,7 +41,7 @@ def test_colliding_field_names():
                                                ' with names that collide with built-in methods/attributes.'):
         class FailRecord(records.SQLRecord, table_name='sample_record_class'):
             ok_name = fields.IntField()
-            get_context = fields.IntField()
+            context_values_stored = fields.IntField()
 
 def test_initialization(sample_record_class):
     r1 = sample_record_class()
@@ -142,13 +142,13 @@ def test_fields_values_items(sample_record_class):
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
     assert field_values == [4, True, 3.0, 'test']
 
-def test_get_context(sample_record_class):
+def test_context_values_stored(sample_record_class):
     r1 = sample_record_class(trans_id=1, flag=True, amount=3.0, narrative='test')
 
-    assert r1.get_context() == {'trans_id' : 1}
+    assert r1.context_values_stored() == {'trans_id' : 1}
 
     r1.trans_id = 3
 
-    assert r1.get_context() == {'trans_id' : 3}
+    assert r1.context_values_stored() == {'trans_id' : 3}
 
 
