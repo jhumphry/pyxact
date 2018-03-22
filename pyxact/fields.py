@@ -358,3 +358,80 @@ class UTCNowTimestampField(TimestampField):
         now_utc = datetime.datetime.utcnow()
         setattr(instance, self._slot_name, now_utc)
         return now_utc
+
+class DateField(SQLField):
+    '''Represents a DATE.'''
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=None,
+                         sql_type='DATE',
+                         **kwargs)
+
+    def convert(self, value):
+        if isinstance(value, datetime.date):
+            return value
+        elif isinstance(value, str):
+            return datetime.datetime.strptime(value, '%Y-%M-%d').date()
+        else:
+            raise ValueError
+
+    def sql_type(self, dialect=None):
+        if (dialect and dialect.store_date_time_datetime_as_text) or \
+            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+            return "TEXT"
+        return self._sql_type
+
+class TodayDateField(DateField):
+    '''Represents a DATE. If update() is called on this class, the stored value
+    will be set to the current date, according to the local system clock.'''
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def update(self, instance, context, cursor, dialect=None):
+        today = datetime.date.today()
+        setattr(instance, self._slot_name, today)
+        return today
+
+class TimeField(SQLField):
+    '''Represents a TIME WITHOUT TIME ZONE. Note that while SQL supports the
+    idea of a TIME values with time zone information, they are very hard to use
+    without the associated date, so are not supported. '''
+
+    def __init__(self, **kwargs):
+        super().__init__(py_type=None,
+                         sql_type='TIME WITHOUT TIME ZONE',
+                         **kwargs)
+
+    def convert(self, value):
+
+        if isinstance(value, datetime.time):
+            if value.tzinfo is not None:
+                    raise ValueError('''Field '{0}' needs a time object without tzinfo.'''
+                                     .format(self._name))
+            return value
+        elif isinstance(value, str):
+            dt_value = datetime.datetime.strptime(value, '%H:%m:%S.%f')
+            return datetime.datetime.strptime(value, '%H:%m:%S.%f').time()
+        else:
+            raise ValueError
+
+    def sql_type(self, dialect=None):
+        if (dialect and dialect.store_date_time_datetime_as_text) or \
+            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+            return "TEXT"
+        return self._sql_type
+
+class UTCNowTimeField(TimeField):
+    '''Represents a TIME WITHOUT TIME ZONE that represents a UTC time. If
+    udpate() is called on an instance of this class, the stored value in the
+    associated SQLRecord or SQLTransaction will be set to the current time in
+    UTC, according to the local system clock.'''
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def update(self, instance, context, cursor, dialect=None):
+        now_utc = datetime.datetime.utcnow().time()
+        setattr(instance, self._slot_name, now_utc)
+        return now_utc

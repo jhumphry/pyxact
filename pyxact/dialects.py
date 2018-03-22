@@ -50,6 +50,10 @@ class sqliteDialect(SQLDialect):
                 return value.strftime('%Y-%M-%dT%H:%m:%S.%f%z')
             else:
                 return value.strftime('%Y-%M-%dT%H:%m:%S.%f')
+        elif isinstance(value, datetime.date):
+            return value.strftime('%Y-%M-%d')
+        elif isinstance(value, datetime.time):
+            return value.strftime('%H:%m:%S.%f')
 
         raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
