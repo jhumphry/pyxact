@@ -100,3 +100,27 @@ def test_update(sample_table, sample_record_class, sample_records, sqlitecur):
     # Check there are still only four rows
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
     assert sqlitecur.fetchone() == (4,)
+
+def test_delete(sample_table, sample_record_class, sample_records, sqlitecur):
+
+    # Ensure the table is empty
+    sqlitecur.execute('DELETE FROM sample_table WHERE 1=1')
+
+    # Insert all four records
+    for i in sample_records:
+        sqlitecur.execute(*i.insert_sql())
+
+    # Check there are four rows
+    sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
+    assert sqlitecur.fetchone() == (4,)
+
+    # Delete one record
+    sqlitecur.execute(*sample_records[2].delete_sql())
+
+    # Check there are now three rows
+    sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
+    assert sqlitecur.fetchone() == (3,)
+
+    # Check the correct row was deleted
+    sqlitecur.execute('SELECT COUNT(*) FROM sample_table WHERE trans_id=3;')
+    assert sqlitecur.fetchone() == (0,)
