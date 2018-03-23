@@ -52,7 +52,6 @@ def holder_class(field_test_seq):
 
 @pytest.fixture()
 def holder(holder_class):
-    print("New holder")
     return holder_class()
 
 @pytest.fixture()
@@ -71,7 +70,8 @@ def test_int(context, holder, holder_class):
     holder.int_field = '4'
     assert holder.int_field == 4
 
-    with pytest.raises(ValueError, message='IntField should not have accepted a float in a string value'):
+    with pytest.raises(ValueError, message='IntField should not have accepted a float '
+                                           'in a string value'):
         holder.int_field = '1.2'
 
     with pytest.raises(TypeError, message='SQLField should not have accepted a None value'):
@@ -103,7 +103,8 @@ def test_contextintfield(context, holder, holder_class):
 
     null_context = {}
 
-    with pytest.raises(ContextRequiredError, message='ContextIntField.get_Context should complain if required context is missing'):
+    with pytest.raises(ContextRequiredError, message='ContextIntField.get_Context should complain '
+                                                     'if required context is missing'):
         holder_class.context_int_field.get_context(holder, null_context)
 
 def test_sequenceintfield(holder_class):
@@ -139,10 +140,12 @@ def test_numericfield(holder):
     with pytest.raises(TypeError, message='NumericField should not have accepted a float'):
         holder.numeric_field = 1.25
 
-    with pytest.raises(Inexact, message='NumericField should not have accepted a decimal with inexact quantization'):
+    with pytest.raises(Inexact, message='NumericField should not have accepted a decimal '
+                                        'with inexact quantization'):
         holder.numeric_field = Decimal('1.234')
 
-    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a decimal too large for the quantization/precision'):
+    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a '
+                                                 'decimal too large for the quantization/precision'):
         holder.numeric_field = Decimal('12345')
 
     holder.numeric_field_from_floats = 1.5
