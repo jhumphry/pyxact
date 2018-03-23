@@ -1,6 +1,7 @@
 # Test pyxact.fields
 
 from decimal import Decimal, Inexact, InvalidOperation
+import datetime
 
 import pytest
 from pyxact import ContextRequiredError
@@ -38,6 +39,14 @@ def holder_class(field_test_seq):
         varchar_field=fields.VarCharField(max_length=5)
         varchar_field_truncate=fields.VarCharField(max_length=5, silent_truncate=True)
         char_field=fields.CharField(max_length=3)
+        timestamp_field=fields.TimestampField(tz=True)
+        timestamp_notz_field=fields.TimestampField(tz=False)
+        utcnowtimestamp_field=fields.UTCNowTimestampField()
+        time_field=fields.TimeField()
+        utcnowtime_field=fields.UTCNowTimeField()
+        date_field=fields.DateField()
+        todaydate_field=fields.TodayDateField()
+        blob_field=fields.BlobField()
 
     return Holder
 
@@ -194,3 +203,76 @@ def test_char_varcharfield(holder):
         holder.varchar_field = "Lorem Ipsum"
 
     holder.varchar_field_truncate = "Lorem Ipsum"
+
+def test_datetime(holder, holder_class):
+    # timestamp_field=fields.TimestampField(tz=True)
+    # timestamp_notz_field=fields.TimestampField(tz=False)
+    # utcnowtimestamp_field=fields.UTCNowTimestampField()
+
+    holder_class.utcnowtimestamp_field.update(holder, None, None, None)
+    timestamp1 = holder.utcnowtimestamp_field
+    holder_class.utcnowtimestamp_field.update(holder, None, None, None)
+    timestamp2 = holder.utcnowtimestamp_field
+    assert timestamp2 > timestamp1
+
+    holder.timestamp_notz_field = timestamp1
+    assert holder.timestamp_notz_field == timestamp1
+
+    with pytest.raises(ValueError, message='A timestamp field that requires a time zone should '
+                                           'have rejected an input value without one.'):
+        holder.timestamp_field = timestamp2
+
+    holder.timestamp_field = '2010-06-30T09:30:52.6541+0100'
+
+    with pytest.raises(ValueError, message='A timestamp field that requires a time zone should have '
+                                           'rejected an input value without one.'):
+        holder.timestamp_field = '2010-06-30T09:30:52.5434'
+
+
+    holder.timestamp_notz_field = '2010-06-30T09:30:52.5434'
+    with pytest.raises(ValueError, message='A timestamp field that does not require a time zone should '
+                                           'have rejected an input value with one.'):
+        holder.timestamp_notz_field = '2010-06-30T09:30:52.5434+0530'
+
+
+def test_date_time(holder, holder_class):
+    # time_field=fields.TimeField()
+    # utcnowtime_field=fields.UTCNowTimeField()
+    # date_field=fields.DateField()
+    # todaydate_field=fields.TodayDateField()
+
+    holder_class.utcnowtime_field.update(holder, None, None, None)
+    time1 = holder.utcnowtime_field
+    holder.time_field = time1
+    holder_class.todaydate_field.update(holder, None, None, None)
+    date1 = holder.todaydate_field
+    holder.date_field = date1
+
+    holder_class.utcnowtime_field.update(holder, None, None, None)
+    time2 = holder.utcnowtime_field
+    holder_class.todaydate_field.update(holder, None, None, None)
+    date2 = holder.todaydate_field
+
+    # Don't forget people running the test over midnight!
+    # (we are ignoring people for whom the test takes more than 24 hours...
+    assert (date2 == date1 and time2 > time1) or (date2 > date1 and time2 < time1)
+
+    holder.time_field = '13:45:54.123456'
+    with pytest.raises(ValueError, message='TimeField should reject invalid time strings.'):
+        holder.time_field = 'Hello, World!'
+    with pytest.raises(ValueError, message='TimeField should reject impossible times.'):
+        holder.time_field = '25:45:54.12344'
+
+    holder.date_field = '1956-08-14'
+    with pytest.raises(ValueError, message='DateField should reject invalid date strings.'):
+        holder.date_field = 'Hello, World!'
+    with pytest.raises(ValueError, message='DateField should reject impossible dates.'):
+        holder.date_field = '1999-06-31'
+
+def test_blobfield(holder):
+    holder.blob_field = b'Test\0Binary\0'
+    assert holder.blob_field == b'Test\0Binary\0'
+
+    holder.blob_field = b'\0Field!'
+    assert holder.blob_field == b'\0Field!'
+
