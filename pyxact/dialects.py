@@ -48,12 +48,12 @@ class sqliteDialect(SQLDialect):
             return str(value)
         elif isinstance(value, datetime.datetime):
             if value.tzinfo:
-                return value.strftime('%Y-%M-%dT%H:%m:%S.%f%z')
-            return value.strftime('%Y-%M-%dT%H:%m:%S.%f')
+                return value.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+            return value.strftime('%Y-%m-%dT%H:%M:%S.%f')
         elif isinstance(value, datetime.date):
-            return value.strftime('%Y-%M-%d')
+            return value.strftime('%Y-%m-%d')
         elif isinstance(value, datetime.time):
-            return value.strftime('%H:%m:%S.%f')
+            return value.strftime('%H:%M:%S.%f')
 
         raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 

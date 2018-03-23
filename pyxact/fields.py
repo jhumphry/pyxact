@@ -336,9 +336,9 @@ class TimestampField(SQLField):
             return value
         elif isinstance(value, str):
             if self.tz:
-                dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f%z')
+                dt_value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f%z')
             else:
-                dt_value = datetime.datetime.strptime(value, '%Y-%M-%dT%H:%m:%S.%f')
+                dt_value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')
             return dt_value
         else:
             raise TypeError
@@ -375,7 +375,7 @@ class DateField(SQLField):
         if isinstance(value, datetime.date):
             return value
         elif isinstance(value, str):
-            return datetime.datetime.strptime(value, '%Y-%M-%d').date()
+            return datetime.datetime.strptime(value, '%Y-%m-%d').date()
         else:
             raise TypeError
 
@@ -412,8 +412,8 @@ class TimeField(SQLField):
                                  .format(self._name))
             return value
         elif isinstance(value, str):
-            dt_value = datetime.datetime.strptime(value, '%H:%m:%S.%f')
-            return datetime.datetime.strptime(value, '%H:%m:%S.%f').time()
+            dt_value = datetime.datetime.strptime(value, '%H:%M:%S.%f')
+            return datetime.datetime.strptime(value, '%H:%M:%S.%f').time()
         else:
             raise TypeError
 
