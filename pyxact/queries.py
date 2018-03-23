@@ -157,6 +157,21 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             next_row = cursor.fetchone()
 
     @classmethod
+    def result_record(cls, cursor):
+        '''Take a database cursor with an executed query return an instance of
+        the SQLRecord subclass specified via record_type when SQLQuery was
+        subclassed. None is returned if there are no more results.'''
+
+        if not cls._record_type:
+            raise RuntimeError('This SQLQuery subclass does not have an associated SQLRecord '
+                               'result class specified.')
+
+        next_row = cursor.fetchone()
+        if next_row:
+            return cls._record_type(*next_row)
+        return None
+
+    @classmethod
     def result_recordlist(cls, cursor):
         '''Take a database cursor with an executed query and return an instance
         of the SQLRecordList subclass specified when SQLQuery was
@@ -175,8 +190,11 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
         result_row = cursor.fetchone()
 
+        if result_row is None:
+            raise ValueError('No result returned from query.')
+
         if len(result_row) != 1:
-            raise ValueError('The query returned more than one value.')
+            raise ValueError('The query did not return one value.')
 
         return result_row[0]
 
