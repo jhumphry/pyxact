@@ -3,7 +3,7 @@ defines and maps SQL types and values to Python types and values.'''
 
 import datetime
 import decimal
-from . import dialects, sequences, ContextRequiredError
+from . import dialects, ContextRequiredError
 
 class SQLField:
     '''SQLField is an abstract class that forms the root of a hierarchy that
@@ -155,29 +155,6 @@ class ContextIntField(AbstractIntField):
             return context[self.context_used]
         raise ContextRequiredError('''Required context '{0}' is not provided'''
                                    .format(self.context_used))
-
-class SequenceIntField(AbstractIntField):
-    '''Represents an integer field in an SQLTransaction that has a link to a
-    SQLSequence. It can be retrieved and set as a normal SQLField, but when
-    get_new_context is called on the SQLTransaction, it will be updated from
-    the next value of the sequence and the name:value pair will be returned as
-    part of the context dictionary. Within SQLRecord subclasses, an
-    ContextIntField can be used to represent this value. This field type has no
-    direct use inside an SQLRecord.'''
-
-    def __init__(self, sequence, **kwargs):
-        if not isinstance(sequence, sequences.SQLSequence):
-            raise TypeError('Sequence provided must be an instance of '
-                            'pyxact.sequences.SQLSequence')
-        self.sequence = sequence
-        super().__init__(py_type=int, sql_type=None,
-                         nullable=True, **kwargs)
-
-    def update(self, instance, context, cursor, dialect=None):
-
-        value = self.sequence.nextval(cursor, dialect)
-        setattr(instance, self._slot_name, value)
-        return value
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via

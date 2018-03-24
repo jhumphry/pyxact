@@ -28,7 +28,7 @@ def holder_class(field_test_seq):
         smallint_field=fields.SmallIntField()
         bigint_field=fields.BigIntField()
         context_int_field=fields.ContextIntField(context_used='int_context')
-        sequence_int_field=fields.SequenceIntField(sequence=field_test_seq)
+        sequence_int_field=sequences.SequenceIntField(sequence=field_test_seq)
         row_enum_int_field=fields.RowEnumIntField(context_used='row_context')
         numeric_field=fields.NumericField(precision=6, scale=2)
         numeric_field_from_floats=fields.NumericField(precision=6, scale=2, allow_floats=True)

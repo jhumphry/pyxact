@@ -73,7 +73,7 @@ class JournalList(recordlists.SQLRecordList, record_type=JournalRecord):
 # balances.
 
 class AccountingTransaction(transactions.SQLTransaction):
-    trans_id = fields.SequenceIntField(sequence=trans_id_seq)
+    trans_id = sequences.SequenceIntField(sequence=trans_id_seq)
     trans_details = transactions.SQLTransactionField(TransactionRecord)
     journal_list = transactions.SQLTransactionField(JournalList)
 

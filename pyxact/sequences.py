@@ -2,7 +2,7 @@
 be used where it is necessary to acquire values that will be unique within the
 database (such as for transaction IDs).'''
 
-from . import dialects
+from . import dialects, fields
 
 class SQLSequence:
     '''SQLSequence defines a basic sequence type. Information about the
@@ -102,3 +102,26 @@ class SQLSequence:
         return [x.format(name=self.name, start=self.start,
                          interval=self.interval, index_type=self.index_type)
                 for x in dialect.reset_sequence_sql]
+
+class SequenceIntField(fields.AbstractIntField):
+    '''Represents an integer field in an SQLTransaction that has a link to a
+    SQLSequence. It can be retrieved and set as a normal SQLField, but when
+    get_new_context is called on the SQLTransaction, it will be updated from
+    the next value of the sequence and the name:value pair will be returned as
+    part of the context dictionary. Within SQLRecord subclasses, an
+    ContextIntField can be used to represent this value. This field type has no
+    direct use inside an SQLRecord.'''
+
+    def __init__(self, sequence, **kwargs):
+        if not isinstance(sequence, SQLSequence):
+            raise TypeError('Sequence provided must be an instance of '
+                            'pyxact.sequences.SQLSequence')
+        self.sequence = sequence
+        super().__init__(py_type=int, sql_type=None,
+                         nullable=True, **kwargs)
+
+    def update(self, instance, context, cursor, dialect=None):
+
+        value = self.sequence.nextval(cursor, dialect)
+        setattr(instance, self._slot_name, value)
+        return value
