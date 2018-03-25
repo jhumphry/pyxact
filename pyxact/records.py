@@ -320,37 +320,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         return (self.insert_sql_command(dialect), self.values_sql_repr(context, dialect))
 
-    def insert_sql_unsafe(self, context=None, dialect=None):
-        '''Returns a string containing the INSERT command (in the given SQL
-        dialect) required to insert the values held by an SQL Record instance
-        into the SQL table.
-
-        Note that this is not safe, as it is not guaranteed that any escaping
-        performed will be sufficient to prevent SQL injection attacks. Do not
-        use it with any values supplied by the user or previously stored in the
-        database by the user.'''
-
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        values = []
-        for key in self._fields.keys():
-            if context:
-                value = dialect.sql_repr(self._fields[key].get_context(self, context))
-            else:
-                value = dialect.sql_repr(self._fields[key].get(self))
-            if isinstance(value, str):
-                values.append("'"+value+"'")
-            else:
-                values.append(str(value))
-
-        result = 'INSERT INTO ' + self.qualified_name(dialect) + ' ('
-        result += self.column_names_sql()
-        result += ') VALUES ('
-        result += ', '.join(values)
-        result += ');'
-        return result
-
     def update_sql(self, context=None, dialect=None):
         '''This method constructs an SQL UDPATE command and returns a tuple
         containing a suitable string and list of values. It identifies the row
@@ -441,44 +410,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         values = [dialect.sql_repr(x) for x in kwargs.values()]
 
         return (result, values)
-
-    @classmethod
-    def simple_select_sql_unsafe(cls, dialect=None, **kwargs):
-        '''Returns a string containing the SELECT command (in the given SQL
-        dialect) required to retrieve data from the SQL table represented by
-        the SQLRecord. Only the most basic form of WHERE clause is supported,
-        with exact values for columns specified in the form of keyword
-        arguments to the method.
-
-        Note that this is not safe, as it is not guaranteed that any escaping
-        performed will be sufficient to prevent SQL injection attacks. Do not
-        use it with any values supplied by the user or previously stored in the
-        database by the user.'''
-
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_name(dialect)
-        if kwargs:
-            result += ' WHERE '
-            i = 1
-            for field, value in kwargs.items():
-                if not field in cls._fields:
-                    raise ValueError('Specified field {0} is not valid'.format(field))
-                result += cls._fields[field].sql_name+'='
-
-                sql_value = dialect.sql_repr(value)
-
-                if isinstance(sql_value, str):
-                    result += "'" + str(sql_value) + "'"
-                else:
-                    result += str(sql_value)
-
-                if i < len(kwargs):
-                    result += ' AND '
-                i += 1
-        result += ';'
-        return result
 
     def pk_select_sql(self, context=None, dialect=None):
         '''This method returns a tuple containg an SQL SELECT statement that

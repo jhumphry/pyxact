@@ -49,15 +49,10 @@ def test_insert(sample_table, sample_record_class, sample_records, sqlitecur):
                       (sample_records[0].trans_id,))
     assert sqlitecur.fetchone() == (1, 1, 3.4, 'Line 1')
 
-    # Insert a single row using the dangerous string concatenation mathod
-    sqlitecur.execute(sample_records[1].insert_sql_unsafe())
-    sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
-                      (sample_records[1].trans_id,))
-    assert sqlitecur.fetchone() == (2, 0, 1.1, 'Line 2')
-
     # Insert the remaining rows in one go and read them back
     sqlitecur.executemany(sample_record_class.insert_sql_command(),
-                          [sample_records[2].values_sql_repr(),
+                          [sample_records[1].values_sql_repr(),
+                           sample_records[2].values_sql_repr(),
                            sample_records[3].values_sql_repr()])
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=? OR trans_id=?',
                    (sample_records[2].trans_id, sample_records[3].trans_id))
