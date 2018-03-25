@@ -1,5 +1,7 @@
 '''This module defines classes that represent tables constraints in SQL.'''
 
+from . import SQLSchemaBase
+
 class SQLConstraint:
     '''This abstract base class is the root of the class hierarchy for table
     constraints.'''
@@ -102,8 +104,10 @@ class ForeignKeyConstraint(ColumnsConstraint):
         # Note that we cannot type-check the foreign_schema to avoid circular dependencies
         if foreign_schema is None:
             self.foreign_schema = None
-        else:
+        elif isinstance(foreign_schema, SQLSchemaBase):
             self.foreign_schema = foreign_schema
+        else:
+            raise TypeError('foreign_schema must be an instance of pyxact.schemas.SQLSchema')
 
         if isinstance(sql_reference_names, str):
             self.sql_reference_names = (sql_reference_names,)

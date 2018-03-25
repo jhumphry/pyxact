@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-from . import UnconstrainedWhereError
-from . import fields, constraints, dialects, schemas
+from . import UnconstrainedWhereError, SQLSchemaBase
+from . import fields, constraints, dialects
 
 class SQLRecordMetaClass(type):
     '''This is a metaclass that automatically identifies the SQLField and
@@ -15,7 +15,7 @@ class SQLRecordMetaClass(type):
 
         namespace['_table_name'] = table_name
 
-        if not ((schema is None) or isinstance(schema, schemas.SQLSchema)):
+        if not ((schema is None) or isinstance(schema, SQLSchemaBase)):
             raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
 
         namespace['_schema'] = schema

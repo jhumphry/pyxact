@@ -3,16 +3,17 @@ classes that represent an associated set of database objects. These can be
 mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
+from . import SQLSchemaBase
 from . import dialects, records, sequences
 
-class SQLSchema:
+class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all
     associated. Where the database provides sufficient support, they will all be
     placed in the same SQL schema, and where it does not they will all have the
     same prefix, which will be added automatically.'''
 
     def __init__(self, name):
-
+        super().__init__()
         self.name = name
         self.record_types = {}
         self.tables = {}

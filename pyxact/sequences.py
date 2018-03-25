@@ -2,8 +2,8 @@
 be used where it is necessary to acquire values that will be unique within the
 database (such as for transaction IDs).'''
 
+from . import SQLSchemaBase
 from . import dialects, fields
-from . import schemas
 
 class SQLSequence:
     '''SQLSequence defines a basic sequence type. Information about the
@@ -20,7 +20,7 @@ class SQLSequence:
 
         if schema is None:
             self.schema = None
-        elif isinstance(schema, schemas.SQLSchema):
+        elif isinstance(schema, SQLSchemaBase):
             self.schema = schema
             schema.register_sequence(self)
         else:

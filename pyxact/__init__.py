@@ -30,3 +30,11 @@ class ContextRequiredError(PyxactError):
     retrieve values.'''
 
     pass
+
+class SQLSchemaBase:
+    '''This serves as a base class for pyxact.schemas.SQLSchema. It is used in
+    the modules of pyxact to check if an SQLSchema has been passed in as a
+    parameter, without needing to import the 'schemas' module itself, which
+    could create circular dependencies. It is not intended for end-user use.'''
+
+    pass
