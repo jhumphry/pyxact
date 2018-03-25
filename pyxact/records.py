@@ -20,7 +20,7 @@ class SQLRecordMetaClass(type):
 
         return type.__new__(mcs, name, bases, namespace)
 
-    def prepare_sqlrecord_namespace(mcs, namespace, forbidden_names):
+    def prepare_sqlrecord_namespace(cls, namespace, forbidden_names):
         '''This method receives an ordered dictionary of attributes attached to
         the new subclass and checks, indexes and processes them appropriately,
         adding additional items where necessary.'''
@@ -104,8 +104,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         if context:
             return self._fields[key].get_context(self, context)
-        else:
-            return self._fields[key].get(self)
+        return self._fields[key].get(self)
 
     def set(self, key, value):
         '''Set a value stored in an SQLField within this SQLRecord.'''
@@ -233,7 +232,7 @@ class SQLTableMetaClass(SQLRecordMetaClass):
 
         return new_record_class
 
-    def prepare_sqltable_namespace(mcs, namespace):
+    def prepare_sqltable_namespace(cls, namespace):
         '''This method receives an ordered dictionary of attributes attached to
         the new subclass and checks, indexes and processes them appropriately,
         adding additional items where necessary.'''
@@ -293,10 +292,6 @@ class SQLTable(SQLRecord, metaclass=SQLTableMetaClass):
     needed to map an SQLRecord to a specific table. It also contains methods
     that allow for inserting/updating/selecting records from the table.'''
 
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         result = super().__str__(self)
         if self._primary_key:
@@ -318,7 +313,7 @@ class SQLTable(SQLRecord, metaclass=SQLTableMetaClass):
         if cls._schema is None:
             return cls._table_name
 
-        return cls._schema.qualified_name(cls._table_name)
+        return cls._schema.qualified_name(cls._table_name, dialect)
 
     def _pk_items(self, context=None):
         '''Returns a tuple containing a list of primary key SQL column names
