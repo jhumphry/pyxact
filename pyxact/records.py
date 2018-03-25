@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import UnconstrainedWhereError
-from . import fields, constraints, dialects
+from . import fields, constraints, dialects, schemas
 
 class SQLRecordMetaClass(type):
     '''This is a metaclass that automatically identifies the SQLField and
@@ -11,9 +11,14 @@ class SQLRecordMetaClass(type):
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
 
-    def __new__(mcs, name, bases, namespace, table_name=None, **kwds):
+    def __new__(mcs, name, bases, namespace, table_name=None, schema=None, **kwds):
 
         namespace['_table_name'] = table_name
+
+        if not ((schema is None) or isinstance(schema, schemas.SQLSchema)):
+            raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
+
+        namespace['_schema'] = schema
 
         slots = []
         _fields = dict()
@@ -76,7 +81,12 @@ class SQLRecordMetaClass(type):
                         not value.sql_reference_names:
                     value.sql_reference_names = value.sql_column_names
 
-        return type.__new__(mcs, name, bases, namespace)
+        new_record_class = type.__new__(mcs, name, bases, namespace)
+
+        if schema is not None:
+            schema.register_table(new_record_class)
+
+        return new_record_class
 
 class SQLRecord(metaclass=SQLRecordMetaClass):
     '''SQLRecord maps SQL database tables to Python class types. It is not
@@ -174,6 +184,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return self._table_name
 
     @classmethod
+    def qualified_name(cls, dialect=None):
+        '''The (possibly schema-qualified) name of the table used in SQL.'''
+
+        if cls._schema is None:
+            return cls._table_name
+
+        return cls._schema.qualified_name(cls._table_name)
+
+    @classmethod
     def fields(cls):
         '''Returns a iterable of SQLField objects in the order they were
         defined in the SQLRecord subclass.'''
@@ -261,7 +280,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         '''Returns a string containing the CREATE TABLE command (in the given
         SQL dialect) that will create the table defined by the SQLRecord.'''
 
-        result = 'CREATE TABLE IF NOT EXISTS ' + cls._table_name + ' (\n    '
+        result = 'CREATE TABLE IF NOT EXISTS ' + cls.qualified_name(dialect) + ' (\n    '
         table_columns = [cls._fields[key].sql_ddl(dialect)
                          for key in cls._fields.keys()]
         table_constraints = [cls._constraints[key].sql_ddl(dialect)
@@ -277,7 +296,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return dialect.truncate_table_sql.format(table_name=cls._table_name)
+        return dialect.truncate_table_sql.format(table_name=cls.qualified_name(dialect))
 
     @classmethod
     def insert_sql_command(cls, dialect=None):
@@ -288,7 +307,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'INSERT INTO ' + cls._table_name + ' ('
+        result = 'INSERT INTO ' + cls.qualified_name(dialect) + ' ('
         result += cls.column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
@@ -329,7 +348,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             else:
                 values.append(str(value))
 
-        result = 'INSERT INTO ' + self._table_name + ' ('
+        result = 'INSERT INTO ' + self.qualified_name(dialect) + ' ('
         result += self.column_names_sql()
         result += ') VALUES ('
         result += ', '.join(values)
@@ -366,7 +385,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 else:
                     update_values.append(dialect.sql_repr(field_obj.get(self)))
 
-        result = 'UPDATE ' + self._table_name + ' SET '
+        result = 'UPDATE ' + self.qualified_name(dialect) + ' SET '
         result += ', '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in update_sql_names])
         result += ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
@@ -393,7 +412,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'DELETE FROM ' + self._table_name + ' WHERE '
+        result = 'DELETE FROM ' + self.qualified_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
         result += ';'
@@ -416,7 +435,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_name(dialect)
         if kwargs:
             result += ' WHERE '
             result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
@@ -443,7 +462,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_name(dialect)
         if kwargs:
             result += ' WHERE '
             i = 1
@@ -480,7 +499,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'SELECT ' + self.column_names_sql() + ' FROM ' + self._table_name + ' WHERE '
+        result = 'SELECT ' + self.column_names_sql() + ' FROM ' + self.qualified_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
         result += ';'
@@ -498,7 +517,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._table_name
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_name(dialect)
 
         column_sql_names = []
         column_values = []

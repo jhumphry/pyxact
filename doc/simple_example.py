@@ -4,48 +4,56 @@ tables and the insertion and retrieval of linked records.'''
 import sqlite3
 from decimal import Decimal as D
 
-from pyxact import constraints, fields, queries, records, recordlists, sequences, transactions
+from pyxact import constraints, dialects, fields, queries, records
+from pyxact import recordlists, schemas, sequences, transactions
 
-# Create an in-memory sqlite3 database to work on
+# Create a schema to hold our database objects. SQLite does not really support
+# schema, but this will automatically be worked around - objects will be renamed
+# 'schema_object'
 
-conn = sqlite3.connect(':memory:')
-conn.execute('PRAGMA foreign_keys = ON;') # We need sqlite foreign key support
-
-cursor = conn.cursor()
-cursor.execute('BEGIN TRANSACTION;')
+accounting = schemas.SQLSchema('accounting')
 
 # Create a persistent sequence for the schema we are going to build. Most
 # databases have the concept of implicit sequences/identity columns, but it can
 # then be hard to refer to the underlying sequence in a consistent manner. We
 # prefer explict sequences here.
 
-trans_id_seq = sequences.SQLSequence(name='trans_id_seq')
-
-trans_id_seq.create(cursor) # Creation can require more than one SQL statement
+trans_id_seq = sequences.SQLSequence(name='trans_id_seq', schema=accounting)
 
 # Now start building up a schema by subclassing records.SQLRecord, adding
 # SQLField class attributes to represent the columns and SQLConstraint class
 # attributes to represent table constraints.
 
-class TransactionRecord(records.SQLRecord, table_name='transactions'):
+class TransactionRecord(records.SQLRecord, table_name='transactions', schema=accounting):
     trans_id = fields.ContextIntField(context_used='trans_id') # Context dicts are explained later
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
     cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
-cursor.execute(TransactionRecord.create_table_sql())
-
-class JournalRecord(records.SQLRecord, table_name='journals'):
+class JournalRecord(records.SQLRecord, table_name='journals', schema=accounting):
     trans_id = fields.ContextIntField(context_used='trans_id')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
     cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id', 'row_id'))
     cons_fk = constraints.ForeignKeyConstraint(column_names=('trans_id',),
-                                               foreign_table='transactions')
+                                               foreign_table='transactions',
+                                               foreign_schema=accounting)
 
-cursor.execute(JournalRecord.create_table_sql())
+# Create an in-memory sqlite3 database to work on
+
+conn = sqlite3.connect(':memory:')
+conn.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
+
+cursor = conn.cursor()
+
+# Create the 'accounting' schema and the objects defined above
+
+cursor.execute('BEGIN TRANSACTION;')
+
+accounting.create_schema(cursor=cursor, dialect=dialects.sqliteDialect)
+accounting.create_schema_objects(cursor=cursor, dialect=dialects.sqliteDialect)
 
 cursor.execute('COMMIT TRANSACTION;')
 
@@ -142,7 +150,7 @@ rev_trans.insert_new(cursor)
 # This usage of SQLQuery shows a very simple usage case with no parameters
 
 class TransactionCountQuery(queries.SQLQuery,
-                            query='''SELECT COUNT(*) FROM transactions;'''):
+                            query='''SELECT COUNT(*) FROM accounting_transactions;'''):
     pass
 
 trans_count_query = TransactionCountQuery()
@@ -166,8 +174,8 @@ assert trans_count_query.result_singlevalue(cursor) == 3
 
 JOURNAL_ROW_COUNT_QUERY = '''
 SELECT transactions.created_by, transactions.trans_id, COUNT(*) AS row_count
-FROM journals
-JOIN transactions ON journals.trans_id = transactions.trans_id
+FROM accounting_journals AS journals
+JOIN accounting_transactions as transactions ON journals.trans_id = transactions.trans_id
 WHERE transactions.created_by LIKE {created_by}
 GROUP BY transactions.created_by, transactions.trans_id;
 '''

@@ -3,6 +3,7 @@ be used where it is necessary to acquire values that will be unique within the
 database (such as for transaction IDs).'''
 
 from . import dialects, fields
+from . import schemas
 
 class SQLSequence:
     '''SQLSequence defines a basic sequence type. Information about the
@@ -10,18 +11,35 @@ class SQLSequence:
     this sequence type does not guarantee a 'gapless' sequence.'''
 
     def __init__(self, name, start=1, interval=1, index_type='BIGINT',
-                 sql_options='', sql_name=None):
+                 sql_options='', sql_name=None, schema=None):
         self.name = name
         if sql_name:
             self.sql_name = sql_name
         else:
             self.sql_name = name
+
+        if schema is None:
+            self.schema = None
+        elif isinstance(schema, schemas.SQLSchema):
+            self.schema = schema
+            schema.register_sequence(self)
+        else:
+            raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
+
         self.start = start
         self.interval = interval
         self.index_type = index_type
         self.sql_options = sql_options
         self._nextval_sequence_sql = None
         self._nextval_cached_dialect = None
+
+    def qualified_name(self, dialect=None):
+        '''The (possibly schema-qualified) name of the sequence used in SQL.'''
+
+        if self.schema is None:
+            return self.sql_name
+
+        return self.schema.qualified_name(self.sql_name)
 
     def create(self, cursor, dialect=None):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
@@ -67,8 +85,10 @@ class SQLSequence:
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return [x.format(name=self.name, start=self.start,
-                         interval=self.interval, index_type=self.index_type,
+        return [x.format(qualified_name=self.qualified_name(dialect),
+                         start=self.start,
+                         interval=self.interval,
+                         index_type=self.index_type,
                          sql_options=self.sql_options)
                 for x in dialect.create_sequence_sql]
 
@@ -83,7 +103,8 @@ class SQLSequence:
             dialect = dialects.DefaultDialect
 
         if not self._nextval_sequence_sql or dialect != self._nextval_cached_dialect:
-            self._nextval_sequence_sql = [x.format(name=self.name, start=self.start,
+            self._nextval_sequence_sql = [x.format(qualified_name=self.qualified_name(dialect),
+                                                   start=self.start,
                                                    interval=self.interval,
                                                    index_type=self.index_type)
                                           for x in dialect.nextval_sequence_sql]
@@ -99,7 +120,7 @@ class SQLSequence:
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return [x.format(name=self.name, start=self.start,
+        return [x.format(qualified_name=self.qualified_name(dialect), start=self.start,
                          interval=self.interval, index_type=self.index_type)
                 for x in dialect.reset_sequence_sql]
 

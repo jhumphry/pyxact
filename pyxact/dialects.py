@@ -10,6 +10,8 @@ class SQLDialect:
 
     placeholder = '?'
 
+    schema_support = True
+
     store_decimal_as_text = False
     store_date_time_datetime_as_text = False
 
@@ -32,6 +34,8 @@ class sqliteDialect(SQLDialect):
     database engine that usually comes supplied with Python.'''
 
     placeholder = '?' # The placeholder to use for parametised queries
+
+    schema_support = False
 
     store_decimal_as_text = False
     store_date_time_datetime_as_text = True
@@ -58,14 +62,14 @@ class sqliteDialect(SQLDialect):
         raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
     create_sequence_sql = ('''
-CREATE TABLE IF NOT EXISTS {name}    (start {index_type},
-                                      interval {index_type},
-                                      lastval {index_type},
-                                      nextval {index_type});''',
-                           '''INSERT INTO {name} VALUES ({start},{interval},{start},{start});''')
-    nextval_sequence_sql = ('''UPDATE {name} SET lastval=nextval, nextval=nextval+interval;''',
-                            '''SELECT lastval FROM {name};''')
-    reset_sequence_sql = ('''UPDATE {name} SET lastval=start, nextval=start;''',)
+CREATE TABLE IF NOT EXISTS {qualified_name}    (start {index_type},
+                                                interval {index_type},
+                                                lastval {index_type},
+                                                nextval {index_type});''',
+                           '''INSERT INTO {qualified_name} VALUES ({start},{interval},{start},{start});''')
+    nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
+                            '''SELECT lastval FROM {qualified_name};''')
+    reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
 
 
 # This will be used by routines when no dialect is specified. It is not a

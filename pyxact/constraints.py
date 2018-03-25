@@ -1,6 +1,5 @@
 '''This module defines classes that represent tables constraints in SQL.'''
 
-
 class SQLConstraint:
     '''This abstract base class is the root of the class hierarchy for table
     constraints.'''
@@ -94,11 +93,17 @@ class ForeignKeyConstraint(ColumnsConstraint):
     sql_reference_names is None then it is assumed the referenced columns have
     the same names as the columns in the current table.'''
 
-    def __init__(self, foreign_table, sql_reference_names=None, **kwargs):
+    def __init__(self, foreign_table, foreign_schema=None, sql_reference_names=None, **kwargs):
 
         super().__init__(**kwargs)
 
         self.foreign_table = foreign_table
+
+        # Note that we cannot type-check the foreign_schema to avoid circular dependencies
+        if foreign_schema is None:
+            self.foreign_schema = None
+        else:
+            self.foreign_schema = foreign_schema
 
         if isinstance(sql_reference_names, str):
             self.sql_reference_names = (sql_reference_names,)
@@ -108,9 +113,18 @@ class ForeignKeyConstraint(ColumnsConstraint):
         # in SQLRecordMetaClass
 
     def sql_ddl(self, dialect=None):
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        if self.foreign_schema is None:
+            foreign_table = self.foreign_table
+        else:
+            foreign_table = self.foreign_schema.qualified_name(self.foreign_table)
+
         result = 'CONSTRAINT ' + self.sql_name + ' FOREIGN KEY ('
         result += ', '.join(self.sql_column_names)
-        result += ') REFERENCES '+self.foreign_table + ' ('
+        result += ') REFERENCES ' + foreign_table + ' ('
         result += ', '.join(self.sql_reference_names)
         result += ') ' + self.sql_options
         return result
