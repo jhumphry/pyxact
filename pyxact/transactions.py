@@ -11,11 +11,16 @@ class SQLTransactionField:
     def __init__(self, record_type):
 
         if not isinstance(record_type, type):
-            raise ValueError('record_type parameter must refer to an appropriate subclass.')
+            raise TypeError('record_type parameter must refer to an appropriate subclass.')
 
-        if not issubclass(record_type, (records.SQLRecord,
+        if not issubclass(record_type, (records.SQLTable,
                                         recordlists.SQLRecordList)):
-            raise ValueError('record_type parameter must refer to an appropriate subclass.')
+            raise TypeError('record_type parameter must refer to an appropriate subclass.')
+
+        if issubclass(record_type, recordlists.SQLRecordList) and \
+           not issubclass(record_type._record_type, records.SQLTable):
+            raise TypeError('record_type parameter which are SQLRecordList must be able to contain'
+                            ' an appropriate subclass.')
 
         self._record_type = record_type
         self._name = None
@@ -77,7 +82,7 @@ class SQLTransactionMetaClass(type):
                 if k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
                     raise AttributeError('SQLTransactionField {} has the same name as an '
                                          'SQLTransaction method or internal attribute'.format(k))
-                if issubclass(namespace[k]._record_type, records.SQLRecord):
+                if issubclass(namespace[k]._record_type, records.SQLTable):
                     _records[k] = namespace[k]
                 elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
                     _recordlists[k] = namespace[k]
@@ -98,14 +103,14 @@ class SQLTransactionMetaClass(type):
 
 class SQLTransaction(metaclass=SQLTransactionMetaClass):
     '''SQLTransaction is an abstract class that can be subclassed to represent
-    different types of database transaction. It groups together SQLRecord and
+    different types of database transaction. It groups together SQLTable and
     SQLRecordList subclasses (wrapped in SQLTransactionField) that represent
     rows from different tables in the database that must all be inserted or
     retrieved in a single transaction.
 
     It can also contain attributes of type SQLField. These are called the
     context fields and represent values (such as transaction numbers) that must
-    be consistent accross the appropriate fields within the SQLRecord and
+    be consistent accross the appropriate fields within the SQLTable and
     SQLRecordList.'''
 
 
@@ -156,7 +161,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = self.__class__()
         for attr in self.__slots__:
             value = getattr(self, attr)
-            if isinstance(value, (records.SQLRecord, recordlists.SQLRecordList)):
+            if isinstance(value, (records.SQLTable, recordlists.SQLRecordList)):
                 setattr(result, attr, value.copy())
             else:
                 setattr(result, attr, value)
@@ -180,7 +185,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         True if this is possible to achieve. The use of this hook is dependent
         on the domain for which SQLTransaction has been subclassed. The default
         implementation for SQLTransaction retrieves all the context information
-        from the SQLRecords attached to the class and updates the context
+        from the SQLTable attached to the class and updates the context
         fields. This may be useful where only some of the context fields were
         necessary to identify the records to retrieve, but having the other
         context fields completed is useful for further processing.'''
@@ -244,10 +249,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         return result
 
     def get_context_from_records(self):
-        '''This method makes the context dictionary by scanning the SQLRecord
-        and SQLTransactionRecord contained in SQLTransactionField attributes
+        '''This method makes the context dictionary by scanning the SQLTable
+        and SQLRecordList contained in SQLTransactionField attributes
         and working out what context name:value pairs are consistent with them.
-        For example if an SQLRecord attached to the SQLTransaction has a
+        For example if an SQLTable attached to the SQLTransaction has a
         IDIntField equal to 37 that uses a context value named trans_id, then
         the returned context dictionary should have 37 stored under the name
         trans_id. Does NOT attempt to identify if there are inconsistencies
@@ -353,7 +358,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         '''This method extracts the values stored in SQLField directly attached
         to the SQLTransaction and stored them in a context dictionary under the
         name of the attribute. It then attempts to use this dictionary to
-        retrieve all of the SQLRecord and SQLRecordList objects stored in
+        retrieve all of the SQLTable and SQLRecordList objects stored in
         SQLTransactionField attributes. The post_select_hook method is then
         called, followed by the verify method to check that the result meets
         internal consistency requirements.'''

@@ -1,4 +1,4 @@
-# Test pyxact.records for behaviours that need a sqlite database to demonstrate
+# Test SQLTable behaviours that need a sqlite database to demonstrate
 
 import pytest
 import pyxact.fields as fields
@@ -8,8 +8,8 @@ import pyxact.records as records
 from pyxact.dialects import sqliteDialect
 
 @pytest.fixture('module')
-def sample_record_class(sqlitedb):
-    class SampleRecord(records.SQLRecord, table_name='sample_table'):
+def sample_table_class(sqlitedb):
+    class SampleRecord(records.SQLTable, table_name='sample_table'):
         trans_id=fields.ContextIntField(context_used='trans_id')
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
@@ -19,43 +19,43 @@ def sample_record_class(sqlitedb):
     return SampleRecord
 
 @pytest.fixture('module')
-def sample_records(sample_record_class):
+def sample_table_rows(sample_table_class):
 
     result = []
-    result.append(sample_record_class(1, True, '3.4', 'Line 1'))
-    result.append(sample_record_class(2, False, '1.1', 'Line 2'))
-    result.append(sample_record_class(3, True, '-10.4', 'Line 3'))
-    result.append(sample_record_class(4, False, '2.2', 'Line 4'))
+    result.append(sample_table_class(1, True, '3.4', 'Line 1'))
+    result.append(sample_table_class(2, False, '1.1', 'Line 2'))
+    result.append(sample_table_class(3, True, '-10.4', 'Line 3'))
+    result.append(sample_table_class(4, False, '2.2', 'Line 4'))
 
     return result
 
 @pytest.fixture('module')
-def sample_table(sqlitedb, sample_record_class):
+def sample_table(sqlitedb, sample_table_class):
 
-    sqlitedb.execute(sample_record_class.create_table_sql())
+    sqlitedb.execute(sample_table_class.create_table_sql())
 
     # This will raise an OperationalError if the table doesn't exist or the
     # names of the columns are wrong
     sqlitedb.execute('SELECT trans_id, flag, amount, narrative FROM sample_table;')
 
-def test_insert(sample_table, sample_record_class, sample_records, sqlitecur):
+def test_insert(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Ensure the table is empty
     sqlitecur.execute('DELETE FROM sample_table WHERE 1=1')
 
     # Insert a single row and make sure it can be read back
-    sqlitecur.execute(*sample_records[0].insert_sql())
+    sqlitecur.execute(*sample_table_rows[0].insert_sql())
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
-                      (sample_records[0].trans_id,))
+                      (sample_table_rows[0].trans_id,))
     assert sqlitecur.fetchone() == (1, 1, 3.4, 'Line 1')
 
     # Insert the remaining rows in one go and read them back
-    sqlitecur.executemany(sample_record_class.insert_sql_command(),
-                          [sample_records[1].values_sql_repr(),
-                           sample_records[2].values_sql_repr(),
-                           sample_records[3].values_sql_repr()])
+    sqlitecur.executemany(sample_table_class.insert_sql_command(),
+                          [sample_table_rows[1].values_sql_repr(),
+                           sample_table_rows[2].values_sql_repr(),
+                           sample_table_rows[3].values_sql_repr()])
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=? OR trans_id=?',
-                   (sample_records[2].trans_id, sample_records[3].trans_id))
+                   (sample_table_rows[2].trans_id, sample_table_rows[3].trans_id))
     assert sqlitecur.fetchone() == (3, 1, -10.4, 'Line 3')
     assert sqlitecur.fetchone() == (4, 0, 2.2, 'Line 4')
 
@@ -63,17 +63,17 @@ def test_insert(sample_table, sample_record_class, sample_records, sqlitecur):
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
     assert sqlitecur.fetchone() == (4,)
 
-def test_update(sample_table, sample_record_class, sample_records, sqlitecur):
+def test_update(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Ensure the table is empty
     sqlitecur.execute('DELETE FROM sample_table WHERE 1=1')
 
     # Insert all four records
-    for i in sample_records:
+    for i in sample_table_rows:
         sqlitecur.execute(*i.insert_sql())
 
     # Pick one record and make sure it is stored correctly
-    row = sample_records[2].copy()
+    row = sample_table_rows[2].copy()
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
                       (row.trans_id,))
     assert sqlitecur.fetchone() == (3, 1, -10.4, 'Line 3')
@@ -96,13 +96,13 @@ def test_update(sample_table, sample_record_class, sample_records, sqlitecur):
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
     assert sqlitecur.fetchone() == (4,)
 
-def test_delete(sample_table, sample_record_class, sample_records, sqlitecur):
+def test_delete(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Ensure the table is empty
     sqlitecur.execute('DELETE FROM sample_table WHERE 1=1')
 
     # Insert all four records
-    for i in sample_records:
+    for i in sample_table_rows:
         sqlitecur.execute(*i.insert_sql())
 
     # Check there are four rows
@@ -110,7 +110,7 @@ def test_delete(sample_table, sample_record_class, sample_records, sqlitecur):
     assert sqlitecur.fetchone() == (4,)
 
     # Delete one record
-    sqlitecur.execute(*sample_records[2].delete_sql())
+    sqlitecur.execute(*sample_table_rows[2].delete_sql())
 
     # Check there are now three rows
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')

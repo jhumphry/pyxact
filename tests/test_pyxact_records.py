@@ -1,4 +1,4 @@
-# Test pyxact.records for behaviours that don't require a database
+# Test SQLRecord
 
 import pytest
 import pyxact.fields as fields
@@ -9,12 +9,11 @@ from pyxact.dialects import sqliteDialect
 
 @pytest.fixture('module')
 def sample_record_class():
-    class SampleRecord(records.SQLRecord, table_name='sample_record_class'):
+    class SampleRecord(records.SQLRecord):
         trans_id=fields.ContextIntField(context_used='trans_id')
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
         narrative=fields.TextField()
-        pk=constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
     return SampleRecord
 
@@ -33,8 +32,6 @@ def test_table_creation(sample_record_class):
 
     assert [x.sql_name for x in sample_record_class.fields()] == \
                 ['trans_id', 'flag', 'amount', 'narrative']
-
-    assert sample_record_class().table_name == 'sample_record_class'
 
 def test_colliding_field_names():
     with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'

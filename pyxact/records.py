@@ -11,21 +11,22 @@ class SQLRecordMetaClass(type):
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
 
-    def __new__(mcs, name, bases, namespace, table_name=None, schema=None, **kwds):
+    def __new__(mcs, name, bases, namespace, **kwds):
 
-        namespace['_table_name'] = table_name
+        namespace = mcs.prepare_sqlrecord_namespace(mcs, namespace)
 
-        if not ((schema is None) or isinstance(schema, SQLSchemaBase)):
-            raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
+        return type.__new__(mcs, name, bases, namespace)
 
-        namespace['_schema'] = schema
+    def prepare_sqlrecord_namespace(mcs, namespace):
+        '''This method receives an ordered dictionary of attributes attached to
+        the new subclass and checks, indexes and processes them appropriately,
+        adding additional items where necessary.'''
 
         slots = []
         _fields = dict()
-        _constraints = dict()
 
-        # Make a list of the SQLField and SQLConstraints attributes attached to the class and
-        # check that the names won't be hiding any methods or attributes on the base class.
+        # Make a list of the SQLField attributes attached to the class and check that
+        # the names won't be hiding any methods or attributes on the base class.
 
         for key, value in namespace.items():
             if isinstance(value, fields.SQLField):
@@ -34,59 +35,18 @@ class SQLRecordMetaClass(type):
                                          'internal attribute'.format(key))
                 slots.append('_'+key)
                 _fields[key] = value
-            elif isinstance(value, constraints.SQLConstraint):
-                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLConstraint {} has the same name as an SQLRecord method'
-                                         'or internal attribute'.format(key))
-                _constraints[key] = value
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields'] = _fields
         namespace['_field_count'] = len(slots)
-        namespace['_constraints'] = _constraints
 
-        # Now check the ColumnsConstraint for exant columns, fill out the sql_column_names
-        # attribute on the constraint (which is not available when the constraint is instantiated,
-        # and finally set the sql_reference_names to be the same as the sql_column_names
-        # (a 'natural join') if it is None on a ForeignKeyConstraint.
-
-        namespace['_primary_key'] = None
-
-        for key, value in _constraints.items():
-            if isinstance(value, constraints.ColumnsConstraint):
-                sql_column_names = []
-
-                for column_name in value.column_names:
-                    if column_name not in _fields:
-                        raise AttributeError('SQLConstraint {} references non-existent column {}'
-                                             .format(key, column_name))
-
-                    if _fields[column_name].sql_name:
-                        sql_column_names.append(_fields[column_name].sql_name)
-                    else:
-                        sql_column_names.append(column_name)
-
-                value.sql_column_names = tuple(sql_column_names)
-
-                if isinstance(value, constraints.PrimaryKeyConstraint):
-                    if namespace['_primary_key']:
-                        raise AttributeError('Attempting to have multiple primary keys')
-                    namespace['_primary_key'] = value
-
-                if isinstance(value, constraints.ForeignKeyConstraint) and \
-                        not value.sql_reference_names:
-                    value.sql_reference_names = value.sql_column_names
-
-        new_record_class = type.__new__(mcs, name, bases, namespace)
-
-        if schema is not None:
-            schema.register_table(new_record_class)
-
-        return new_record_class
+        return namespace
 
 class SQLRecord(metaclass=SQLRecordMetaClass):
-    '''SQLRecord maps SQL database tables to Python class types. It is not
-    intended for direct use, but as an abstract class to be subclassed.'''
+    '''SQLRecord maps database rows (including those not connected with a
+    specific table, for example the output of queries) to a Python class type.
+    It is not intended for direct use, but as an abstract class to be
+    subclassed.'''
 
     def __init__(self, *args, **kwargs):
 
@@ -115,10 +75,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                                                    self._fields[key].__class__.__name__,
                                                    str(getattr(self, key))
                                                   )
-        if self._primary_key:
-            result += 'Primary key ('
-            result += ', '.join(self._primary_key.column_names)
-            result += ')\n'
         return result
 
     def copy(self):
@@ -172,21 +128,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 setattr(self, field_name, value)
         else:
             raise ValueError('Must specify values')
-
-    @property
-    def table_name(self):
-        '''The name of the table used in SQL.'''
-
-        return self._table_name
-
-    @classmethod
-    def qualified_name(cls, dialect=None):
-        '''The (possibly schema-qualified) name of the table used in SQL.'''
-
-        if cls._schema is None:
-            return cls._table_name
-
-        return cls._schema.qualified_name(cls._table_name)
 
     @classmethod
     def fields(cls):
@@ -242,6 +183,140 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [(key, value.get(self))
                 for key, value in self._fields.items()]
 
+    @classmethod
+    def column_names_sql(cls):
+        '''Returns a string containing a comma-separated list of column names.'''
+
+        return ', '.join([cls._fields[key].sql_name for key in cls._fields.keys()])
+
+    def context_values_stored(self):
+        '''Returns a dictionary containing all of the (non-None) context values
+        that are stored by context-sensitive fields in the record.'''
+
+        context = {}
+
+        for field_obj in self._fields.values():
+            if field_obj.context_used:
+                tmp = field_obj.get(self)
+                if tmp:
+                    context[field_obj.context_used] = tmp
+
+        return context
+
+class SQLTableMetaClass(SQLRecordMetaClass):
+    '''This is a metaclass that automatically identifies the SQLField and
+    SQLConstraint member attributes added to new subclasses and creates
+    additional private attributes to help order and access them.'''
+
+    # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
+    # default
+
+    def __new__(mcs, name, bases, namespace, table_name=None, schema=None, **kwds):
+
+        mcs.prepare_sqlrecord_namespace(mcs, namespace)
+        mcs.prepare_sqltable_namespace(mcs, namespace)
+
+        namespace['_table_name'] = table_name
+
+        if not ((schema is None) or isinstance(schema, SQLSchemaBase)):
+            raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
+
+        namespace['_schema'] = schema
+
+        new_record_class = type.__new__(mcs, name, bases, namespace)
+
+        if schema is not None:
+            schema.register_table(new_record_class)
+
+        return new_record_class
+
+    def prepare_sqltable_namespace(mcs, namespace):
+        '''This method receives an ordered dictionary of attributes attached to
+        the new subclass and checks, indexes and processes them appropriately,
+        adding additional items where necessary.'''
+
+        _constraints = dict()
+
+        # Make a list of the SQLConstraints attributes attached to the class and
+        # check that the names won't be hiding any methods or attributes on the base class.
+
+        for key, value in namespace.items():
+            if isinstance(value, constraints.SQLConstraint):
+                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
+                    raise AttributeError('SQLConstraint {} has the same name as an SQLRecord method'
+                                         'or internal attribute'.format(key))
+                _constraints[key] = value
+
+        namespace['_constraints'] = _constraints
+
+        # Now check the ColumnsConstraint for exant columns, fill out the sql_column_names
+        # attribute on the constraint (which is not available when the constraint is instantiated,
+        # and finally set the sql_reference_names to be the same as the sql_column_names
+        # (a 'natural join') if it is None on a ForeignKeyConstraint.
+
+        namespace['_primary_key'] = None
+
+        _fields = namespace['_fields']
+
+        for key, value in _constraints.items():
+            if isinstance(value, constraints.ColumnsConstraint):
+                sql_column_names = []
+
+                for column_name in value.column_names:
+                    if column_name not in _fields:
+                        raise AttributeError('SQLConstraint {} references non-existent column {}'
+                                             .format(key, column_name))
+
+                    if _fields[column_name].sql_name:
+                        sql_column_names.append(_fields[column_name].sql_name)
+                    else:
+                        sql_column_names.append(column_name)
+
+                value.sql_column_names = tuple(sql_column_names)
+
+                if isinstance(value, constraints.PrimaryKeyConstraint):
+                    if namespace['_primary_key']:
+                        raise AttributeError('Attempting to have multiple primary keys')
+                    namespace['_primary_key'] = value
+
+                if isinstance(value, constraints.ForeignKeyConstraint) and \
+                        not value.sql_reference_names:
+                    value.sql_reference_names = value.sql_column_names
+
+        return namespace
+
+class SQLTable(SQLRecord, metaclass=SQLTableMetaClass):
+    '''SQLTable is a subclass of SQLRecord that contains additional information
+    needed to map an SQLRecord to a specific table. It also contains methods
+    that allow for inserting/updating/selecting records from the table.'''
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        result = super().__str__(self)
+        if self._primary_key:
+            result += 'Primary key ('
+            result += ', '.join(self._primary_key.column_names)
+            result += ')\n'
+        return result
+
+    @property
+    def table_name(self):
+        '''The name of the table used in SQL.'''
+
+        return self._table_name
+
+    @classmethod
+    def qualified_name(cls, dialect=None):
+        '''The (possibly schema-qualified) name of the table used in SQL.'''
+
+        if cls._schema is None:
+            return cls._table_name
+
+        return cls._schema.qualified_name(cls._table_name)
+
     def _pk_items(self, context=None):
         '''Returns a tuple containing a list of primary key SQL column names
         and a list of the associated values, using the context dictionary if
@@ -263,13 +338,6 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 raise UnconstrainedWhereError('Value for primary key column {0} is None.'
                                               .format(pk_field_name))
         return (sql_names, values)
-
-
-    @classmethod
-    def column_names_sql(cls):
-        '''Returns a string containing a comma-separated list of column names.'''
-
-        return ', '.join([cls._fields[key].sql_name for key in cls._fields.keys()])
 
     @classmethod
     def create_table_sql(cls, dialect=None):
@@ -469,21 +537,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         result += ';'
         return (result, column_values)
 
-    def context_values_stored(self):
-        '''Returns a dictionary containing all of the (non-None) context values
-        that are stored by context-sensitive fields in the record.'''
-
-        context = {}
-
-        for field_obj in self._fields.values():
-            if field_obj.context_used:
-                tmp = field_obj.get(self)
-                if tmp:
-                    context[field_obj.context_used] = tmp
-
-        return context
-
 # This constant records all the method and attribute names used in SQLRecord so
 # that SQLRecordMetaClass can detect any attempts to overwrite them in subclasses.
 
-INVALID_SQLRECORD_ATTRIBUTE_NAMES = frozenset(dir(SQLRecord))
+INVALID_SQLRECORD_ATTRIBUTE_NAMES = frozenset(dir(SQLTable))

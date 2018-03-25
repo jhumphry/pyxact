@@ -24,14 +24,14 @@ trans_id_seq = sequences.SQLSequence(name='trans_id_seq', schema=accounting)
 # SQLField class attributes to represent the columns and SQLConstraint class
 # attributes to represent table constraints.
 
-class TransactionRecord(records.SQLRecord, table_name='transactions', schema=accounting):
+class TransactionRecord(records.SQLTable, table_name='transactions', schema=accounting):
     trans_id = fields.ContextIntField(context_used='trans_id') # Context dicts are explained later
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
     cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
-class JournalRecord(records.SQLRecord, table_name='journals', schema=accounting):
+class JournalRecord(records.SQLTable, table_name='journals', schema=accounting):
     trans_id = fields.ContextIntField(context_used='trans_id')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()

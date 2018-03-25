@@ -15,7 +15,7 @@ class SQLSchema(SQLSchemaBase):
     def __init__(self, name):
         super().__init__()
         self.name = name
-        self.record_types = {}
+        self.table_types = {}
         self.tables = {}
         self.sequence_types = {}
         self.sequences = {}
@@ -53,13 +53,13 @@ class SQLSchema(SQLSchemaBase):
         given a table_name. If the schema class parameter was used on defining
         the subclass then this will have already been called.'''
 
-        if not issubclass(table, records.SQLRecord):
-            raise TypeError('Only SQLRecord subclasses can be registered to a schema.')
+        if not issubclass(table, records.SQLTable):
+            raise TypeError('Only SQLTable subclasses can be registered to a schema.')
 
         if table.table_name is None:
             raise TypeError('Only tables with defined names can be registered to a schema.')
 
-        self.record_types[table.__name__] = table
+        self.table_types[table.__name__] = table
         self.tables[table.table_name] = table
 
     def register_sequence(self, sequence):
@@ -79,7 +79,7 @@ class SQLSchema(SQLSchemaBase):
         if dialect is None:
             dialect = dialects.DefaultDialect
 
-        for i in self.record_types.values():
+        for i in self.table_types.values():
             cursor.execute(i.create_table_sql(dialect))
 
         for i in self.sequence_types.values():
