@@ -3,6 +3,9 @@
 from . import UnconstrainedWhereError, SQLSchemaBase
 from . import fields, constraints, dialects
 
+INVALID_SQLRECORD_NAMES = None
+INVALID_SQLTABLE_NAMES = None
+
 class SQLRecordMetaClass(type):
     '''This is a metaclass that automatically identifies the SQLField and
     SQLConstraint member attributes added to new subclasses and creates
@@ -13,11 +16,11 @@ class SQLRecordMetaClass(type):
 
     def __new__(mcs, name, bases, namespace, **kwds):
 
-        namespace = mcs.prepare_sqlrecord_namespace(mcs, namespace)
+        mcs.prepare_sqlrecord_namespace(mcs, namespace, INVALID_SQLRECORD_NAMES)
 
         return type.__new__(mcs, name, bases, namespace)
 
-    def prepare_sqlrecord_namespace(mcs, namespace):
+    def prepare_sqlrecord_namespace(mcs, namespace, forbidden_names):
         '''This method receives an ordered dictionary of attributes attached to
         the new subclass and checks, indexes and processes them appropriately,
         adding additional items where necessary.'''
@@ -30,8 +33,8 @@ class SQLRecordMetaClass(type):
 
         for key, value in namespace.items():
             if isinstance(value, fields.SQLField):
-                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLField {} has the same name as an SQLRecord method or '
+                if key in forbidden_names:
+                    raise AttributeError('SQLField {} has the same name as a method or '
                                          'internal attribute'.format(key))
                 slots.append('_'+key)
                 _fields[key] = value
@@ -213,7 +216,7 @@ class SQLTableMetaClass(SQLRecordMetaClass):
 
     def __new__(mcs, name, bases, namespace, table_name=None, schema=None, **kwds):
 
-        mcs.prepare_sqlrecord_namespace(mcs, namespace)
+        mcs.prepare_sqlrecord_namespace(mcs, namespace, INVALID_SQLTABLE_NAMES)
         mcs.prepare_sqltable_namespace(mcs, namespace)
 
         namespace['_table_name'] = table_name
@@ -242,8 +245,8 @@ class SQLTableMetaClass(SQLRecordMetaClass):
 
         for key, value in namespace.items():
             if isinstance(value, constraints.SQLConstraint):
-                if key in INVALID_SQLRECORD_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLConstraint {} has the same name as an SQLRecord method'
+                if key in INVALID_SQLTABLE_NAMES:
+                    raise AttributeError('SQLConstraint {} has the same name as a method'
                                          'or internal attribute'.format(key))
                 _constraints[key] = value
 
@@ -537,7 +540,9 @@ class SQLTable(SQLRecord, metaclass=SQLTableMetaClass):
         result += ';'
         return (result, column_values)
 
-# This constant records all the method and attribute names used in SQLRecord so
-# that SQLRecordMetaClass can detect any attempts to overwrite them in subclasses.
+# This constant records all the method and attribute names used in SQLRecord
+# and SQLTable so thatthe metaclasses can detect any attempts to overwrite
+# them in subclasses.
 
-INVALID_SQLRECORD_ATTRIBUTE_NAMES = frozenset(dir(SQLTable))
+INVALID_SQLRECORD_NAMES = frozenset(dir(SQLRecord))
+INVALID_SQLTABLE_NAMES = frozenset(dir(SQLTable))

@@ -38,6 +38,14 @@ def sample_table(sqlitedb, sample_table_class):
     # names of the columns are wrong
     sqlitedb.execute('SELECT trans_id, flag, amount, narrative FROM sample_table;')
 
+def test_colliding_field_names():
+
+    with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
+                                               ' with names that collide with built-in methods/attributes.'):
+        class FailRecord(records.SQLTable, table_name='sample_table_class'):
+            ok_name = fields.IntField()
+            insert_sql = fields.IntField()
+
 def test_insert(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Ensure the table is empty
