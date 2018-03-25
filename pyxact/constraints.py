@@ -113,10 +113,6 @@ class ForeignKeyConstraint(ColumnsConstraint):
         # in SQLRecordMetaClass
 
     def sql_ddl(self, dialect=None):
-
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
         if self.foreign_schema is None:
             foreign_table = self.foreign_table
         else:

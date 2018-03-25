@@ -118,19 +118,19 @@ class IntField(AbstractIntField):
     '''Represents an INTEGER field in a database.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=int, sql_type="INTEGER", **kwargs)
+        super().__init__(py_type=int, sql_type='INTEGER', **kwargs)
 
 class SmallIntField(AbstractIntField):
     '''Represents a SMALLINT field in a database.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=int, sql_type="SMALLINT", **kwargs)
+        super().__init__(py_type=int, sql_type='SMALLINT', **kwargs)
 
 class BigIntField(AbstractIntField):
     '''Represents a BIGINT field in a database.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=int, sql_type="BIGINT", **kwargs)
+        super().__init__(py_type=int, sql_type='BIGINT', **kwargs)
 
 class ContextIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
@@ -142,7 +142,7 @@ class ContextIntField(AbstractIntField):
     tables.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=int, sql_type="INTEGER",
+        super().__init__(py_type=int, sql_type='INTEGER',
                          nullable=True, **kwargs)
 
     def get_context(self, instance, context):
@@ -165,7 +165,7 @@ class RowEnumIntField(AbstractIntField):
     multiple rows are being INSERTED into a table at once.'''
 
     def __init__(self, starting_number=1, **kwargs):
-        super().__init__(py_type=int, sql_type="INTEGER",
+        super().__init__(py_type=int, sql_type='INTEGER',
                          nullable=True, **kwargs)
         self._starting_number = starting_number
 
@@ -225,21 +225,21 @@ class NumericField(SQLField):
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_decimal_as_text) or \
             (not dialect and dialects.DefaultDialect.store_decimal_as_text):
-            return "TEXT"
+            return 'TEXT'
         return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
 
 class RealField(SQLField):
     '''Represents a REAL field in a database, which maps to float in Python.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=float, sql_type="REAL", **kwargs)
+        super().__init__(py_type=float, sql_type='REAL', **kwargs)
 
 class BooleanField(SQLField):
     '''Represents a BOOLEAN field in a database, which maps to bool in
     Python.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=bool, sql_type="BOOLEAN", **kwargs)
+        super().__init__(py_type=bool, sql_type='BOOLEAN', **kwargs)
 
     def convert(self, value):
         if isinstance(value, int):
@@ -289,7 +289,7 @@ class TextField(SQLField):
     '''Represents a TEXT field in a database, which maps to str in Python.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=str, sql_type="TEXT", **kwargs)
+        super().__init__(py_type=str, sql_type='TEXT', **kwargs)
 
 class TimestampField(SQLField):
     '''Represents a TIMESTAMP with or without time zone.'''
@@ -305,11 +305,11 @@ class TimestampField(SQLField):
 
         if isinstance(value, datetime.datetime):
             if (value.tzinfo is None and self.tz):
-                    raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''
-                                     .format(self._name))
+                raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''
+                                 .format(self._name))
             if (value.tzinfo is not None and not self.tz):
-                    raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''
-                                     .format(self._name))
+                raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''
+                                 .format(self._name))
             return value
         elif isinstance(value, str):
             if self.tz:
@@ -323,7 +323,7 @@ class TimestampField(SQLField):
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
             (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
-            return "TEXT"
+            return 'TEXT'
         return self._sql_type
 
 class UTCNowTimestampField(TimestampField):
@@ -359,7 +359,7 @@ class DateField(SQLField):
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
             (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
-            return "TEXT"
+            return 'TEXT'
         return self._sql_type
 
 class TodayDateField(DateField):
@@ -397,7 +397,7 @@ class TimeField(SQLField):
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
             (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
-            return "TEXT"
+            return 'TEXT'
         return self._sql_type
 
 class UTCNowTimeField(TimeField):
@@ -415,4 +415,4 @@ class BlobField(SQLField):
     '''Represents a BLOB field in a database, which maps to bytes in Python.'''
 
     def __init__(self, **kwargs):
-        super().__init__(py_type=bytes, sql_type="BLOB", **kwargs)
+        super().__init__(py_type=bytes, sql_type='BLOB', **kwargs)

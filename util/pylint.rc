@@ -201,7 +201,8 @@ generated-members=_fields,
                   _records,
                   _recordlists,
                   _query_fields,
-                  _segmented_query
+                  _segmented_query,
+                  _schema
 
 # Tells whether missing members accessed in mixin class should be ignored. A
 # mixin class is detected if its name ends with "mixin" (case insensitive).

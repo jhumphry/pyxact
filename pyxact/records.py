@@ -499,7 +499,8 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'SELECT ' + self.column_names_sql() + ' FROM ' + self.qualified_name(dialect) + ' WHERE '
+        result = 'SELECT ' + self.column_names_sql()
+        result += ' FROM ' + self.qualified_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
         result += ';'
