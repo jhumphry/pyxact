@@ -63,7 +63,6 @@ class ColumnsConstraint(SQLConstraint):
             self.column_names = column_names
         self.sql_column_names = None # Will be filled out by SQLRecordMetaClass
         self.sql_options = sql_options
-        self.superkey = False
 
 class UniqueConstraint(ColumnsConstraint):
     '''This class is used to create UNIQUE constraints. Depending on the
@@ -81,7 +80,6 @@ class PrimaryKeyConstraint(ColumnsConstraint):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.superkey = True
 
     def sql_ddl(self, dialect=None):
         result = 'CONSTRAINT ' + self.sql_name + ' PRIMARY KEY ('

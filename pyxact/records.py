@@ -47,17 +47,15 @@ class SQLRecordMetaClass(type):
 
         # Now check the ColumnsConstraint for exant columns, fill out the sql_column_names
         # attribute on the constraint (which is not available when the constraint is instantiated,
-        # check if the ColumnsConstraint might be a suitable superkey (a unique or PK constraint
-        # that only references non-nullable columns), and finally fill out the sql_reference_names
-        # to be the same as the sql_column_names (a 'natural join') if it is None on a
-        # ForeignKeyConstraint.
+        # and finally set the sql_reference_names to be the same as the sql_column_names
+        # (a 'natural join') if it is None on a ForeignKeyConstraint.
 
         namespace['_primary_key'] = None
 
         for key, value in _constraints.items():
             if isinstance(value, constraints.ColumnsConstraint):
                 sql_column_names = []
-                possible_superkey = True
+
                 for column_name in value.column_names:
                     if column_name not in _fields:
                         raise AttributeError('SQLConstraint {} references non-existent column {}'
@@ -67,16 +65,14 @@ class SQLRecordMetaClass(type):
                         sql_column_names.append(_fields[column_name].sql_name)
                     else:
                         sql_column_names.append(column_name)
-                    possible_superkey &= not _fields[column_name].nullable
+
                 value.sql_column_names = tuple(sql_column_names)
 
                 if isinstance(value, constraints.PrimaryKeyConstraint):
                     if namespace['_primary_key']:
                         raise AttributeError('Attempting to have multiple primary keys')
                     namespace['_primary_key'] = value
-                if isinstance(value, (constraints.UniqueConstraint,
-                                      constraints.PrimaryKeyConstraint)):
-                    value.superkey = possible_superkey
+
                 if isinstance(value, constraints.ForeignKeyConstraint) and \
                         not value.sql_reference_names:
                     value.sql_reference_names = value.sql_column_names
