@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import VerificationError
-from . import dialects, fields, queries, records, recordlists, tables
+from . import dialects, fields, records, recordlists, tables
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
@@ -52,7 +52,7 @@ class SQLTransactionMetaClass(type):
         slots = []
         _fields = dict()
         _context_fields = dict()
-        _records = dict()
+        _tables = dict()
         _recordlists = dict()
 
         # Inherit any attributes on base classes
@@ -62,7 +62,7 @@ class SQLTransactionMetaClass(type):
                 slots.extend(i.__slots__)
                 _fields.update(i._fields)
                 _context_fields.update(i._context_fields)
-                _records.update(i._records)
+                _tables.update(i._tables)
                 _recordlists.update(i._recordlists)
 
         # Check names on attributes and add them to the appropriate internal
@@ -83,7 +83,7 @@ class SQLTransactionMetaClass(type):
                     raise AttributeError('SQLTransactionField {} has the same name as an '
                                          'SQLTransaction method or internal attribute'.format(k))
                 if issubclass(namespace[k]._record_type, tables.SQLTable):
-                    _records[k] = namespace[k]
+                    _tables[k] = namespace[k]
                 elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
                     _recordlists[k] = namespace[k]
 
@@ -94,7 +94,7 @@ class SQLTransactionMetaClass(type):
         namespace['_fields_count'] = len(_fields)
         namespace['_fields'] = _fields
         namespace['_context_fields'] = _context_fields
-        namespace['_records'] = _records
+        namespace['_tables'] = _tables
         namespace['_recordlists'] = _recordlists
         namespace['__slots__'] = slots
 
@@ -143,9 +143,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                                                    str(getattr(self, field_name))
                                                   )
 
-        for record_name in self._records:
-            result += '* {0} '.format(record_name)
-            result += str(getattr(self, record_name))
+        for table_name in self._tables:
+            result += '* {0} '.format(table_name)
+            result += str(getattr(self, table_name))
 
         for recordlist_name in self._recordlists:
             result += '* {0} '.format(recordlist_name)
@@ -260,9 +260,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         context = {}
 
-        for record_name in self._records:
-            record = getattr(self, record_name)
-            context.update(record.context_values_stored())
+        for table_name in self._tables:
+            table = getattr(self, table_name)
+            context.update(table.context_values_stored())
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -287,10 +287,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not self.verify():
             raise VerificationError
 
-        for record_name in self._records:
-            record = getattr(self, record_name)
-            cursor.execute(record.insert_sql(dialect),
-                           record.values_sql_repr(context, dialect))
+        for table_name in self._tables:
+            table = getattr(self, table_name)
+            cursor.execute(table.insert_sql(dialect),
+                           table.values_sql_repr(context, dialect))
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -316,9 +316,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not self.verify():
             raise VerificationError
 
-        for record_name in self._records:
-            record = getattr(self, record_name)
-            cursor.execute(*record.insert_sql(context, dialect))
+        for table_name in self._tables:
+            table = getattr(self, table_name)
+            cursor.execute(*table.insert_sql(context, dialect))
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -343,9 +343,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not self.verify():
             raise VerificationError
 
-        for record_name in self._records:
-            record = getattr(self, record_name)
-            cursor.execute(*(record.update_sql(context, dialect)))
+        for table_name in self._tables:
+            table = getattr(self, table_name)
+            cursor.execute(*(table.update_sql(context, dialect)))
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -369,22 +369,22 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_context()
 
-        for record_name, record_field in self._records.items():
-            record_type = record_field._record_type
+        for table_name, table_field in self._tables.items():
+            table_type = table_field._record_type
 
-            record = getattr(self, record_name)
-            if record is None:
-                record = record_type()
-                setattr(self, record_name, record)
+            table = getattr(self, table_name)
+            if table is None:
+                table = table_type()
+                setattr(self, table_name, table)
 
-            cursor.execute(*record_type.context_select_sql(context,
-                                                           dialect,
-                                                           allow_unlimited=False))
+            cursor.execute(*table_type.context_select_sql(context,
+                                                          dialect,
+                                                          allow_unlimited=False))
             nextrow = cursor.fetchone()
             if nextrow:
-                record.set_values(nextrow)
+                table.set_values(nextrow)
             else:
-                record.clear()
+                table.clear()
 
         for recordlist_name, recordlist_field in self._recordlists.items():
             recordlist_type = recordlist_field._record_type
