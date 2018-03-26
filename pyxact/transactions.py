@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import VerificationError
-from . import fields, records, recordlists, dialects, queries
+from . import dialects, fields, queries, records, recordlists, tables
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
@@ -13,12 +13,12 @@ class SQLTransactionField:
         if not isinstance(record_type, type):
             raise TypeError('record_type parameter must refer to an appropriate subclass.')
 
-        if not issubclass(record_type, (records.SQLTable,
+        if not issubclass(record_type, (tables.SQLTable,
                                         recordlists.SQLRecordList)):
             raise TypeError('record_type parameter must refer to an appropriate subclass.')
 
         if issubclass(record_type, recordlists.SQLRecordList) and \
-           not issubclass(record_type._record_type, records.SQLTable):
+           not issubclass(record_type._record_type, tables.SQLTable):
             raise TypeError('record_type parameter which are SQLRecordList must be able to contain'
                             ' an appropriate subclass.')
 
@@ -82,7 +82,7 @@ class SQLTransactionMetaClass(type):
                 if k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
                     raise AttributeError('SQLTransactionField {} has the same name as an '
                                          'SQLTransaction method or internal attribute'.format(k))
-                if issubclass(namespace[k]._record_type, records.SQLTable):
+                if issubclass(namespace[k]._record_type, tables.SQLTable):
                     _records[k] = namespace[k]
                 elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
                     _recordlists[k] = namespace[k]
@@ -161,7 +161,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = self.__class__()
         for attr in self.__slots__:
             value = getattr(self, attr)
-            if isinstance(value, (records.SQLTable, recordlists.SQLRecordList)):
+            if isinstance(value, (tables.SQLTable, recordlists.SQLRecordList)):
                 setattr(result, attr, value.copy())
             else:
                 setattr(result, attr, value)

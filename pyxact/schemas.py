@@ -4,7 +4,7 @@ mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
 from . import SQLSchemaBase
-from . import dialects, records, sequences
+from . import dialects, records, sequences, tables
 
 class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all
@@ -53,7 +53,7 @@ class SQLSchema(SQLSchemaBase):
         given a table_name. If the schema class parameter was used on defining
         the subclass then this will have already been called.'''
 
-        if not issubclass(table, records.SQLTable):
+        if not issubclass(table, tables.SQLTable):
             raise TypeError('Only SQLTable subclasses can be registered to a schema.')
 
         if table.table_name is None:

@@ -4,12 +4,12 @@ import pytest
 import pyxact.fields as fields
 import pyxact.constraints as constraints
 import pyxact.sequences as sequences
-import pyxact.records as records
+import pyxact.tables as tables
 from pyxact.dialects import sqliteDialect
 
 @pytest.fixture('module')
 def sample_table_class(sqlitedb):
-    class SampleRecord(records.SQLTable, table_name='sample_table'):
+    class SampleRecord(tables.SQLTable, table_name='sample_table'):
         trans_id=fields.ContextIntField(context_used='trans_id')
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
@@ -42,7 +42,7 @@ def test_colliding_field_names():
 
     with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
                                                ' with names that collide with built-in methods/attributes.'):
-        class FailRecord(records.SQLTable, table_name='sample_table_class'):
+        class FailRecord(tables.SQLTable, table_name='sample_table_class'):
             ok_name = fields.IntField()
             insert_sql = fields.IntField()
 
