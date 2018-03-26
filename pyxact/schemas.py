@@ -4,7 +4,7 @@ mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
 from . import SQLSchemaBase
-from . import dialects, records, sequences, tables
+from . import dialects, records, sequences, tables, views
 
 class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all
@@ -17,6 +17,8 @@ class SQLSchema(SQLSchemaBase):
         self.name = name
         self.table_types = {}
         self.tables = {}
+        self.view_types = {}
+        self.views = {}
         self.sequence_types = {}
         self.sequences = {}
 
@@ -62,6 +64,21 @@ class SQLSchema(SQLSchemaBase):
         self.table_types[table.__name__] = table
         self.tables[table.table_name] = table
 
+    def register_view(self, view):
+        '''Register an SQLView subclass as the definition of a database
+        table. Note that in order for this to work, the view must have been
+        given a view_name. If the schema class parameter was used on defining
+        the subclass then this will have already been called.'''
+
+        if not issubclass(view, views.SQLView):
+            raise TypeError('Only SQLView subclasses can be registered to a schema.')
+
+        if view.view_name is None:
+            raise TypeError('Only views with defined names can be registered to a schema.')
+
+        self.view_types[view.__name__] = view
+        self.views[view.view_name] = view
+
     def register_sequence(self, sequence):
         '''Register an SQLSequence isntance as the definition of a database
         sequence. If the schema class parameter was used on creating the
@@ -81,6 +98,9 @@ class SQLSchema(SQLSchemaBase):
 
         for i in self.table_types.values():
             cursor.execute(i.create_table_sql(dialect))
+
+        for i in self.view_types.values():
+            cursor.execute(i.create_view_sql(dialect))
 
         for i in self.sequence_types.values():
             i.create(cursor, dialect)
