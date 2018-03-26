@@ -389,7 +389,6 @@ class TimeField(SQLField):
                                  .format(self._name))
             return value
         elif isinstance(value, str):
-            dt_value = datetime.datetime.strptime(value, '%H:%M:%S.%f')
             return datetime.datetime.strptime(value, '%H:%M:%S.%f').time()
         else:
             raise TypeError

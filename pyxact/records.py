@@ -72,7 +72,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 setattr(self, key, value)
 
     def __str__(self):
-        result = self.__class__.__name__ + ':\n'
+        result = 'class ' + self.__class__.__name__ + ':\n'
         for key in self._fields.keys():
             result += '- {0} ({1}) = {2}\n'.format(key,
                                                    self._fields[key].__class__.__name__,

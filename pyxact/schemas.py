@@ -48,7 +48,7 @@ class SQLSchema(SQLSchemaBase):
         return self.name + '.' + name
 
     def register_table(self, table):
-        '''Register an SQLRecord subclass as the definition of a database
+        '''Register an SQLTable subclass as the definition of a database
         table. Note that in order for this to work, the table must have been
         given a table_name. If the schema class parameter was used on defining
         the subclass then this will have already been called.'''
