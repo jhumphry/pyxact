@@ -46,6 +46,12 @@ def test_colliding_field_names():
             ok_name = fields.IntField()
             insert_sql = fields.IntField()
 
+    with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
+                                               ' with names that collide with built-in methods/attributes.'):
+        class FailRecord2(tables.SQLTable, table_name='sample_table_class'):
+            ok_name = fields.IntField()
+            _schema = fields.IntField()
+
 def test_insert(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Ensure the table is empty

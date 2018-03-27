@@ -35,15 +35,21 @@ def test_table_creation(sample_record_class):
 
 def test_colliding_field_names():
 
-    class OKRecord(records.SQLRecord, table_name='sample_record_class'):
+    class OKRecord(records.SQLRecord):
             ok_name = fields.IntField()
             insert_sql = fields.IntField()
 
     with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'
                                                ' with names that collide with built-in methods/attributes.'):
-        class FailRecord(records.SQLRecord, table_name='sample_record_class'):
+        class FailRecord(records.SQLRecord):
             ok_name = fields.IntField()
             context_values_stored = fields.IntField()
+
+    with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'
+                                               ' with names that collide with built-in methods/attributes.'):
+        class FailRecord2(records.SQLRecord):
+            ok_name = fields.IntField()
+            _fields = fields.IntField()
 
 def test_initialization(sample_record_class):
     r1 = sample_record_class()
