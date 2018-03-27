@@ -191,10 +191,14 @@ assert trans_count_query.result_singlevalue(cursor) == 3
 # once) or the result_singlevalue method which assumes the SQL query will return
 # a single value.
 
+# Any instances of '{schema.obj}' will be replaced with the SQL standard
+# 'schema.obj' or the work-around 'schema_obj' depending on whether the database
+# in use supports SQL schema sufficiently - sqlite3 does not, for example.
+
 JOURNAL_ROW_COUNT_QUERY = '''
 SELECT transactions.created_by, transactions.trans_id, COUNT(*) AS row_count
-FROM accounting_journals AS journals
-JOIN accounting_transactions as transactions ON journals.trans_id = transactions.trans_id
+FROM {accounting.journals} AS journals
+JOIN {accounting.transactions} as transactions ON journals.trans_id = transactions.trans_id
 WHERE transactions.created_by LIKE {created_by}
 GROUP BY transactions.created_by, transactions.trans_id;
 '''

@@ -46,6 +46,7 @@ class SQLQueryMetaClass(type):
         # Now process the query text to extract placeholders and check they
         # correspond to actual context fields.
         segmented_query = []
+        segmented_query_noschema = []
         query_fields = []
         current_pos = 0
         match = CONTEXT_PLACEHOLDER_REGEXP.search(query, pos=current_pos)
@@ -56,12 +57,21 @@ class SQLQueryMetaClass(type):
                     raise AttributeError('Query placeholder {} does not match any of the '
                                          'context fields'.format(field))
                 query_fields.append(field)
-                segmented_query.append(query[current_pos:match.start()])
+
+                query_segment = query[current_pos:match.start()]
+                segmented_query.append(dialects.convert_schema_sep(query_segment, '.'))
+                segmented_query_noschema.append(dialects.convert_schema_sep(query_segment, '_'))
+
                 current_pos = match.end()
                 match = CONTEXT_PLACEHOLDER_REGEXP.search(query, pos=current_pos)
-        segmented_query.append(query[current_pos:])
+
+        query_segment = query[current_pos:]
+        segmented_query.append(dialects.convert_schema_sep(query_segment, '.'))
+        segmented_query_noschema.append(dialects.convert_schema_sep(query_segment, '_'))
+
         namespace['_query'] = query
         namespace['_segmented_query'] = segmented_query
+        namespace['_segmented_query_noschema'] = segmented_query_noschema
         namespace['_query_fields'] = query_fields
 
         return type.__new__(mcs, name, bases, namespace)
@@ -132,7 +142,9 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
         if dialect is None:
             dialect = dialects.DefaultDialect
-        return dialect.placeholder.join(cls._segmented_query)
+        if dialect.schema_support:
+            return dialect.placeholder.join(cls._segmented_query)
+        return dialect.placeholder.join(cls._segmented_query_noschema)
 
     def execute(self, cursor, dialect=None):
         '''Execute the query using the cursor.'''

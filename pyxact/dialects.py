@@ -3,6 +3,26 @@ various flavours of SQL used by different database adaptors.'''
 
 import datetime
 import decimal
+import re
+
+SCHEMA_SEPARATOR_REGEXP = re.compile(r'\{([^\}\.]+)\.([^\}\.]+)\}', re.UNICODE)
+
+def convert_schema_sep(sql_text, separator='.'):
+    '''Find any instances of '{schema.obj}' in the sql_text parameter and
+    return a string using the given separator character 'schema.obj'. This is
+    used to emulate SQL schema on databases that don't really support them.'''
+
+    match = SCHEMA_SEPARATOR_REGEXP.search(sql_text)
+    result = ''
+    current_pos = 0
+
+    if match:
+         while match:
+             result+=sql_text[current_pos:match.start()] + match[1] + separator + match[2]
+             current_pos = match.end()
+             match = SCHEMA_SEPARATOR_REGEXP.search(sql_text, match.end())
+    result += sql_text[current_pos:]
+    return result
 
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
