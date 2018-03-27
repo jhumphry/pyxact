@@ -75,12 +75,11 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         else:
             init_list = []
 
-        if init_list:
-            for record in init_list:
-                if not isinstance(record, self._record_type):
-                    raise ValueError('Value must be an instance of {0}'
-                                     .format(str(self._record_type.__name__)))
-                self._records.append(record)
+        for record in init_list:
+            if not isinstance(record, self._record_type):
+                raise ValueError('Value must be an instance of {0}'
+                                 .format(str(self._record_type.__name__)))
+            self._records.append(record)
 
     def __len__(self):
         return len(self._records)

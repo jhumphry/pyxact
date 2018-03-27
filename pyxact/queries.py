@@ -3,7 +3,7 @@
 import re
 from . import dialects, fields, records, recordlists
 
-CONTEXT_PLACEHOLDER_REGEXP = re.compile(r'\{[^\}]*\}')
+CONTEXT_PLACEHOLDER_REGEXP = re.compile(r'\{[^\}\.]+\}', re.UNICODE)
 
 class SQLQueryMetaClass(type):
     '''This metaclass ensures that SQLQuery is only subclassed with a
@@ -35,7 +35,7 @@ class SQLQueryMetaClass(type):
         _context_fields = dict()
         for k in namespace:
             if isinstance(namespace[k], fields.SQLField):
-                if k in INVALID_SQLQUERY_ATTRIBUTE_NAMES:
+                if k in INVALID_SQLQUERY_NAMES:
                     raise AttributeError('SQLField {} has the same name as an SQLQuery'
                                          ' method or internal attribute'.format(k))
                 slots.append('_'+k)
@@ -198,7 +198,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
         return result_row[0]
 
-INVALID_SQLQUERY_ATTRIBUTE_NAMES = frozenset(dir(SQLQuery))
+INVALID_SQLQUERY_NAMES = frozenset(dir(SQLQuery))
 
 class QueryIntField(fields.IntField):
     '''Represents an context field in an SQLTransaction that has a link to an
