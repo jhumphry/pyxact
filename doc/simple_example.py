@@ -4,7 +4,7 @@ tables and the insertion and retrieval of linked records.'''
 import sqlite3
 from decimal import Decimal as D
 
-from pyxact import constraints, dialects, fields, queries, records
+from pyxact import constraints, dialects, fields, indexes, queries, records
 from pyxact import recordlists, schemas, sequences, tables, transactions, views
 
 # Create a schema to hold our database objects. SQLite does not really support
@@ -40,6 +40,14 @@ class JournalRecord(tables.SQLTable, table_name='journals', schema=accounting):
     cons_fk = constraints.ForeignKeyConstraint(column_names=('trans_id',),
                                                foreign_table='transactions',
                                                foreign_schema=accounting)
+
+# Create an index on JournalRecord
+
+journals_account_idx = indexes.SQLIndex(name='journals_account_idx',
+                                        table=JournalRecord,
+                                        column_exprs=(indexes.IndexColumn('account', None, None),),
+                                        unique=False,
+                                        schema=accounting)
 
 # Creating a simple view joining the two tables
 

@@ -4,7 +4,7 @@ mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
 from . import SQLSchemaBase
-from . import dialects, records, sequences, tables, views
+from . import dialects, indexes, records, sequences, tables, views
 
 class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all
@@ -23,6 +23,8 @@ class SQLSchema(SQLSchemaBase):
         self.views = {}
         self.sequence_types = {}
         self.sequences = {}
+        self.index_types = {}
+        self.indexes = {}
         self.commands_after = []
 
     def create_schema(self, cursor, dialect=None):
@@ -105,6 +107,16 @@ class SQLSchema(SQLSchemaBase):
         self.sequence_types[sequence.name] = sequence
         self.sequences[sequence.sql_name] = sequence
 
+    def register_index(self, index):
+        '''Register an SQLIndex subclass as the definition of a database index.
+        If the schema class parameter was used on defining the subclass then
+        this will have already been called.'''
+
+        if not isinstance(index, indexes.SQLIndex):
+            raise TypeError('Only SQLIndex instances can be registered to a schema.')
+
+        self.index_types[index.name] = index
+        self.indexes[index.sql_name] = index
 
     def _run_commands(self, commands, cursor, dialect):
 
@@ -125,13 +137,16 @@ class SQLSchema(SQLSchemaBase):
 
         self._run_commands(self.commands_before, cursor, dialect)
 
+        for i in self.sequence_types.values():
+            i.create(cursor, dialect)
+
         for i in self.table_types.values():
             cursor.execute(i.create_table_sql(dialect))
 
         for i in self.view_types.values():
             cursor.execute(i.create_view_sql(dialect))
 
-        for i in self.sequence_types.values():
+        for i in self.index_types.values():
             i.create(cursor, dialect)
 
         self._run_commands(self.commands_after, cursor, dialect)
