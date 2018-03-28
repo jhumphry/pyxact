@@ -179,7 +179,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         return True
 
-    def post_select_hook(self, context):
+    def post_select_hook(self, context, cursor, dialect):
         '''This method is called at the end of the context_select method. After
         a call to this method, the a call to the verify() method should return
         True if this is possible to achieve. The use of this hook is dependent
@@ -196,7 +196,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if field in context:
                 setattr(self, field, context[field])
 
-    def pre_insert_hook(self, context):
+    def pre_insert_hook(self, context, cursor, dialect):
         '''This method is called by routines that insert a transaction into the
         database, after a context dictionary has been created but before any
         records have been written. After a call to this method, the a call to
@@ -207,7 +207,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         pass
 
-    def pre_update_hook(self, context):
+    def pre_update_hook(self, context, cursor, dialect):
         '''This method is called by routines that update a transaction in the
         database, after a context dictionary has been created but before any
         records have been written. After a call to this method, the a call to
@@ -282,7 +282,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_context()
 
-        self.pre_insert_hook(context)
+        self.pre_insert_hook(context, cursor, dialect)
 
         if not self.verify():
             raise VerificationError
@@ -311,7 +311,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_updated_context(cursor, dialect)
 
-        self.pre_insert_hook(context)
+        self.pre_insert_hook(context, cursor, dialect)
 
         if not self.verify():
             raise VerificationError
@@ -338,7 +338,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_context()
 
-        self.pre_update_hook(context)
+        self.pre_update_hook(context, cursor, dialect)
 
         if not self.verify():
             raise VerificationError
@@ -405,9 +405,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 recordlist.append(record_type(*nextrow))
                 nextrow = cursor.fetchone()
 
-        cursor.execute('COMMIT TRANSACTION;')
+        self.post_select_hook(context, cursor, dialect)
 
-        self.post_select_hook(context)
+        cursor.execute('COMMIT TRANSACTION;')
 
         if not self.verify():
             raise VerificationError

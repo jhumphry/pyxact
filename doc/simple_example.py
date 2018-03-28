@@ -152,8 +152,8 @@ assert new_trans.trans_details.narrative == 'Example usage of pyxact'
 
 class ReverseTransaction(AccountingTransaction):
 
-    def post_select_hook(self, context):
-        super().post_select_hook(context)
+    def post_select_hook(self, context, cursor, dialect):
+        super().post_select_hook(context, cursor, dialect)
         for i in self.journal_list:
             i.amount = -i.amount
         self.trans_details.trans_reversed = True
