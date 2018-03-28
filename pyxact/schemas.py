@@ -15,12 +15,15 @@ class SQLSchema(SQLSchemaBase):
     def __init__(self, name):
         super().__init__()
         self.name = name
+
+        self.commands_before = []
         self.table_types = {}
         self.tables = {}
         self.view_types = {}
         self.views = {}
         self.sequence_types = {}
         self.sequences = {}
+        self.commands_after = []
 
     def create_schema(self, cursor, dialect=None):
         '''Execute a suitable CREATE SCEHMA command (in the given
@@ -48,6 +51,18 @@ class SQLSchema(SQLSchemaBase):
             return self.name + '_' + name
 
         return self.name + '.' + name
+
+    def register_sql_command(self, command, dialect=None, after=True):
+        '''Register a string to execute as an SQL command when creating the
+        schema. By default they will be run after the other objects are
+        created, unless the after parameter is set to false. If a dialect is
+        specified, this command will only be run if that database dialect is in
+        use.'''
+
+        if after:
+            self.commands_after.append((dialect, command))
+        else:
+            self.commands_before.append((dialect, command))
 
     def register_table(self, table):
         '''Register an SQLTable subclass as the definition of a database
@@ -90,11 +105,25 @@ class SQLSchema(SQLSchemaBase):
         self.sequence_types[sequence.name] = sequence
         self.sequences[sequence.sql_name] = sequence
 
+
+    def _run_commands(self, commands, cursor, dialect):
+
+        for i in commands:
+            if i[0] is None or i[0] == dialect:
+                if i[0] is None or not dialect.schema_support:
+                    command = dialects.convert_schema_sep(i[1], '_')
+                else:
+                    command = i[1]
+                cursor.execute(command)
+
+
     def create_schema_objects(self, cursor, dialect=None):
         '''Create all of the registered objects in the schema.'''
 
         if dialect is None:
             dialect = dialects.DefaultDialect
+
+        self._run_commands(self.commands_before, cursor, dialect)
 
         for i in self.table_types.values():
             cursor.execute(i.create_table_sql(dialect))
@@ -104,3 +133,5 @@ class SQLSchema(SQLSchemaBase):
 
         for i in self.sequence_types.values():
             i.create(cursor, dialect)
+
+        self._run_commands(self.commands_after, cursor, dialect)
