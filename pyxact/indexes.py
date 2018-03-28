@@ -3,7 +3,7 @@
 from collections import namedtuple
 
 from . import SQLSchemaBase
-from . import dialects, tables, fields
+from . import dialects, tables
 
 IndexColumn = namedtuple('Column', ['column', 'collation', 'direction'])
 IndexExpr = namedtuple('Expr', ['expr'])

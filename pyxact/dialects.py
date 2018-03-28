@@ -17,10 +17,10 @@ def convert_schema_sep(sql_text, separator='.'):
     current_pos = 0
 
     if match:
-         while match:
-             result+=sql_text[current_pos:match.start()] + match[1] + separator + match[2]
-             current_pos = match.end()
-             match = SCHEMA_SEPARATOR_REGEXP.search(sql_text, match.end())
+        while match:
+            result += sql_text[current_pos:match.start()] + match[1] + separator + match[2]
+            current_pos = match.end()
+            match = SCHEMA_SEPARATOR_REGEXP.search(sql_text, match.end())
     result += sql_text[current_pos:]
     return result
 
