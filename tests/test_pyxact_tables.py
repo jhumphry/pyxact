@@ -10,7 +10,7 @@ from pyxact.dialects import sqliteDialect
 @pytest.fixture('module')
 def sample_table_class(sqlitedb):
     class SampleRecord(tables.SQLTable, table_name='sample_table'):
-        trans_id=fields.ContextIntField(context_used='trans_id')
+        trans_id=fields.IntField(context_used='trans_id')
         flag=fields.BooleanField()
         amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
         narrative=fields.TextField()

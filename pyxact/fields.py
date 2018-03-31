@@ -68,14 +68,25 @@ class SQLField:
         return instance.__getattribute__(self._slot_name)
 
     def get_context(self, instance, context):
-        '''Given a particular context dictionary, this method attempts to
-        retrieve the associated value from the given instance. Depending on the
-        type of the field, this will either be from the given instance of the
-        SQLField subclass or from the value in the context dictionary under the
-        name of the field's context_usage parameter. In the latter case the
-        value will also be stored in the instance.'''
+        '''This method retrieves the appropriate value for a field given an instance of an
+        SQLRecord class and a context dictionary. If the field was created with the 'context_used'
+        parameter set and a context dictionary has been provided, it will use the value in the
+        context dictionary and set the value in the SQLRecord instance to equal it. Otherwise it
+        will return the value currently stored in the SQLRecord instance.'''
 
-        return instance.__getattribute__(self._slot_name)
+        if self.context_used is None:
+            return instance.__getattribute__(self._slot_name)
+
+        if context is None:
+            raise ContextRequiredError
+
+        if self.context_used in context:
+            context_value = context[self.context_used]
+            self.__set__(instance, context_value)
+            return context_value
+
+        raise ContextRequiredError('''Required context '{0}' is not provided'''
+                                   .format(self.context_used))
 
     def update(self, instance, context, cursor, dialect=None):
         '''Given a (possibly partially-completed) context dictionary, a
@@ -131,30 +142,6 @@ class BigIntField(AbstractIntField):
 
     def __init__(self, **kwargs):
         super().__init__(py_type=int, sql_type='BIGINT', **kwargs)
-
-class ContextIntField(AbstractIntField):
-    '''Represents an INTEGER field in a database. When retrieved via
-    get_context, the value returned will not be that stored in the SQLRecord
-    instance, but will be retrieved from the context dictionary object passed
-    in, under the context_name specified. This is intended for use for ID
-    fields such as transaction ID, where on insertion a new value will be
-    picked from a sequence and then used to relate records in different
-    tables.'''
-
-    def __init__(self, **kwargs):
-        super().__init__(py_type=int, sql_type='INTEGER',
-                         nullable=True, **kwargs)
-
-    def get_context(self, instance, context):
-
-        if context is None:
-            raise ContextRequiredError
-
-        if self.context_used in context:
-            setattr(instance, self._slot_name, context[self.context_used])
-            return context[self.context_used]
-        raise ContextRequiredError('''Required context '{0}' is not provided'''
-                                   .format(self.context_used))
 
 class RowEnumIntField(AbstractIntField):
     '''Represents an INTEGER field in a database. When retrieved via
@@ -319,20 +306,6 @@ class TimestampField(SQLField):
             return dt_value
         else:
             raise TypeError
-
-    def get_context(self, instance, context):
-
-        if self.context_used is None:
-            return getattr(instance, self._slot_name)
-
-        if context is None:
-            raise ContextRequiredError
-
-        if self.context_used in context:
-            setattr(instance, self._slot_name, context[self.context_used])
-            return context[self.context_used]
-        raise ContextRequiredError('''Required context '{0}' is not provided'''
-                                   .format(self.context_used))
 
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \

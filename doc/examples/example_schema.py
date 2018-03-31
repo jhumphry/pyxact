@@ -30,7 +30,7 @@ tid_seq = sequences.SQLSequence(name='tid_seq', schema=accounting)
 # means that the table is automatically registered in the 'accounting' schema.
 
 class TransactionTable(tables.SQLTable, table_name='transactions', schema=accounting):
-    tid = fields.ContextIntField(context_used='tid')
+    tid = fields.IntField(context_used='tid')
     creator = fields.CharField(max_length=3)
     creation_ts = fields.TimestampField(tz=False, context_used='creation_ts')
     t_rev = fields.BooleanField(sql_name='t_rev')
@@ -43,23 +43,25 @@ class TransactionTable(tables.SQLTable, table_name='transactions', schema=accoun
 # accept certain types of values. In addition, you can not dynamically create additional attributes
 # on an instance of TransactionTable - only the four specified in the class definition above.
 
-# There are a few things to explain. A 'fields.ContextIntField' differs from a normal
-# 'fields.IntField' because it is sensitive to what is called a context dict. When the values of an
-# instance of TransactionTable are retrieved, a context dict can be passed and a ContextIntField will
-# expect to be able to update itself from a value in that dictionary (in this case, under the name
-# 'tid') and to return that value rather than any value previously stored. This is used where
-# multiple rows need to have a consistent value - for example a transaction ID number.
+# There are a few things to explain. The 'tid' field operates slightly differently from the other
+# SQLField instances because it has 'context_used' set and so it is sensitive to what is called a
+# context dictionary. When the values of an instance of TransactionTable are retrieved, a context
+# dictionary can be passed and the IntField will expect to be able to update itself from a value in
+# that dictionary (in this case, under the name 'tid') and to return that value rather than any value
+# previously stored. This is used where multiple rows need to have a consistent value - for example a
+# transaction ID number. The context dictionary carries that state from one SQLTable instance to the
+# next.
 
 # All fields take an optional 'sql_name' parameter. This allows the name used in the SQL database to
 # be different from that in Python. This is useful in cases where there is a name collision between
-# the database and one of the provided methods of SQLTable.
+# the database and one of the provided methods or attributes of SQLTable.
 
 # The 'constraints.PrimaryKeyConstraint' defines a primary key for the table. The 'column_names'
 # parameter should be passed a sequence of names of SQLField attributes that have been added to the
 # SQLTable subclass.
 
 class JournalTable(tables.SQLTable, table_name='journals', schema=accounting):
-    tid = fields.ContextIntField(context_used='tid')
+    tid = fields.IntField(context_used='tid')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)

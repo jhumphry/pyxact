@@ -25,14 +25,14 @@ trans_id_seq = sequences.SQLSequence(name='trans_id_seq', schema=accounting)
 # attributes to represent table constraints.
 
 class TransactionRecord(tables.SQLTable, table_name='transactions', schema=accounting):
-    trans_id = fields.ContextIntField(context_used='trans_id') # Context dicts are explained later
+    trans_id = fields.IntField(context_used='trans_id') # Context dicts are explained later
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()
     cons_pk = constraints.PrimaryKeyConstraint(column_names=('trans_id'))
 
 class JournalRecord(tables.SQLTable, table_name='journals', schema=accounting):
-    trans_id = fields.ContextIntField(context_used='trans_id')
+    trans_id = fields.IntField(context_used='trans_id')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
@@ -60,7 +60,7 @@ class SimpleView(views.SQLView,
                  view_name='simple_view',
                  query=SIMPLEVIEW_QUERY,
                  schema=accounting):
-    trans_id = fields.ContextIntField(context_used='trans_id')
+    trans_id = fields.IntField(context_used='trans_id')
     created_by = fields.CharField(max_length=3)
     trans_reversed = fields.BooleanField()
     narrative = fields.TextField()

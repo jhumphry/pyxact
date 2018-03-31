@@ -27,7 +27,7 @@ def holder_class(field_test_seq):
         int_field_sqlname=fields.IntField(sql_name='not_int_field_sqlname')
         smallint_field=fields.SmallIntField()
         bigint_field=fields.BigIntField()
-        context_int_field=fields.ContextIntField(context_used='int_context')
+        context_int_field=fields.IntField(context_used='int_context')
         sequence_int_field=sequences.SequenceIntField(sequence=field_test_seq)
         row_enum_int_field=fields.RowEnumIntField(context_used='row_context')
         numeric_field=fields.NumericField(precision=6, scale=2)
@@ -103,9 +103,15 @@ def test_contextintfield(context, holder, holder_class):
 
     null_context = {}
 
-    with pytest.raises(ContextRequiredError, message='ContextIntField.get_Context should complain '
+    with pytest.raises(ContextRequiredError, message='IntField.get_context should complain '
                                                      'if required context is missing'):
         holder_class.context_int_field.get_context(holder, null_context)
+
+    silly_context = {'int_context' : 'not_a_number', 'row_context' : 7}
+
+    with pytest.raises(ValueError, message='IntField.get_context should complain if it is'
+                                                     'given a context value of the wrong type'):
+        holder_class.context_int_field.get_context(holder, silly_context)
 
 def test_sequenceintfield(holder_class):
 
