@@ -49,6 +49,10 @@ class SQLTableMetaClass(records.SQLRecordMetaClass):
                                          'or internal attribute'.format(key))
                 _constraints[key] = value
 
+            if isinstance(value, type) and issubclass(value, constraints.SQLConstraint):
+                raise Warning('An SQLConstraint subclass has been attached as {} rather than an '
+                              'instance of the class. This is probably incorrect.'.format(key))
+
         namespace['_constraints'] = _constraints
 
         # Now check the ColumnsConstraint for exant columns, fill out the sql_column_names

@@ -38,6 +38,9 @@ class SQLRecordMetaClass(type):
                                          'internal attribute'.format(key))
                 slots.append('_'+key)
                 _fields[key] = value
+            if isinstance(value, type) and issubclass(value, fields.SQLField):
+                raise Warning('An SQLField subclass has been attached as {} rather than an '
+                              'instance of the class. This is probably incorrect.'.format(key))
 
         namespace['__slots__'] = tuple(slots)
         namespace['_fields'] = _fields
