@@ -320,6 +320,20 @@ class TimestampField(SQLField):
         else:
             raise TypeError
 
+    def get_context(self, instance, context):
+
+        if self.context_used is None:
+            return getattr(instance, self._slot_name)
+
+        if context is None:
+            raise ContextRequiredError
+
+        if self.context_used in context:
+            setattr(instance, self._slot_name, context[self.context_used])
+            return context[self.context_used]
+        raise ContextRequiredError('''Required context '{0}' is not provided'''
+                                   .format(self.context_used))
+
     def sql_type(self, dialect=None):
         if (dialect and dialect.store_date_time_datetime_as_text) or \
             (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
