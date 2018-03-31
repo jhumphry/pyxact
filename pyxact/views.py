@@ -65,7 +65,10 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
 
         result = 'CREATE VIEW IF NOT EXISTS ' + cls.qualified_view_name(dialect) + ' ('
         result += ', '.join(cls._fields.keys())
-        result += ') AS \n' + cls._query + ';'
+        if dialect.schema_support:
+            result += ') AS \n' + dialects.convert_schema_sep(cls._query, '.')  + ';'
+        else:
+            result += ') AS \n' + dialects.convert_schema_sep(cls._query, '_')  + ';'
         return result
 
     @classmethod
