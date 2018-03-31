@@ -3,7 +3,7 @@
 import sqlite3
 from decimal import Decimal as D
 
-from pyxact import constraints, dialects, fields, indexes, queries, records
+from pyxact import constraints, dialects, fields, indexes
 from pyxact import recordlists, schemas, sequences, tables, transactions, views
 
 # These examples are going to sketch out a very simplistic version of an accounting application. All
@@ -140,7 +140,7 @@ class AccountingTransaction(transactions.SQLTransaction):
     journal_list = transactions.SQLTransactionField(JournalList)
 
     def verify(self):
-        return super().verify() and sum(self.journal_list.amount)==0
+        return super().verify() and sum(self.journal_list.amount) == 0
 
 # AccountingTransaction ties together a single TransactionTable, a JournalList holding a variable
 # number of JournalTable, and a number of 'context fields'. When the 'insert_new' method is called on
@@ -184,7 +184,7 @@ test_transaction2.journal_list[2].account = 1003
 # ensure a deep copy is made - otherwise the values stored in one may just be aliases of the values
 # stored in the other.
 
-def create_example_schema(cursor, dialect=dialects.sqliteDialect):
+def create_example_schema(cursor, dialect=dialects.DefaultDialect):
     '''Create the example 'accounting' schema in the database using the cursor and the database
     dialect supplied. The dialect is an object that defines the peculiarities of a particular
     database and its Python database adaptor. Most methods will use the variable
@@ -197,7 +197,7 @@ def create_example_schema(cursor, dialect=dialects.sqliteDialect):
 
     cursor.execute('COMMIT TRANSACTION;')
 
-def populate_example_schema(cursor, dialect=dialects.sqliteDialect):
+def populate_example_schema(cursor, dialect=dialects.DefaultDialect):
     '''Add some sample data to the example 'accounting' schema.'''
 
     # Note that SQLTransactions issue 'BEGIN TRANSACTION' and 'COMMIT TRANSACTION' themselves
@@ -221,4 +221,3 @@ if __name__ == '__main__':
 
     assert new_trans.journal_list[2].account == 1003
     assert new_trans.transaction.narrative == 'Example usage of pyxact'
-

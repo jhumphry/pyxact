@@ -1,14 +1,14 @@
 '''This module defines Python types that map to SQL database views.'''
 
 from . import UnconstrainedWhereError, SQLSchemaBase
-from . import constraints, dialects, fields, records
+from . import dialects, records
 
 INVALID_SQLVIEW_NAMES = None
 
 class SQLViewMetaClass(records.SQLRecordMetaClass):
-    '''This is a metaclass that automatically identifies the SQLField and
-    SQLConstraint member attributes added to new subclasses and creates
-    additional private attributes to help order and access them.'''
+    '''This is a metaclass that automatically identifies the SQLField and SQLConstraint member
+    attributes added to new subclasses and creates additional private attributes to help order and
+    access them.'''
 
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
@@ -34,9 +34,9 @@ class SQLViewMetaClass(records.SQLRecordMetaClass):
         return new_record_class
 
 class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
-    '''SQLView is a subclass of SQLRecord that contains additional information
-    needed to map an SQLRecord to a specific view. It also contains methods
-    that allow for selecting records from the view.'''
+    '''SQLView is a subclass of SQLRecord that contains additional information needed to map an
+    SQLRecord to a specific view. It also contains methods that allow for selecting records from
+    the view.'''
 
     def __str__(self):
         result = 'SQLView "' + self._view_name + '"\n'
@@ -60,8 +60,8 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
 
     @classmethod
     def create_view_sql(cls, dialect=None):
-        '''Returns a string containing the CREATE TABLE command (in the given
-        SQL dialect) that will create the table defined by the SQLRecord.'''
+        '''Returns a string containing the CREATE TABLE command (in the given SQL dialect) that
+        will create the table defined by the SQLRecord.'''
 
         result = 'CREATE VIEW IF NOT EXISTS ' + cls.qualified_view_name(dialect) + ' ('
         result += ', '.join(cls._fields.keys())
@@ -73,12 +73,10 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
 
     @classmethod
     def simple_select_sql(cls, dialect=None, **kwargs):
-        '''Returns a tuple of a string containing the parametrised SELECT command (in the
-        given SQL dialect) required to retrieve data from the SQL table
-        represented by the SQLRecord, and the values to pass as parameters.
-        Only the most basic form of WHERE clause is supported, with exact
-        values for columns specified in the form of keyword arguments to the
-        method.'''
+        '''Returns a tuple of a string containing the parametrised SELECT command (in the given SQL
+        dialect) required to retrieve data from the SQL View represented by the SQLView, and the
+        values to pass as parameters. Only the most basic form of WHERE clause is supported, with
+        exact values for columns specified in the form of keyword arguments to the method.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -101,10 +99,9 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
     @classmethod
     def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
         '''This method  takes a context dictionary of name:value pairs and identifies those
-        SQLFields within the SQLRecord that would use the context values provided by
-        any of those names. It then constructs an SQL statement using the column names
-        of the identified SQLFields and returns that statement and the list of relevant
-        values.'''
+        SQLFields within the SQLView that would use the context values provided by any of those
+        names. It then constructs an SQL statement using the column names of the identified
+        SQLFields and returns that statement and the list of relevant values.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -133,8 +130,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         result += ';'
         return (result, column_values)
 
-# This constant records all the method and attribute names used in SQLRecord
-# and SQLTable so thatthe metaclasses can detect any attempts to overwrite
-# them in subclasses.
+# This constant records all the method and attribute names used in SQLRecord and SQLTable so that
+# the metaclasses can detect any attempts to overwrite them in subclasses.
 
 INVALID_SQLVIEW_NAMES = frozenset(dir(SQLView))

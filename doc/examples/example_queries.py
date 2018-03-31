@@ -69,8 +69,8 @@ if __name__ == '__main__':
     conn.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
 
     cursor = conn.cursor()
-    example_schema.create_example_schema(cursor, dialects.sqliteDialect)
-    example_schema.populate_example_schema(cursor, dialects.sqliteDialect)
+    example_schema.create_example_schema(cursor)
+    example_schema.populate_example_schema(cursor)
 
     # First we are going to count the number of transactions in the example schema...
     transaction_count_query = TransactionCountQuery()
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # Now we are going to count the number of journal rows for all transactions created by all
     # creators (all creators are selected as the 'created_by' pattern is the SQL wildcard '%').
     journal_row_count_query = JournalRowCountQuery(creator_pattern='%')
-    journal_row_count_query.execute(cursor, dialects.sqliteDialect)
+    journal_row_count_query.execute(cursor)
 
     print('\nTransactions and associated journal entries:\n')
 
