@@ -90,11 +90,11 @@ class SQLSchema(SQLSchemaBase):
         if not issubclass(view, views.SQLView):
             raise TypeError('Only SQLView subclasses can be registered to a schema.')
 
-        if view.view_name is None:
+        if view._view_name is None:
             raise TypeError('Only views with defined names can be registered to a schema.')
 
         self.view_types[view.__name__] = view
-        self.views[view.view_name] = view
+        self.views[view._view_name] = view
 
     def register_sequence(self, sequence):
         '''Register an SQLSequence isntance as the definition of a database
@@ -144,7 +144,7 @@ class SQLSchema(SQLSchemaBase):
             cursor.execute(i._create_table_sql(dialect))
 
         for i in self.view_types.values():
-            cursor.execute(i.create_view_sql(dialect))
+            cursor.execute(i._create_view_sql(dialect))
 
         for i in self.index_types.values():
             i.create(cursor, dialect)

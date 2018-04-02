@@ -44,13 +44,13 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return result
 
     @property
-    def view_name(self):
+    def _view_name(self):
         '''The name of the view used in SQL.'''
 
         return self._view_name
 
     @classmethod
-    def qualified_view_name(cls, dialect=None):
+    def _qualified_view_name(cls, dialect=None):
         '''The (possibly schema-qualified) name of the view used in SQL.'''
 
         if cls._schema is None:
@@ -59,11 +59,11 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return cls._schema.qualified_name(cls._view_name, dialect)
 
     @classmethod
-    def create_view_sql(cls, dialect=None):
+    def _create_view_sql(cls, dialect=None):
         '''Returns a string containing the CREATE TABLE command (in the given SQL dialect) that
         will create the table defined by the SQLRecord.'''
 
-        result = 'CREATE VIEW IF NOT EXISTS ' + cls.qualified_view_name(dialect) + ' ('
+        result = 'CREATE VIEW IF NOT EXISTS ' + cls._qualified_view_name(dialect) + ' ('
         result += ', '.join(cls._fields.keys())
         if dialect.schema_support:
             result += ') AS \n' + dialects.convert_schema_sep(cls._query, '.')  + ';'
@@ -72,7 +72,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return result
 
     @classmethod
-    def simple_select_sql(cls, dialect=None, **kwargs):
+    def _simple_select_sql(cls, dialect=None, **kwargs):
         '''Returns a tuple of a string containing the parametrised SELECT command (in the given SQL
         dialect) required to retrieve data from the SQL View represented by the SQLView, and the
         values to pass as parameters. Only the most basic form of WHERE clause is supported, with
@@ -85,7 +85,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_view_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name(dialect)
         if kwargs:
             result += ' WHERE '
             result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
@@ -97,7 +97,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return (result, values)
 
     @classmethod
-    def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+    def _context_select_sql(cls, context, dialect=None, allow_unlimited=True):
         '''This method  takes a context dictionary of name:value pairs and identifies those
         SQLFields within the SQLView that would use the context values provided by any of those
         names. It then constructs an SQL statement using the column names of the identified
@@ -106,7 +106,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_view_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name(dialect)
 
         column_sql_names = []
         column_values = []
