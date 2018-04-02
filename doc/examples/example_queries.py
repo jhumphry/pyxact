@@ -74,17 +74,17 @@ if __name__ == '__main__':
 
     # First we are going to count the number of transactions in the example schema...
     transaction_count_query = TransactionCountQuery()
-    transaction_count_query.execute(cursor)
-    assert transaction_count_query.result_singlevalue(cursor) == 2
+    transaction_count_query._execute(cursor)
+    assert transaction_count_query._result_singlevalue(cursor) == 2
 
     # Now we are going to count the number of journal rows for all transactions created by all
     # creators (all creators are selected as the 'created_by' pattern is the SQL wildcard '%').
     journal_row_count_query = JournalRowCountQuery(creator_pattern='%')
-    journal_row_count_query.execute(cursor)
+    journal_row_count_query._execute(cursor)
 
     print('\nTransactions and associated journal entries:\n')
 
-    for i in journal_row_count_query.result_records(cursor):
+    for i in journal_row_count_query._result_records(cursor):
         print(i)
 
     # SQLQuery instances have a result_records generator method that returns one SQLRecord for each

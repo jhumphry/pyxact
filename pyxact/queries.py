@@ -109,7 +109,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
                     raise ValueError('{0} is not a valid attribute name.'.format(key))
                 setattr(self, key, value)
 
-    def get_context(self):
+    def _get_context(self):
         '''Return a context dictionary created from the values stored under the
         names of the SQLField objects directly attached as attributes to the
         SQLQuery.'''
@@ -119,13 +119,13 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             result[i] = getattr(self, i)
         return result
 
-    def query_values(self):
+    def _query_values(self):
         '''Return a correctly-ordered list of the values that need to be passed
         to the database to execute the query.'''
 
         return [getattr(self, i) for i in self._query_fields]
 
-    def query_values_sql_repr(self, dialect=None):
+    def _query_values_sql_repr(self, dialect=None):
         '''Return a correctly-ordered list of the values that need to be passed
         to the database to execute the query, using the appropriate SQL adaptor
         dialect.'''
@@ -136,7 +136,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
         return [dialect.sql_repr(getattr(self, i)) for i in self._query_fields]
 
     @classmethod
-    def query_sql(cls, dialect=None):
+    def _query_sql(cls, dialect=None):
         '''Return the SQL query text using the correct placeholder for the SQL
         dialect in use.'''
 
@@ -146,15 +146,15 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             return dialect.placeholder.join(cls._segmented_query)
         return dialect.placeholder.join(cls._segmented_query_noschema)
 
-    def execute(self, cursor, dialect=None):
+    def _execute(self, cursor, dialect=None):
         '''Execute the query using the cursor.'''
 
         if dialect is None:
             dialect = dialects.DefaultDialect
-        cursor.execute(self.query_sql(dialect), self.query_values_sql_repr())
+        cursor.execute(self._query_sql(dialect), self._query_values_sql_repr())
 
     @classmethod
-    def result_records(cls, cursor):
+    def _result_records(cls, cursor):
         '''Take a database cursor with an executed query and for each row
         returned by this query, yield an instance of the SQLRecord subclass
         specified via record_type when SQLQuery was subclassed.'''
@@ -169,7 +169,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             next_row = cursor.fetchone()
 
     @classmethod
-    def result_record(cls, cursor):
+    def _result_record(cls, cursor):
         '''Take a database cursor with an executed query return an instance of
         the SQLRecord subclass specified via record_type when SQLQuery was
         subclassed. None is returned if there are no more results.'''
@@ -184,7 +184,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
         return None
 
     @classmethod
-    def result_recordlist(cls, cursor):
+    def _result_recordlist(cls, cursor):
         '''Take a database cursor with an executed query and return an instance
         of the SQLRecordList subclass specified when SQLQuery was
         subclassed.'''
@@ -196,7 +196,7 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
         return cls._recordlist_type((cls._record_type(*x) for x in cursor.fetchall()))
 
     @staticmethod
-    def result_singlevalue(cursor):
+    def _result_singlevalue(cursor):
         '''Take a database cursor with an executed query that returns a single
         value and return just that value.'''
 
@@ -235,7 +235,7 @@ class QueryIntField(fields.IntField):
     def update(self, instance, context, cursor, dialect=None):
 
         query = self.query(**context)
-        query.execute(cursor, dialect)
-        value = query.result_singlevalue(cursor)
+        query._execute(cursor, dialect)
+        value = query._result_singlevalue(cursor)
         setattr(instance, self.slot_name, self.convert(value))
         return value
