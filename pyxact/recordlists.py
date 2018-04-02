@@ -111,7 +111,7 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
                                             )
         return result
 
-    def append(self, value):
+    def _append(self, value):
         '''Append value to the end of the list of SQLRecords.'''
 
         if not isinstance(value, self._record_type):
@@ -119,12 +119,12 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
                              .format(str(self._record_type.__name__)))
         self._records.append(value)
 
-    def clear(self):
+    def _clear(self):
         '''Clear the list of SQLRecords.'''
 
         self._records.clear()
 
-    def copy(self):
+    def _copy(self):
         '''Create a deep-copy of the list by calling SQLRecord.copy() on each
         of the underlying records and adding them to a new SQLRecordList
         instantiation.'''
@@ -134,9 +134,8 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
             result._records.extend((x._copy() for x in self._records))
         return result
 
-    _copy = copy
 
-    def extend(self, values):
+    def _extend(self, values):
         '''Extend the SQLRecordList with the list of records found in values.'''
 
         if all((isinstance(x, self._record_type) for x in values)):
@@ -145,7 +144,7 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
             raise ValueError('Values must be instances of {0}'
                              .format(str(self._record_type.__name__)))
 
-    def insert(self, index, obj):
+    def _insert(self, index, obj):
         '''Insert SQLRecord obj at index position index.'''
 
         if not isinstance(obj, self._record_type):
@@ -153,20 +152,14 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
                              .format(str(self._record_type.__name__)))
         self._records.insert(index, obj)
 
-    @property
-    def record_type(self):
-        '''Return the SQLRecord subclass that this SQLRecordList can contain.'''
-
-        return self._record_type
-
-    def values(self, context=None):
+    def _values(self, context=None):
         '''Returns a list of lists of values stored in the SQLField attributes
         of the underlying SQLRecord instances. A context dictionary can be
         provided for SQLField types that require one.'''
 
         return [x._values(context) for x in self._records]
 
-    def values_sql_repr(self, context=None, dialect=None):
+    def _values_sql_repr(self, context=None, dialect=None):
         '''Returns a list of lists of values stored in the SQLField attributes
         of the underlying SQLRecord instances. A context dictionary can be
         provided for SQLField types that require one. The values are in the

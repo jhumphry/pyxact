@@ -294,8 +294,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist.record_type._insert_sql(dialect),
-                               recordlist.values_sql_repr(context, dialect))
+            cursor.executemany(recordlist._record_type._insert_sql(dialect),
+                               recordlist._values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
 
@@ -322,8 +322,8 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist.record_type._insert_sql_command(dialect),
-                               recordlist.values_sql_repr(context, dialect))
+            cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
+                               recordlist._values_sql_repr(context, dialect))
 
         cursor.execute('COMMIT TRANSACTION;')
 
@@ -395,14 +395,14 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 recordlist = recordlist_type()
                 setattr(self, recordlist_name, recordlist)
 
-            recordlist.clear()
+            recordlist._clear()
 
             cursor.execute(*record_type._context_select_sql(context,
                                                             dialect,
                                                             allow_unlimited=False))
             nextrow = cursor.fetchone()
             while nextrow:
-                recordlist.append(record_type(*nextrow))
+                recordlist._append(record_type(*nextrow))
                 nextrow = cursor.fetchone()
 
         self._post_select_hook(context, cursor, dialect)
