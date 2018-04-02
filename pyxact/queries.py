@@ -220,6 +220,31 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
 INVALID_SQLQUERY_NAMES = frozenset(dir(SQLQuery))
 
+def query_field(query):
+    '''This function changes the 'update' method of the SQLField instance it is applied to so that
+    it runs an SQLQuery with a single-column result and uses the result as the value to update the
+    SQLRecord with.'''
+
+    if not issubclass(query, SQLQuery):
+        raise TypeError('queryfield needs an SQLQuery subclass')
+
+    def queryfield_decorator(field):
+        if not issubclass(field, fields.SQLField):
+            raise TypeError('queryfield can only be applied to SQLField instances')
+
+        def update_from_query(self, instance, context, cursor, dialect=None):
+            query = self.query()
+            query._set_context(context)
+            query._execute(cursor, dialect)
+            value = query._result_singlevalue(cursor)
+            setattr(instance, self.slot_name, self.convert(value))
+            return value
+
+        field.query = query
+        field.update = update_from_query
+        return field
+    return queryfield_decorator
+
 class QueryIntField(fields.IntField):
     '''Represents an context field in an SQLTransaction that has a link to an
     SQLQuery. It can be retrieved and set as a normal SQLField. When
