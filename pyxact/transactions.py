@@ -153,7 +153,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         return result
 
-    def copy(self):
+    def _copy(self):
         '''Create a deep copy of an instance of an SQLTransaction. If normal
         assignment is used, the copies will be shallow and changing the
         attributes on one instance will affect the other.'''
@@ -167,7 +167,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 setattr(result, attr, value)
         return result
 
-    def verify(self):
+    def _verify(self):
         '''Return a boolean indicating whether this SQLTransaction meets
         internal consistency requirements (i.e. those that do not require
         database access). If True is returned, the SQLTransaction should be
@@ -179,9 +179,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         return True
 
-    def post_select_hook(self, context, cursor, dialect):
+    def _post_select_hook(self, context, cursor, dialect):
         '''This method is called at the end of the context_select method. After
-        a call to this method, the a call to the verify() method should return
+        a call to this method, the a call to the _verify() method should return
         True if this is possible to achieve. The use of this hook is dependent
         on the domain for which SQLTransaction has been subclassed. The default
         implementation for SQLTransaction retrieves all the context information
@@ -190,28 +190,28 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         necessary to identify the records to retrieve, but having the other
         context fields completed is useful for further processing.'''
 
-        context = self.get_context_from_records()
+        context = self._get_context_from_records()
 
         for field in self._context_fields:
             if field in context:
                 setattr(self, field, context[field])
 
-    def pre_insert_hook(self, context, cursor, dialect):
+    def _pre_insert_hook(self, context, cursor, dialect):
         '''This method is called by routines that insert a transaction into the
         database, after a context dictionary has been created but before any
         records have been written. After a call to this method, the a call to
-        the verify() method should return True if this is possible to achieve.
+        the _verify() method should return True if this is possible to achieve.
         The use of this hook is dependent on the domain for which
         SQLTransaction has been subclassed. The default implementation does
         nothing.'''
 
         pass
 
-    def pre_update_hook(self, context, cursor, dialect):
+    def _pre_update_hook(self, context, cursor, dialect):
         '''This method is called by routines that update a transaction in the
         database, after a context dictionary has been created but before any
         records have been written. After a call to this method, the a call to
-        the verify() method should return True if this is possible to achieve.
+        the _verify() method should return True if this is possible to achieve.
         The use of this hook is dependent on the domain for which
         SQLTransaction has been subclassed. The default implementation does
         nothing.'''
@@ -248,7 +248,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 result[field_name] = tmp
         return result
 
-    def get_context_from_records(self):
+    def _get_context_from_records(self):
         '''This method makes the context dictionary by scanning the SQLTable
         and SQLRecordList contained in SQLTransactionField attributes
         and working out what context name:value pairs are consistent with them.
@@ -271,7 +271,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         return context
 
-    def insert_existing(self, cursor, dialect=None):
+    def _insert_existing(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
         method stores only the existing data and will not update any values
         that are linked to sequences in the database.'''
@@ -282,9 +282,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_context()
 
-        self.pre_insert_hook(context, cursor, dialect)
+        self._pre_insert_hook(context, cursor, dialect)
 
-        if not self.verify():
+        if not self._verify():
             raise VerificationError
 
         for table_name in self._tables:
@@ -299,7 +299,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-    def insert_new(self, cursor, dialect=None):
+    def _insert_new(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
         method will update any values that are linked to sequences or queries
         in the database and then check that the verify method returns True
@@ -311,9 +311,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_updated_context(cursor, dialect)
 
-        self.pre_insert_hook(context, cursor, dialect)
+        self._pre_insert_hook(context, cursor, dialect)
 
-        if not self.verify():
+        if not self._verify():
             raise VerificationError
 
         for table_name in self._tables:
@@ -327,7 +327,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-    def update(self, cursor, dialect=None):
+    def _update(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
         method stores only the existing data and will not update any values
         that are linked to sequences in the database.'''
@@ -338,9 +338,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         cursor.execute('BEGIN TRANSACTION;')
         context = self._get_context()
 
-        self.pre_update_hook(context, cursor, dialect)
+        self._pre_update_hook(context, cursor, dialect)
 
-        if not self.verify():
+        if not self._verify():
             raise VerificationError
 
         for table_name in self._tables:
@@ -354,7 +354,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         cursor.execute('COMMIT TRANSACTION;')
 
-    def context_select(self, cursor, dialect=None):
+    def _context_select(self, cursor, dialect=None):
         '''This method extracts the values stored in SQLField directly attached
         to the SQLTransaction and stored them in a context dictionary under the
         name of the attribute. It then attempts to use this dictionary to
@@ -405,11 +405,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 recordlist.append(record_type(*nextrow))
                 nextrow = cursor.fetchone()
 
-        self.post_select_hook(context, cursor, dialect)
+        self._post_select_hook(context, cursor, dialect)
 
         cursor.execute('COMMIT TRANSACTION;')
 
-        if not self.verify():
+        if not self._verify():
             raise VerificationError
 
 # This constant records all the method and attribute names used in

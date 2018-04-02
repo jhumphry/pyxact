@@ -139,8 +139,8 @@ class AccountingTransaction(transactions.SQLTransaction):
     transaction = transactions.SQLTransactionField(TransactionTable)
     journal_list = transactions.SQLTransactionField(JournalList)
 
-    def verify(self):
-        return super().verify() and sum(self.journal_list.amount) == 0
+    def _verify(self):
+        return super()._verify() and sum(self.journal_list.amount) == 0
 
 # AccountingTransaction ties together a single TransactionTable, a JournalList holding a variable
 # number of JournalTable, and a number of 'context fields'. When the 'insert_new' method is called on
@@ -153,7 +153,7 @@ class AccountingTransaction(transactions.SQLTransaction):
 # same 'tid' and 'creation_ts' values, and the RowEnumIntField of the JournalTable records will have
 # enumerated them.
 
-# AccountingTransaction has been given an optional domain-specific verify method that checks for
+# AccountingTransaction has been given an optional domain-specific _verify method that checks for
 # internal consistency - in this case checking that the accounting journal balances and is valid for
 # double-entry book-keeping.
 
@@ -175,7 +175,7 @@ test_transaction1 = AccountingTransaction(transaction=sample_transaction,
 # certain fields where we expect them to be completed from the context dictionary, or automatically
 # completed.
 
-test_transaction2 = test_transaction1.copy()
+test_transaction2 = test_transaction1._copy()
 
 test_transaction2.transaction.creator = 'DEF'
 test_transaction2.journal_list[2].account = 1003
@@ -202,8 +202,8 @@ def populate_example_schema(cursor, dialect=dialects.DefaultDialect):
 
     # Note that SQLTransactions issue 'BEGIN TRANSACTION' and 'COMMIT TRANSACTION' themselves
 
-    test_transaction1.insert_new(cursor, dialect)
-    test_transaction2.insert_new(cursor, dialect)
+    test_transaction1._insert_new(cursor, dialect)
+    test_transaction2._insert_new(cursor, dialect)
 
 if __name__ == '__main__':
     conn = sqlite3.connect(':memory:')
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     # context fields appropriately and call context_select to fill in the rest of the data.
 
     new_trans = AccountingTransaction(tid=2)
-    new_trans.context_select(cursor)
+    new_trans._context_select(cursor)
 
     assert new_trans.journal_list[2].account == 1003
     assert new_trans.transaction.narrative == 'Example usage of pyxact'
