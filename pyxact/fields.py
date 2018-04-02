@@ -12,39 +12,39 @@ class SQLField:
 
     def __init__(self, py_type=None, sql_name=None, context_used=None,
                  sql_ddl_options='', sql_type=None, nullable=True):
-        self._py_type = py_type
+        self.py_type = py_type
         self.sql_name = sql_name
         self.context_used = context_used
         self._sql_ddl_options = sql_ddl_options
         self._sql_type = sql_type
         self.nullable = nullable
-        self._name = None
-        self._slot_name = None
+        self.name = None
+        self.slot_name = None
 
     def __set_name__(self, owner, name):
-        self._name = name
-        self._slot_name = '_' + name
+        self.name = name
+        self.slot_name = '_' + name
         if self.sql_name is None:
             self.sql_name = name
 
     def __set__(self, instance, value):
         if value is None:
             if self.nullable:
-                instance.__setattr__(self._slot_name, None)
+                instance.__setattr__(self.slot_name, None)
             else:
-                raise TypeError('''Field '{0}' can not be null.'''.format(self._name))
-        elif self._py_type is not None and isinstance(value, self._py_type):
-            instance.__setattr__(self._slot_name, value)
+                raise TypeError('''Field '{0}' can not be null.'''.format(self.name))
+        elif self.py_type is not None and isinstance(value, self.py_type):
+            instance.__setattr__(self.slot_name, value)
         else:
             try:
-                instance.__setattr__(self._slot_name, self.convert(value))
+                instance.__setattr__(self.slot_name, self.convert(value))
             except TypeError as te_raised:
                 raise TypeError('''Field '{0}' cannot be set to value '{1}' of type '{2}.'''
-                                .format(self._name, str(value), str(type(value)))) from te_raised
+                                .format(self.name, str(value), str(type(value)))) from te_raised
 
     def __get__(self, instance, owner):
         if instance is not None:
-            return instance.__getattribute__(self._slot_name)
+            return instance.__getattribute__(self.slot_name)
         return self
 
     def __str__(self):
@@ -65,7 +65,7 @@ class SQLField:
         '''This method attempts to retrieve the associated value from the given
         instance.'''
 
-        return instance.__getattribute__(self._slot_name)
+        return instance.__getattribute__(self.slot_name)
 
     def get_context(self, instance, context):
         '''This method retrieves the appropriate value for a field given an instance of an
@@ -75,7 +75,7 @@ class SQLField:
         will return the value currently stored in the SQLRecord instance.'''
 
         if self.context_used is None:
-            return instance.__getattribute__(self._slot_name)
+            return instance.__getattribute__(self.slot_name)
 
         if context is None:
             raise ContextRequiredError
@@ -95,7 +95,7 @@ class SQLField:
         SQLField instance. It should also return the value. The default action
         is to simply return the existing value unchanged.'''
 
-        return instance.__getattribute__(self._slot_name)
+        return instance.__getattribute__(self.slot_name)
 
     def sql_type(self, dialect=None):
         '''Returns the SQL definition of the data type of the field in the
@@ -163,11 +163,11 @@ class RowEnumIntField(AbstractIntField):
 
         if self.context_used in context:
             context[self.context_used] += 1
-            setattr(instance, self._slot_name, context[self.context_used])
+            setattr(instance, self.slot_name, context[self.context_used])
             return context[self.context_used]
 
         context[self.context_used] = self._starting_number
-        setattr(instance, self._slot_name, self._starting_number)
+        setattr(instance, self.slot_name, self._starting_number)
         return self._starting_number
 
 class NumericField(SQLField):
@@ -251,7 +251,7 @@ class VarCharField(SQLField):
                     return value[0:self._max_length]
                 else:
                     raise ValueError('''Field '{0}' can not accept strings longer than {1}.'''
-                                     .format(self._name, self._max_length))
+                                     .format(self.name, self._max_length))
             else:
                 return value
 
@@ -293,10 +293,10 @@ class TimestampField(SQLField):
         if isinstance(value, datetime.datetime):
             if (value.tzinfo is None and self.tz):
                 raise ValueError('''Field '{0}' needs a datetime object with tzinfo.'''
-                                 .format(self._name))
+                                 .format(self.name))
             if (value.tzinfo is not None and not self.tz):
                 raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''
-                                 .format(self._name))
+                                 .format(self.name))
             return value
         elif isinstance(value, str):
             if self.tz:
@@ -324,7 +324,7 @@ class UTCNowTimestampField(TimestampField):
 
     def update(self, instance, context, cursor, dialect=None):
         now_utc = datetime.datetime.utcnow()
-        setattr(instance, self._slot_name, now_utc)
+        setattr(instance, self.slot_name, now_utc)
         return now_utc
 
 class DateField(SQLField):
@@ -355,7 +355,7 @@ class TodayDateField(DateField):
 
     def update(self, instance, context, cursor, dialect=None):
         today = datetime.date.today()
-        setattr(instance, self._slot_name, today)
+        setattr(instance, self.slot_name, today)
         return today
 
 class TimeField(SQLField):
@@ -373,7 +373,7 @@ class TimeField(SQLField):
         if isinstance(value, datetime.time):
             if value.tzinfo is not None:
                 raise ValueError('''Field '{0}' needs a time object without tzinfo.'''
-                                 .format(self._name))
+                                 .format(self.name))
             return value
         elif isinstance(value, str):
             return datetime.datetime.strptime(value, '%H:%M:%S.%f').time()
@@ -394,7 +394,7 @@ class UTCNowTimeField(TimeField):
 
     def update(self, instance, context, cursor, dialect=None):
         now_utc = datetime.datetime.utcnow().time()
-        setattr(instance, self._slot_name, now_utc)
+        setattr(instance, self.slot_name, now_utc)
         return now_utc
 
 class BlobField(SQLField):

@@ -237,5 +237,5 @@ class QueryIntField(fields.IntField):
         query = self.query(**context)
         query.execute(cursor, dialect)
         value = query.result_singlevalue(cursor)
-        setattr(instance, self._slot_name, self.convert(value))
+        setattr(instance, self.slot_name, self.convert(value))
         return value

@@ -144,5 +144,5 @@ class SequenceIntField(fields.AbstractIntField):
     def update(self, instance, context, cursor, dialect=None):
 
         value = self.sequence.nextval(cursor, dialect)
-        setattr(instance, self._slot_name, value)
+        setattr(instance, self.slot_name, value)
         return value

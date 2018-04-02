@@ -129,7 +129,7 @@ def test_get_set_clear(sample_record_class):
 def test_fields_values_items(sample_record_class):
 
     r1 = sample_record_class(trans_id=1, flag=True, amount=3.0, narrative='test')
-    field_names = [x._name for x in r1.fields()]
+    field_names = [x.name for x in r1.fields()]
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
 
     assert r1.values() == [1, True, 3.0, 'test']
