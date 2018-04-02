@@ -109,6 +109,14 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
                     raise ValueError('{0} is not a valid attribute name.'.format(key))
                 setattr(self, key, value)
 
+    def _set_context(self, context):
+        '''Set the values stored as SQLField objects directly attached as attributes to the
+        SQLQuery to the values in the supplied context dictionary if present.'''
+
+        for key in self._context_fields.keys():
+            if key in context:
+                setattr(self, key, context[key])
+
     def _get_context(self):
         '''Return a context dictionary created from the values stored under the
         names of the SQLField objects directly attached as attributes to the
@@ -234,7 +242,8 @@ class QueryIntField(fields.IntField):
 
     def update(self, instance, context, cursor, dialect=None):
 
-        query = self.query(**context)
+        query = self.query()
+        query._set_context(context)
         query._execute(cursor, dialect)
         value = query._result_singlevalue(cursor)
         setattr(instance, self.slot_name, self.convert(value))
