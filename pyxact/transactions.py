@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import VerificationError
-from . import dialects, fields, records, recordlists, tables
+from . import dialects, fields, recordlists, tables
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for

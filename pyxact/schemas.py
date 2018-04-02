@@ -4,7 +4,7 @@ mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
 from . import SQLSchemaBase
-from . import dialects, indexes, records, sequences, tables, views
+from . import dialects, indexes, sequences, tables, views
 
 class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all

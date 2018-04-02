@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import UnconstrainedWhereError, SQLSchemaBase
-from . import constraints, dialects, fields, records
+from . import constraints, dialects, records
 
 INVALID_SQLTABLE_NAMES = None
 
