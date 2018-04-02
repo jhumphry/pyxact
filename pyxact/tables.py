@@ -105,14 +105,8 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
             result += ')\n'
         return result
 
-    @property
-    def table_name(self):
-        '''The name of the table used in SQL.'''
-
-        return self._table_name
-
     @classmethod
-    def qualified_table_name(cls, dialect=None):
+    def _qualified_table_name(cls, dialect=None):
         '''The (possibly schema-qualified) name of the table used in SQL.'''
 
         if cls._schema is None:
@@ -143,11 +137,11 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return (sql_names, values)
 
     @classmethod
-    def create_table_sql(cls, dialect=None):
+    def _create_table_sql(cls, dialect=None):
         '''Returns a string containing the CREATE TABLE command (in the given
         SQL dialect) that will create the table defined by the SQLRecord.'''
 
-        result = 'CREATE TABLE IF NOT EXISTS ' + cls.qualified_table_name(dialect) + ' (\n    '
+        result = 'CREATE TABLE IF NOT EXISTS ' + cls._qualified_table_name(dialect) + ' (\n    '
         table_columns = [cls._fields[key].sql_ddl(dialect)
                          for key in cls._fields.keys()]
         table_constraints = [cls._constraints[key].sql_ddl(dialect)
@@ -157,16 +151,16 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return result
 
     @classmethod
-    def truncate_table_sql(cls, dialect=None):
+    def _truncate_table_sql(cls, dialect=None):
         '''Return an SQL string that will truncate this table.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return dialect.truncate_table_sql.format(table_name=cls.qualified_table_name(dialect))
+        return dialect.truncate_table_sql.format(table_name=cls._qualified_table_name(dialect))
 
     @classmethod
-    def insert_sql_command(cls, dialect=None):
+    def _insert_sql_command(cls, dialect=None):
         '''Returns a string containing the parametrised INSERT command (in the
         given SQL dialect) required to insert data into the SQL table
         represented by the SQLRecord.'''
@@ -174,7 +168,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'INSERT INTO ' + cls.qualified_table_name(dialect) + ' ('
+        result = 'INSERT INTO ' + cls._qualified_table_name(dialect) + ' ('
         result += cls.column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
@@ -182,16 +176,16 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         result += ');'
         return result
 
-    def insert_sql(self, context=None, dialect=None):
+    def _insert_sql(self, context=None, dialect=None):
         '''This method constructs an SQL INSERT command and returns a tuple
         containing a suitable string and list of values.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return (self.insert_sql_command(dialect), self.values_sql_repr(context, dialect))
+        return (self._insert_sql_command(dialect), self.values_sql_repr(context, dialect))
 
-    def update_sql(self, context=None, dialect=None):
+    def _update_sql(self, context=None, dialect=None):
         '''This method constructs an SQL UDPATE command and returns a tuple
         containing a suitable string and list of values. It identifies the row
         to be updated using the primary key columns, whose associated SQLField
@@ -221,7 +215,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
                 else:
                     update_values.append(dialect.sql_repr(field_obj.get(self)))
 
-        result = 'UPDATE ' + self.qualified_table_name(dialect) + ' SET '
+        result = 'UPDATE ' + self._qualified_table_name(dialect) + ' SET '
         result += ', '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in update_sql_names])
         result += ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
@@ -230,7 +224,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         return (result, update_values + pk_sql_values)
 
-    def delete_sql(self, context=None, dialect=None):
+    def _delete_sql(self, context=None, dialect=None):
         '''This method constructs an SQL DELETE command and returns a tuple
         containing a suitable string and list of values. It identifies the row
         to be deleted using the primary key columns, whose associated SQLField
@@ -248,7 +242,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'DELETE FROM ' + self.qualified_table_name(dialect) + ' WHERE '
+        result = 'DELETE FROM ' + self._qualified_table_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
         result += ';'
@@ -256,7 +250,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return (result, pk_sql_values)
 
     @classmethod
-    def simple_select_sql(cls, dialect=None, **kwargs):
+    def _simple_select_sql(cls, dialect=None, **kwargs):
         '''Returns a tuple of a string containing the parametrised SELECT command (in the
         given SQL dialect) required to retrieve data from the SQL table
         represented by the SQLRecord, and the values to pass as parameters.
@@ -271,7 +265,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_table_name(dialect)
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
         if kwargs:
             result += ' WHERE '
             result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
@@ -282,7 +276,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         return (result, values)
 
-    def pk_select_sql(self, context=None, dialect=None):
+    def _pk_select_sql(self, context=None, dialect=None):
         '''This method returns a tuple containg an SQL SELECT statement that
         would retrieve this record based on the primary key and a list of
         values for the primary key columns.'''
@@ -298,7 +292,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
         result = 'SELECT ' + self.column_names_sql()
-        result += ' FROM ' + self.qualified_table_name(dialect) + ' WHERE '
+        result += ' FROM ' + self._qualified_table_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
         result += ';'
@@ -306,7 +300,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return (result, pk_sql_values)
 
     @classmethod
-    def context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+    def _context_select_sql(cls, context, dialect=None, allow_unlimited=True):
         '''This method  takes a context dictionary of name:value pairs and identifies those
         SQLFields within the SQLRecord that would use the context values provided by
         any of those names. It then constructs an SQL statement using the column names
@@ -316,7 +310,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls.qualified_table_name(dialect)
+        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
 
         column_sql_names = []
         column_values = []

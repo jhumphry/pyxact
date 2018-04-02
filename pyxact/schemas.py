@@ -75,11 +75,11 @@ class SQLSchema(SQLSchemaBase):
         if not issubclass(table, tables.SQLTable):
             raise TypeError('Only SQLTable subclasses can be registered to a schema.')
 
-        if table.table_name is None:
+        if table._table_name is None:
             raise TypeError('Only tables with defined names can be registered to a schema.')
 
         self.table_types[table.__name__] = table
-        self.tables[table.table_name] = table
+        self.tables[table._table_name] = table
 
     def register_view(self, view):
         '''Register an SQLView subclass as the definition of a database
@@ -141,7 +141,7 @@ class SQLSchema(SQLSchemaBase):
             i.create(cursor, dialect)
 
         for i in self.table_types.values():
-            cursor.execute(i.create_table_sql(dialect))
+            cursor.execute(i._create_table_sql(dialect))
 
         for i in self.view_types.values():
             cursor.execute(i.create_view_sql(dialect))

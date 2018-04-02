@@ -32,7 +32,7 @@ def sample_table_rows(sample_table_class):
 @pytest.fixture('module')
 def sample_table(sqlitedb, sample_table_class):
 
-    sqlitedb.execute(sample_table_class.create_table_sql())
+    sqlitedb.execute(sample_table_class._create_table_sql())
 
     # This will raise an OperationalError if the table doesn't exist or the
     # names of the columns are wrong
@@ -44,7 +44,7 @@ def test_colliding_field_names():
                                                ' with names that collide with built-in methods/attributes.'):
         class FailRecord(tables.SQLTable, table_name='sample_table_class'):
             ok_name = fields.IntField()
-            insert_sql = fields.IntField()
+            _insert_sql = fields.IntField()
 
     with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
                                                ' with names that collide with built-in methods/attributes.'):
@@ -58,13 +58,13 @@ def test_insert(sample_table, sample_table_class, sample_table_rows, sqlitecur):
     sqlitecur.execute('DELETE FROM sample_table WHERE 1=1')
 
     # Insert a single row and make sure it can be read back
-    sqlitecur.execute(*sample_table_rows[0].insert_sql())
+    sqlitecur.execute(*sample_table_rows[0]._insert_sql())
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
                       (sample_table_rows[0].trans_id,))
     assert sqlitecur.fetchone() == (1, 1, 3.4, 'Line 1')
 
     # Insert the remaining rows in one go and read them back
-    sqlitecur.executemany(sample_table_class.insert_sql_command(),
+    sqlitecur.executemany(sample_table_class._insert_sql_command(),
                           [sample_table_rows[1].values_sql_repr(),
                            sample_table_rows[2].values_sql_repr(),
                            sample_table_rows[3].values_sql_repr()])
@@ -84,7 +84,7 @@ def test_update(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Insert all four records
     for i in sample_table_rows:
-        sqlitecur.execute(*i.insert_sql())
+        sqlitecur.execute(*i._insert_sql())
 
     # Pick one record and make sure it is stored correctly
     row = sample_table_rows[2].copy()
@@ -94,7 +94,7 @@ def test_update(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Change a field and update the database
     row.amount = '99.9'
-    sqlitecur.execute(*row.update_sql())
+    sqlitecur.execute(*row._update_sql())
 
     # Check it has been updated
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
@@ -117,14 +117,14 @@ def test_delete(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Insert all four records
     for i in sample_table_rows:
-        sqlitecur.execute(*i.insert_sql())
+        sqlitecur.execute(*i._insert_sql())
 
     # Check there are four rows
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')
     assert sqlitecur.fetchone() == (4,)
 
     # Delete one record
-    sqlitecur.execute(*sample_table_rows[2].delete_sql())
+    sqlitecur.execute(*sample_table_rows[2]._delete_sql())
 
     # Check there are now three rows
     sqlitecur.execute('SELECT COUNT(*) FROM sample_table;')

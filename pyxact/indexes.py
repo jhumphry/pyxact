@@ -72,7 +72,7 @@ class SQLIndex:
             result += 'UNIQUE '
         result += 'INDEX IF NOT EXISTS '
         result += self.qualified_name(dialect)
-        result += ' ON ' + self.table.qualified_table_name(dialect)
+        result += ' ON ' + self.table._qualified_table_name(dialect)
 
         column_exprs_clauses = []
         for i in self.column_exprs:
