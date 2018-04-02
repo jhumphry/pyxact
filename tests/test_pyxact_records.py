@@ -30,7 +30,7 @@ def sample_records(sample_record_class):
 
 def test_table_creation(sample_record_class):
 
-    assert [x.sql_name for x in sample_record_class.fields()] == \
+    assert [x.sql_name for x in sample_record_class._sqlfields()] == \
                 ['trans_id', 'flag', 'amount', 'narrative']
 
 def test_colliding_field_names():
@@ -43,7 +43,7 @@ def test_colliding_field_names():
                                                ' with names that collide with built-in methods/attributes.'):
         class FailRecord(records.SQLRecord):
             ok_name = fields.IntField()
-            context_values_stored = fields.IntField()
+            _context_values_stored = fields.IntField()
 
     with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'
                                                ' with names that collide with built-in methods/attributes.'):
@@ -53,14 +53,14 @@ def test_colliding_field_names():
 
 def test_initialization(sample_record_class):
     r1 = sample_record_class()
-    assert all((x is None for x in r1.values()))
+    assert all((x is None for x in r1._values()))
 
     r2 = sample_record_class(1, True, 3.0, 'test')
-    assert set(r2.item_values()) == \
+    assert set(r2._item_values()) == \
             set((('trans_id', 1), ('flag', True), ('amount', 3.0), ('narrative', 'test')))
 
     r3 = sample_record_class(trans_id=1, amount=3.0, flag=True, narrative='test')
-    assert set(r3.item_values()) == \
+    assert set(r3._item_values()) == \
             set((('trans_id', 1), ('flag', True), ('amount', 3.0), ('narrative', 'test')))
 
     r4 = sample_record_class(trans_id=1, amount=3.0, narrative='test')
@@ -74,7 +74,7 @@ def test_initialization(sample_record_class):
 
 def test_copy(sample_record_class):
     r1 = sample_record_class(trans_id=1, amount=3.0, flag=True, narrative='test')
-    r2 = r1.copy()
+    r2 = r1._copy()
     r1.flag = False
     assert r1.flag == False
     assert r2.flag == True
@@ -82,69 +82,69 @@ def test_copy(sample_record_class):
 def test_get_set_clear(sample_record_class):
 
     r1 = sample_record_class(trans_id=1, amount=3.0, flag=True, narrative='test')
-    r1.clear()
-    assert all((x is None for x in r1.values()))
+    r1._clear()
+    assert all((x is None for x in r1._values()))
 
-    r1.set_values((1, True, 3.0, 'test'))
-    assert set(r1.item_values()) == \
+    r1._set_values((1, True, 3.0, 'test'))
+    assert set(r1._item_values()) == \
             set((('trans_id', 1), ('flag', True), ('amount', 3.0), ('narrative', 'test')))
 
-    r1.clear()
+    r1._clear()
 
-    r1.set_values(trans_id=1, amount=3.0, flag=True, narrative='test')
-    assert set(r1.item_values()) == \
+    r1._set_values(trans_id=1, amount=3.0, flag=True, narrative='test')
+    assert set(r1._item_values()) == \
             set((('trans_id', 1), ('flag', True), ('amount', 3.0), ('narrative', 'test')))
 
-    r1.set_values(trans_id=2, narrative='foobar')
-    assert set(r1.item_values()) == \
+    r1._set_values(trans_id=2, narrative='foobar')
+    assert set(r1._item_values()) == \
             set((('trans_id', 2), ('flag', True), ('amount', 3.0), ('narrative', 'foobar')))
 
-    r1.set('flag', False)
+    r1._set('flag', False)
 
-    assert set(r1.item_values()) == \
+    assert set(r1._item_values()) == \
             set((('trans_id', 2), ('flag', False), ('amount', 3.0), ('narrative', 'foobar')))
 
-    assert r1.get('trans_id') == 2
+    assert r1._get('trans_id') == 2
 
-    assert r1.get('trans_id', context={'trans_id' : 3}) == 3
+    assert r1._get('trans_id', context={'trans_id' : 3}) == 3
 
     # Using the context dictionary parameter should have updated the stored value for
     # trans_id as well as returning the new value
-    assert r1.get('trans_id') == 3
+    assert r1._get('trans_id') == 3
 
     with pytest.raises(ValueError):
-        r1.set('nonesuch', 5) # setting a non-existent attribute
+        r1._set('nonesuch', 5) # setting a non-existent attribute
 
     with pytest.raises(ValueError):
-        r1.set_values((1, True, 3.0)) # wrong number of values supplied
+        r1._set_values((1, True, 3.0)) # wrong number of values supplied
 
     # non-existent attribute
     with pytest.raises(ValueError):
-        r1.set_values(trans_id=1, amount=3.0, flag=True, nonesuch='test')
+        r1._set_values(trans_id=1, amount=3.0, flag=True, nonesuch='test')
 
     # additional non-existent attribute
     with pytest.raises(ValueError):
-        r1.set_values(trans_id=1, amount=3.0, flag=True, narrative='test', nonesuch=3)
+        r1._set_values(trans_id=1, amount=3.0, flag=True, narrative='test', nonesuch=3)
 
 def test_fields_values_items(sample_record_class):
 
     r1 = sample_record_class(trans_id=1, flag=True, amount=3.0, narrative='test')
-    field_names = [x.name for x in r1.fields()]
+    field_names = [x.name for x in r1._sqlfields()]
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
 
-    assert r1.values() == [1, True, 3.0, 'test']
+    assert r1._values() == [1, True, 3.0, 'test']
 
-    field_names = [x[0] for x in r1.items()]
+    field_names = [x[0] for x in r1._items()]
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
 
-    tmp = r1.item_values()
+    tmp = r1._item_values()
     field_names = [x[0] for x in tmp]
     field_values = [x[1] for x in tmp]
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
     assert field_values == [1, True, 3.0, 'test']
 
     ctxt = {'trans_id' : 4}
-    tmp = r1.item_values(context=ctxt)
+    tmp = r1._item_values(context=ctxt)
     field_names = [x[0] for x in tmp]
     field_values = [x[1] for x in tmp]
     assert field_names == ['trans_id', 'flag', 'amount', 'narrative']
@@ -153,10 +153,10 @@ def test_fields_values_items(sample_record_class):
 def test_context_values_stored(sample_record_class):
     r1 = sample_record_class(trans_id=1, flag=True, amount=3.0, narrative='test')
 
-    assert r1.context_values_stored() == {'trans_id' : 1}
+    assert r1._context_values_stored() == {'trans_id' : 1}
 
     r1.trans_id = 3
 
-    assert r1.context_values_stored() == {'trans_id' : 3}
+    assert r1._context_values_stored() == {'trans_id' : 3}
 
 

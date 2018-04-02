@@ -60,7 +60,7 @@ def test_recordlist_creation():
     assert list(rl4.foo) == [1, 3, 5, 7]
 
 def test_recordlist_clear_copy():
-    rl1 = SimpleRecordList([i.copy() for i in simple_records])
+    rl1 = SimpleRecordList([i._copy() for i in simple_records])
     assert len(rl1) == 4
     rl2 = rl1
     rl3 = rl1.copy()
@@ -93,19 +93,19 @@ def test_recordlist_itermethods():
 
 def test_recordlist_getsetdeleteinsert():
 
-    rl1 = SimpleRecordList([i.copy() for i in simple_records])
+    rl1 = SimpleRecordList([i._copy() for i in simple_records])
     assert list(rl1.foo) == [1, 3, 5, 7]
     assert len(rl1) == 4
     del rl1[1]
     assert list(rl1.foo) == [1, 5, 7]
     assert len(rl1) == 3
 
-    rl1.insert(0, rl1[2].copy()) # Don't insert another reference to the same obj!
+    rl1.insert(0, rl1[2]._copy()) # Don't insert another reference to the same obj!
     assert len(rl1) == 4
     assert list(rl1.foo) == [7, 1, 5, 7]
 
 def test_recordlist_values():
-    rl1 = SimpleRecordList([i.copy() for i in simple_records])
+    rl1 = SimpleRecordList([i._copy() for i in simple_records])
 
     expected_values = [[1, 'line1', 2],
                        [3, 'line2', 4],

@@ -65,9 +65,9 @@ def test_insert(sample_table, sample_table_class, sample_table_rows, sqlitecur):
 
     # Insert the remaining rows in one go and read them back
     sqlitecur.executemany(sample_table_class._insert_sql_command(),
-                          [sample_table_rows[1].values_sql_repr(),
-                           sample_table_rows[2].values_sql_repr(),
-                           sample_table_rows[3].values_sql_repr()])
+                          [sample_table_rows[1]._values_sql_repr(),
+                           sample_table_rows[2]._values_sql_repr(),
+                           sample_table_rows[3]._values_sql_repr()])
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=? OR trans_id=?',
                    (sample_table_rows[2].trans_id, sample_table_rows[3].trans_id))
     assert sqlitecur.fetchone() == (3, 1, -10.4, 'Line 3')
@@ -87,7 +87,7 @@ def test_update(sample_table, sample_table_class, sample_table_rows, sqlitecur):
         sqlitecur.execute(*i._insert_sql())
 
     # Pick one record and make sure it is stored correctly
-    row = sample_table_rows[2].copy()
+    row = sample_table_rows[2]._copy()
     sqlitecur.execute('SELECT * FROM sample_table WHERE trans_id=?',
                       (row.trans_id,))
     assert sqlitecur.fetchone() == (3, 1, -10.4, 'Line 3')

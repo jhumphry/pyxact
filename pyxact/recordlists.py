@@ -25,7 +25,7 @@ class SQLRecordListField:
         underlying SQLRecord in turn.'''
 
         for record in instance._records:
-            yield record.get(self.field)
+            yield record._get(self.field)
 
     def get_context(self, instance, context):
         '''Return a generator giving the value of the SQLField for each of the
@@ -33,7 +33,7 @@ class SQLRecordListField:
         appropriate.'''
 
         for record in instance._records:
-            yield record.get(self.field, context)
+            yield record._get(self.field, context)
 
 class SQLRecordMetaClass(type):
     '''This metaclass ensures that SQLRecordList is only subclassed with a
@@ -131,8 +131,10 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
 
         result = self.__class__()
         if self._records:
-            result._records.extend((x.copy() for x in self._records))
+            result._records.extend((x._copy() for x in self._records))
         return result
+
+    _copy = copy
 
     def extend(self, values):
         '''Extend the SQLRecordList with the list of records found in values.'''
@@ -162,7 +164,7 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         of the underlying SQLRecord instances. A context dictionary can be
         provided for SQLField types that require one.'''
 
-        return [x.values(context) for x in self._records]
+        return [x._values(context) for x in self._records]
 
     def values_sql_repr(self, context=None, dialect=None):
         '''Returns a list of lists of values stored in the SQLField attributes
@@ -171,7 +173,7 @@ class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord)
         form required by the SQL database adaptor identified by the dialect
         parameter.'''
 
-        return [x.values_sql_repr(context, dialect) for x in self._records]
+        return [x._values_sql_repr(context, dialect) for x in self._records]
 
 # This constant records all the method and attribute names used in
 # SQLRecordList so that SQLRecordListMetaClass can detect any attempts to

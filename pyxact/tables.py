@@ -169,7 +169,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
             dialect = dialects.DefaultDialect
 
         result = 'INSERT INTO ' + cls._qualified_table_name(dialect) + ' ('
-        result += cls.column_names_sql()
+        result += cls._column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
             result += (dialect.placeholder+', ')*(cls._field_count-1)+dialect.placeholder
@@ -183,7 +183,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return (self._insert_sql_command(dialect), self.values_sql_repr(context, dialect))
+        return (self._insert_sql_command(dialect), self._values_sql_repr(context, dialect))
 
     def _update_sql(self, context=None, dialect=None):
         '''This method constructs an SQL UDPATE command and returns a tuple
@@ -265,7 +265,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
         if kwargs:
             result += ' WHERE '
             result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
@@ -291,7 +291,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'SELECT ' + self.column_names_sql()
+        result = 'SELECT ' + self._column_names_sql()
         result += ' FROM ' + self._qualified_table_name(dialect) + ' WHERE '
         result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
                                 for i in pk_columns_sql_names])
@@ -310,7 +310,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls.column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
 
         column_sql_names = []
         column_values = []

@@ -82,7 +82,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                                                   )
         return result
 
-    def copy(self):
+    def _copy(self):
         '''Create a deep copy of an instance of an SQLRecord. If normal
         assignment is used, the copies will be shallow and changing the
         attributes on one instance will affect the other.'''
@@ -92,13 +92,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(result, attribute, getattr(self, attribute))
         return result
 
-    def clear(self):
+    def _clear(self):
         '''Set all fields in the SQLRecord to None.'''
 
         for key in self._fields:
             setattr(self, key, None)
 
-    def get(self, key, context=None):
+    def _get(self, key, context=None):
         '''Get a value stored in an SQLField within this SQLRecord. If a
         context dictionary is given, it may be used to provide the value, and
         both the context dictionary and the underlying SQLField may be
@@ -108,14 +108,14 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             return self._fields[key].get_context(self, context)
         return self._fields[key].get(self)
 
-    def set(self, key, value):
+    def _set(self, key, value):
         '''Set a value stored in an SQLField within this SQLRecord.'''
 
         if key not in self._fields:
             raise ValueError('{0} is not a valid field name.'.format(key))
         setattr(self, key, value)
 
-    def set_values(self, values=None, **kwargs):
+    def _set_values(self, values=None, **kwargs):
         '''Set all fields within this SQLRecord.'''
         if values:
             if len(values) != self._field_count:
@@ -134,13 +134,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             raise ValueError('Must specify values')
 
     @classmethod
-    def fields(cls):
+    def _sqlfields(cls):
         '''Returns a iterable of SQLField objects in the order they were
         defined in the SQLRecord subclass.'''
 
         return cls._fields.values()
 
-    def values(self, context=None):
+    def _values(self, context=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
         SQLField types that may update and return a value from it, rather than
@@ -151,7 +151,7 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         return [field.get(self) for field in self._fields.values()]
 
-    def values_sql_repr(self, context=None, dialect=None):
+    def _values_sql_repr(self, context=None, dialect=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
         SQLField types that may update and return a value from it, rather than
@@ -168,13 +168,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
         return [dialect.sql_repr(field.get(self)) for field in self._fields.values()]
 
     @classmethod
-    def items(cls):
+    def _items(cls):
         '''Returns a iterable of tuples of field names and SQLField objects in the
         order they were defined in the SQLRecord subclass.'''
 
         return cls._fields.items()
 
-    def item_values(self, context=None):
+    def _item_values(self, context=None):
         '''Returns a list of tuples of field names and values stored in the
         SQLField attributes of a particular SQLRecord instance. A context
         dictionary can be provided for SQLField types that may update and
@@ -188,12 +188,12 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
                 for key, value in self._fields.items()]
 
     @classmethod
-    def column_names_sql(cls):
+    def _column_names_sql(cls):
         '''Returns a string containing a comma-separated list of column names.'''
 
         return ', '.join([cls._fields[key].sql_name for key in cls._fields.keys()])
 
-    def context_values_stored(self):
+    def _context_values_stored(self):
         '''Returns a dictionary containing all of the (non-None) context values
         that are stored by context-sensitive fields in the record.'''
 

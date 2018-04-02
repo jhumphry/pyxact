@@ -162,7 +162,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         for attr in self.__slots__:
             value = getattr(self, attr)
             if isinstance(value, (tables.SQLTable, recordlists.SQLRecordList)):
-                setattr(result, attr, value.copy())
+                setattr(result, attr, value._copy())
             else:
                 setattr(result, attr, value)
         return result
@@ -262,12 +262,12 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         for table_name in self._tables:
             table = getattr(self, table_name)
-            context.update(table.context_values_stored())
+            context.update(table._context_values_stored())
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
             for record in recordlist:
-                context.update(record.context_values_stored())
+                context.update(record._context_values_stored())
 
         return context
 
@@ -290,7 +290,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         for table_name in self._tables:
             table = getattr(self, table_name)
             cursor.execute(table._insert_sql(dialect),
-                           table.values_sql_repr(context, dialect))
+                           table._values_sql_repr(context, dialect))
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -382,9 +382,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                                                            allow_unlimited=False))
             nextrow = cursor.fetchone()
             if nextrow:
-                table.set_values(nextrow)
+                table._set_values(nextrow)
             else:
-                table.clear()
+                table._clear()
 
         for recordlist_name, recordlist_field in self._recordlists.items():
             recordlist_type = recordlist_field._record_type
