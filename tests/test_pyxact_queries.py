@@ -32,7 +32,7 @@ class MultiValueQuery(queries.SQLQuery,
     pass
 
 class Holder:
-    query_field = queries.QueryIntField(query=SimpleQuery)
+    query_field = fields.IntField(query=SimpleQuery)
 
 def test_static_query(sqlitecur):
 

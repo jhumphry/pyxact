@@ -10,11 +10,12 @@ class SQLField:
     defines the mapping between SQL types and values and their Python
     equivalents.'''
 
-    def __init__(self, py_type=None, sql_name=None, context_used=None,
+    def __init__(self, py_type=None, sql_name=None, context_used=None, query=None,
                  sql_ddl_options='', sql_type=None, nullable=True):
         self.py_type = py_type
         self.sql_name = sql_name
         self.context_used = context_used
+        self.query = query
         self._sql_ddl_options = sql_ddl_options
         self._sql_type = sql_type
         self.nullable = nullable
@@ -89,13 +90,22 @@ class SQLField:
                                    .format(self.context_used))
 
     def update(self, instance, context, cursor, dialect=None):
-        '''Given a (possibly partially-completed) context dictionary, a
-        database cursor and a database dialect object, this method may retrieve
-        data or do some other calculation in order to update the value in the
-        SQLField instance. It should also return the value. The default action
-        is to simply return the existing value unchanged.'''
+        '''Given a (possibly partially-completed) context dictionary, a database cursor and a
+        database dialect object, this method may retrieve data or do some other calculation in
+        order to update the value in the SQLField instance. It should also return the value. The
+        default action where the query parameter was set is to execute that query and update and
+        return the single-value result. The default action where no query parameter was supplied is
+        to simply return the existing value unchanged.'''
 
-        return instance.__getattribute__(self.slot_name)
+        if self.query is None:
+            return instance.__getattribute__(self.slot_name)
+
+        query = self.query()
+        query._set_context(context)
+        query._execute(cursor, dialect)
+        value = query._result_singlevalue(cursor)
+        self.__set__(instance, value)
+        return value
 
     def sql_type(self, dialect=None):
         '''Returns the SQL definition of the data type of the field in the
