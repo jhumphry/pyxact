@@ -8,7 +8,7 @@ import pyxact.tables as tables
 from pyxact.dialects import sqliteDialect
 
 @pytest.fixture('module')
-def sample_table_class(sqlitedb):
+def sample_table_class():
     class SampleRecord(tables.SQLTable, table_name='sample_table'):
         trans_id=fields.IntField(context_used='trans_id')
         flag=fields.BooleanField()
