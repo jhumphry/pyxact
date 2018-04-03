@@ -63,6 +63,9 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         '''Returns a string containing the CREATE TABLE command (in the given SQL dialect) that
         will create the table defined by the SQLRecord.'''
 
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
         result = 'CREATE VIEW IF NOT EXISTS ' + cls._qualified_view_name(dialect) + ' ('
         result += ', '.join(cls._fields.keys())
         if dialect.schema_support:
