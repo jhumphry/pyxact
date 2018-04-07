@@ -5,6 +5,8 @@ import datetime
 import decimal
 import re
 
+from . import IsolationLevel
+
 SCHEMA_SEPARATOR_REGEXP = re.compile(r'\{([^\}\.]+)\.([^\}\.]+)\}', re.UNICODE)
 
 def convert_schema_sep(sql_text, separator='.'):
@@ -24,6 +26,32 @@ def convert_schema_sep(sql_text, separator='.'):
     result += sql_text[current_pos:]
     return result
 
+class TransactionContext:
+    '''This is a small helper context manager class that allows the dialect.transaction method to
+    be used in a 'with' statement. A transaction will have been begun, and at the end of the 'with'
+    block or when an exception occurs the transaction will be committed or rolled-back as
+    appropriate.'''
+
+    def __init__(self, cursor, on_success='COMMIT;',
+                 on_exception='ROLLBACK;'):
+
+        self.cursor = cursor
+        self.on_success = on_success
+        self.on_exception = on_exception
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            if self.on_success:
+                self.cursor.execute(self.on_success)
+        else:
+            if self.on_exception:
+                self.cursor.execute(self.on_exception)
+        return False
+
+
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
     should be derived.'''
@@ -37,6 +65,10 @@ class SQLDialect:
 
     truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
 
+    create_sequence_sql = ('',)
+    nextval_sequence_sql = ('',)
+    reset_sequence_sql = ('',)
+
     @classmethod
     def sql_repr(cls, value):
         '''This method returns the value in the form expected by the particular
@@ -47,6 +79,30 @@ class SQLDialect:
         not recognise them, so string values must be stored.'''
 
         return value
+
+    @classmethod
+    def begin_transaction(cls, cursor, isolation_level=None):
+        '''This method starts a new transaction using the database cursor and the (optional)
+        isolation level specified, which should be one of the IsolationLevel enum values. It
+        returns a context manager so can be used in a 'with' statement.'''
+
+        raise NotImplementedError
+
+    @classmethod
+    def commit_transaction(cls, cursor, isolation_level=None):
+        '''This method commits a transaction using the database cursor. The isolation level can be
+        specified in order to cover cases where MANUAL_TRANSACTIONS (i.e. no automatic management)
+        is desired.'''
+
+        raise NotImplementedError
+
+    @classmethod
+    def rollback_transaction(cls, cursor, isolation_level=None):
+        '''This method rolls back a transaction using the database cursor. The isolation level can
+        be specified in order to cover cases where MANUAL_TRANSACTIONS (i.e. no automatic
+        management) is desired.'''
+
+        raise NotImplementedError
 
 class sqliteDialect(SQLDialect):
     '''This class contains information used internally to generate suitable SQL
@@ -61,6 +117,16 @@ class sqliteDialect(SQLDialect):
     store_date_time_datetime_as_text = True
 
     truncate_table_sql = '''DELETE FROM {table_name} WHERE 1=1;'''
+
+    create_sequence_sql = ('''
+            CREATE TABLE IF NOT EXISTS {qualified_name}    (start {index_type},
+                                                            interval {index_type},
+                                                            lastval {index_type},
+                                                            nextval {index_type});''',
+                           '''INSERT INTO {qualified_name} VALUES ({start},{interval},{start},{start});''')
+    nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
+                            '''SELECT lastval FROM {qualified_name};''')
+    reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
 
     @classmethod
     def sql_repr(cls, value):
@@ -81,16 +147,27 @@ class sqliteDialect(SQLDialect):
 
         raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
-    create_sequence_sql = ('''
-CREATE TABLE IF NOT EXISTS {qualified_name}    (start {index_type},
-                                                interval {index_type},
-                                                lastval {index_type},
-                                                nextval {index_type});''',
-                           '''INSERT INTO {qualified_name} VALUES ({start},{interval},{start},{start});''')
-    nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
-                            '''SELECT lastval FROM {qualified_name};''')
-    reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
+    @classmethod
+    def begin_transaction(cls, cursor, isolation_level=None):
 
+        if isolation_level == IsolationLevel.MANUAL_TRANSACTIONS:
+            return TransactionContext(cursor, None, None)
+
+        # Note that while SQLite does support READ_UNCOMMITTED, it is a per-session pragma and not
+        # per-transaction, which makes it harder to use reliably. We always leave the setting on
+        # the default, which is the maximalist SERIALIZABLE isolation level.
+        cursor.execute('BEGIN TRANSACTION;')
+        return TransactionContext(cursor)
+
+    @classmethod
+    def commit_transaction(cls, cursor, isolation_level=None):
+        if isolation_level != IsolationLevel.MANUAL_TRANSACTIONS:
+            cursor.execute('COMMIT;')
+
+    @classmethod
+    def rollback_transaction(cls, cursor, isolation_level=None):
+        if isolation_level != IsolationLevel.MANUAL_TRANSACTIONS:
+            cursor.execute('ROLLBACK;')
 
 # This will be used by routines when no dialect is specified. It is not a
 # constant as it is intended that it may be over-ridden by package users

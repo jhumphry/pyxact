@@ -9,6 +9,20 @@ classes that have type-enforced attributes and have a fixed list of attributes
 frozen at the point of class definition. Python 3.6+ is currently required for
 correct operation.'''
 
+from enum import Enum
+
+class IsolationLevel(Enum):
+    '''This enumeration is used to specify the isolation level used for database transactions.
+    MANUAL_TRANSACTIONS implies that no automatic management of transactions is desired. The other
+    values indicate that the isolation guarantees should be at least equivalent to the relevant
+    guarantee in the SQL standard.'''
+
+    MANUAL_TRANSACTIONS = -1
+    READ_UNCOMMITTED = 1
+    READ_COMMITTED = 2
+    REPEATABLE_READ = 3
+    SERIALIZABLE = 4
+
 class PyxactError(Exception):
     '''Base class for exceptions defined by pyxact.'''
 

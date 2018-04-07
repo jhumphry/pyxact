@@ -47,7 +47,7 @@ class SQLTransactionMetaClass(type):
     SQLTransaction subclass and creates various internal dictionaries and
     indexes to them.'''
 
-    def __new__(mcs, name, bases, namespace, **kwds):
+    def __new__(mcs, name, bases, namespace, isolation_level=None, **kwds):
 
         slots = []
         _fields = dict()
@@ -90,6 +90,7 @@ class SQLTransactionMetaClass(type):
                 slots.append('_'+k)
                 _fields[k] = namespace[k]
 
+        namespace['_isolation_level'] = isolation_level
         namespace['__slots__'] = tuple(slots)
         namespace['_fields_count'] = len(_fields)
         namespace['_fields'] = _fields
@@ -279,25 +280,23 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        cursor.execute('BEGIN TRANSACTION;')
-        context = self._get_context()
+        with dialect.begin_transaction(cursor, self._isolation_level):
+            context = self._get_context()
 
-        self._pre_insert_hook(context, cursor, dialect)
+            self._pre_insert_hook(context, cursor, dialect)
 
-        if not self._verify():
-            raise VerificationError
+            if not self._verify():
+                raise VerificationError
 
-        for table_name in self._tables:
-            table = getattr(self, table_name)
-            cursor.execute(table._insert_sql(dialect),
-                           table._values_sql_repr(context, dialect))
+            for table_name in self._tables:
+                table = getattr(self, table_name)
+                cursor.execute(table._insert_sql(dialect),
+                               table._values_sql_repr(context, dialect))
 
-        for recordlist_name in self._recordlists:
-            recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist._record_type._insert_sql(dialect),
-                               recordlist._values_sql_repr(context, dialect))
-
-        cursor.execute('COMMIT TRANSACTION;')
+            for recordlist_name in self._recordlists:
+                recordlist = getattr(self, recordlist_name)
+                cursor.executemany(recordlist._record_type._insert_sql(dialect),
+                                   recordlist._values_sql_repr(context, dialect))
 
     def _insert_new(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
@@ -308,24 +307,22 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        cursor.execute('BEGIN TRANSACTION;')
-        context = self._get_updated_context(cursor, dialect)
+        with dialect.begin_transaction(cursor, self._isolation_level):
+            context = self._get_updated_context(cursor, dialect)
 
-        self._pre_insert_hook(context, cursor, dialect)
+            self._pre_insert_hook(context, cursor, dialect)
 
-        if not self._verify():
-            raise VerificationError
+            if not self._verify():
+                raise VerificationError
 
-        for table_name in self._tables:
-            table = getattr(self, table_name)
-            cursor.execute(*table._insert_sql(context, dialect))
+            for table_name in self._tables:
+                table = getattr(self, table_name)
+                cursor.execute(*table._insert_sql(context, dialect))
 
-        for recordlist_name in self._recordlists:
-            recordlist = getattr(self, recordlist_name)
-            cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
-                               recordlist._values_sql_repr(context, dialect))
-
-        cursor.execute('COMMIT TRANSACTION;')
+            for recordlist_name in self._recordlists:
+                recordlist = getattr(self, recordlist_name)
+                cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
+                                   recordlist._values_sql_repr(context, dialect))
 
     def _update(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This
@@ -335,24 +332,23 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        cursor.execute('BEGIN TRANSACTION;')
-        context = self._get_context()
+        with dialect.begin_transaction(cursor, self._isolation_level):
+            context = self._get_context()
 
-        self._pre_update_hook(context, cursor, dialect)
+            self._pre_update_hook(context, cursor, dialect)
 
-        if not self._verify():
-            raise VerificationError
+            if not self._verify():
+                raise VerificationError
 
-        for table_name in self._tables:
-            table = getattr(self, table_name)
-            cursor.execute(*(table._update_sql(context, dialect)))
+            for table_name in self._tables:
+                table = getattr(self, table_name)
+                cursor.execute(*(table._update_sql(context, dialect)))
 
-        for recordlist_name in self._recordlists:
-            recordlist = getattr(self, recordlist_name)
-            for record in recordlist:
-                cursor.execute(*(record._update_sql(context, dialect)))
+            for recordlist_name in self._recordlists:
+                recordlist = getattr(self, recordlist_name)
+                for record in recordlist:
+                    cursor.execute(*(record._update_sql(context, dialect)))
 
-        cursor.execute('COMMIT TRANSACTION;')
 
     def _context_select(self, cursor, dialect=None):
         '''This method extracts the values stored in SQLField directly attached
@@ -366,48 +362,46 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        cursor.execute('BEGIN TRANSACTION;')
-        context = self._get_context()
+        with dialect.begin_transaction(cursor, self._isolation_level):
+            context = self._get_context()
 
-        for table_name, table_field in self._tables.items():
-            table_type = table_field._record_type
+            for table_name, table_field in self._tables.items():
+                table_type = table_field._record_type
 
-            table = getattr(self, table_name)
-            if table is None:
-                table = table_type()
-                setattr(self, table_name, table)
+                table = getattr(self, table_name)
+                if table is None:
+                    table = table_type()
+                    setattr(self, table_name, table)
 
-            cursor.execute(*table_type._context_select_sql(context,
-                                                           dialect,
-                                                           allow_unlimited=False))
-            nextrow = cursor.fetchone()
-            if nextrow:
-                table._set_values(nextrow)
-            else:
-                table._clear()
-
-        for recordlist_name, recordlist_field in self._recordlists.items():
-            recordlist_type = recordlist_field._record_type
-            record_type = recordlist_type._record_type
-
-            recordlist = getattr(self, recordlist_name)
-            if recordlist is None:
-                recordlist = recordlist_type()
-                setattr(self, recordlist_name, recordlist)
-
-            recordlist._clear()
-
-            cursor.execute(*record_type._context_select_sql(context,
-                                                            dialect,
-                                                            allow_unlimited=False))
-            nextrow = cursor.fetchone()
-            while nextrow:
-                recordlist._append(record_type(*nextrow))
+                cursor.execute(*table_type._context_select_sql(context,
+                                                               dialect,
+                                                               allow_unlimited=False))
                 nextrow = cursor.fetchone()
+                if nextrow:
+                    table._set_values(nextrow)
+                else:
+                    table._clear()
 
-        self._post_select_hook(context, cursor, dialect)
+            for recordlist_name, recordlist_field in self._recordlists.items():
+                recordlist_type = recordlist_field._record_type
+                record_type = recordlist_type._record_type
 
-        cursor.execute('COMMIT TRANSACTION;')
+                recordlist = getattr(self, recordlist_name)
+                if recordlist is None:
+                    recordlist = recordlist_type()
+                    setattr(self, recordlist_name, recordlist)
+
+                recordlist._clear()
+
+                cursor.execute(*record_type._context_select_sql(context,
+                                                                dialect,
+                                                                allow_unlimited=False))
+                nextrow = cursor.fetchone()
+                while nextrow:
+                    recordlist._append(record_type(*nextrow))
+                    nextrow = cursor.fetchone()
+
+            self._post_select_hook(context, cursor, dialect)
 
         if not self._verify():
             raise VerificationError
