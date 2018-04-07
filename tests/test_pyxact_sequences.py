@@ -47,3 +47,16 @@ def test_nextval_reset(sqlitecur, simple_seq, jump_seq):
     assert jump_seq.nextval(sqlitecur, sqliteDialect) == 2
     assert jump_seq.nextval(sqlitecur, sqliteDialect) == 5
     assert jump_seq.nextval(sqlitecur, sqliteDialect) == 8
+
+def test_valid(simple_seq, jump_seq):
+
+    assert simple_seq.valid(1)
+    assert simple_seq.valid(999)
+    assert not simple_seq.valid(0)
+    assert not simple_seq.valid(-1)
+
+    assert jump_seq.valid(2)
+    assert jump_seq.valid(5)
+    assert jump_seq.valid(8)
+    assert not jump_seq.valid(1)
+    assert not jump_seq.valid(-5)
