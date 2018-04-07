@@ -1,9 +1,10 @@
 '''An example of defining a simple database schema using pyxact.'''
 
 import sqlite3
+import sys
 from decimal import Decimal as D
 
-from pyxact import constraints, dialects, fields, indexes
+from pyxact import constraints, dialects, fields, indexes, loggingdb
 from pyxact import recordlists, schemas, sequences, tables, transactions, views
 
 # These examples are going to sketch out a very simplistic version of an accounting application. All
@@ -206,7 +207,18 @@ def populate_example_schema(cursor, dialect=dialects.DefaultDialect):
     test_transaction2._insert_new(cursor, dialect)
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(':memory:')
+
+    # You can see what SQL commands are being issued by specifying a log file name on the command
+    # line, or you can specify STDOUT to get them printed out on the console.
+    if len(sys.argv) == 1:
+        conn = sqlite3.connect(':memory:')
+    elif sys.argv[1].upper() == 'STDOUT':
+        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'))
+    else:
+        log_file = open(sys.argv[1], 'a')
+        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'),
+                                    log_file=log_file)
+
     conn.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
 
     cursor = conn.cursor()

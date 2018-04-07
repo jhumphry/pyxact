@@ -1,7 +1,9 @@
 '''An example of using SQLTransaction hooks.'''
 
 import sqlite3
+import sys
 
+from pyxact import loggingdb
 import example_schema
 
 class ReverseTransaction(example_schema.AccountingTransaction):
@@ -18,7 +20,18 @@ class ReverseTransaction(example_schema.AccountingTransaction):
 # SQLRecordList attributes from the base class.
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(':memory:')
+
+    # You can see what SQL commands are being issued by specifying a log file name on the command
+    # line, or you can specify STDOUT to get them printed out on the console.
+    if len(sys.argv) == 1:
+        conn = sqlite3.connect(':memory:')
+    elif sys.argv[1].upper() == 'STDOUT':
+        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'))
+    else:
+        log_file = open(sys.argv[1], 'a')
+        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'),
+                                    log_file=log_file)
+
     conn.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
 
     cursor = conn.cursor()
