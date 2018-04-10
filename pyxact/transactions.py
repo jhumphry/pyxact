@@ -1,7 +1,7 @@
 '''This module defines Python types that map to SQL database tables.'''
 
 from . import VerificationError
-from . import dialects, fields, recordlists, tables
+from . import dialects, fields, recordlists, records
 
 class SQLTransactionField:
     '''SQLTransactionField wraps an SQLRecord or SQLRecordList subclass for
@@ -13,12 +13,12 @@ class SQLTransactionField:
         if not isinstance(record_type, type):
             raise TypeError('record_type parameter must refer to an appropriate subclass.')
 
-        if not issubclass(record_type, (tables.SQLTable,
+        if not issubclass(record_type, (records.SQLRecord,
                                         recordlists.SQLRecordList)):
             raise TypeError('record_type parameter must refer to an appropriate subclass.')
 
         if issubclass(record_type, recordlists.SQLRecordList) and \
-           not issubclass(record_type._record_type, tables.SQLTable):
+           not issubclass(record_type._record_type, records.SQLRecord):
             raise TypeError('record_type parameter which are SQLRecordList must be able to contain'
                             ' an appropriate subclass.')
 
@@ -52,7 +52,7 @@ class SQLTransactionMetaClass(type):
         slots = []
         _fields = dict()
         _context_fields = dict()
-        _tables = dict()
+        _records = dict()
         _recordlists = dict()
 
         # Inherit any attributes on base classes
@@ -62,7 +62,7 @@ class SQLTransactionMetaClass(type):
                 slots.extend(i.__slots__)
                 _fields.update(i._fields)
                 _context_fields.update(i._context_fields)
-                _tables.update(i._tables)
+                _records.update(i._records)
                 _recordlists.update(i._recordlists)
 
         # Check names on attributes and add them to the appropriate internal
@@ -82,8 +82,8 @@ class SQLTransactionMetaClass(type):
                 if k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
                     raise AttributeError('SQLTransactionField {} has the same name as an '
                                          'SQLTransaction method or internal attribute'.format(k))
-                if issubclass(namespace[k]._record_type, tables.SQLTable):
-                    _tables[k] = namespace[k]
+                if issubclass(namespace[k]._record_type, records.SQLRecord):
+                    _records[k] = namespace[k]
                 elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
                     _recordlists[k] = namespace[k]
 
@@ -95,7 +95,7 @@ class SQLTransactionMetaClass(type):
         namespace['_fields_count'] = len(_fields)
         namespace['_fields'] = _fields
         namespace['_context_fields'] = _context_fields
-        namespace['_tables'] = _tables
+        namespace['_records'] = _records
         namespace['_recordlists'] = _recordlists
         namespace['__slots__'] = slots
 
@@ -144,9 +144,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                                                    str(getattr(self, field_name))
                                                   )
 
-        for table_name in self._tables:
-            result += '* {0} '.format(table_name)
-            result += str(getattr(self, table_name))
+        for record_name in self._records:
+            result += '* {0} '.format(record_name)
+            result += str(getattr(self, record_name))
 
         for recordlist_name in self._recordlists:
             result += '* {0} '.format(recordlist_name)
@@ -162,7 +162,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         result = self.__class__()
         for attr in self.__slots__:
             value = getattr(self, attr)
-            if isinstance(value, (tables.SQLTable, recordlists.SQLRecordList)):
+            if isinstance(value, (records.SQLRecord, recordlists.SQLRecordList)):
                 setattr(result, attr, value._copy())
             else:
                 setattr(result, attr, value)
@@ -266,20 +266,18 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         return result
 
     def _get_context_from_records(self):
-        '''This method makes the context dictionary by scanning the SQLTable
-        and SQLRecordList contained in SQLTransactionField attributes
-        and working out what context name:value pairs are consistent with them.
-        For example if an SQLTable attached to the SQLTransaction has a
-        IDIntField equal to 37 that uses a context value named trans_id, then
-        the returned context dictionary should have 37 stored under the name
-        trans_id. Does NOT attempt to identify if there are inconsistencies
-        between rows.'''
+        '''This method makes the context dictionary by scanning the SQLRecord and SQLRecordList
+        contained in SQLTransactionField attributes and working out what context name:value pairs
+        are consistent with them. For example if an SQLTable attached to the SQLTransaction has a
+        IDIntField equal to 37 that uses a context value named trans_id, then the returned context
+        dictionary should have 37 stored under the name trans_id. Does NOT attempt to identify if
+        there are inconsistencies between rows.'''
 
         context = {}
 
-        for table_name in self._tables:
-            table = getattr(self, table_name)
-            context.update(table._context_values_stored())
+        for record_name in self._records:
+            record = getattr(self, record_name)
+            context.update(record._context_values_stored())
 
         for recordlist_name in self._recordlists:
             recordlist = getattr(self, recordlist_name)
@@ -289,9 +287,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         return context
 
     def _insert_existing(self, cursor, dialect=None):
-        '''Insert the contents of the SQLTransaction into the database. This
-        method stores only the existing data and will not update any values
-        that are linked to sequences in the database.'''
+        '''Insert the contents of the SQLTransaction into the database. This method stores only the
+        existing data and will not update any values that are linked to sequences in the
+        database.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -304,21 +302,21 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if not self._verify():
                 raise VerificationError
 
-            for table_name in self._tables:
-                table = getattr(self, table_name)
-                cursor.execute(table._insert_sql(dialect),
-                               table._values_sql_repr(context, dialect))
+            for record_name in self._records:
+                record = getattr(self, record_name)
+                if hasattr(record, '_insert_sql'):
+                    cursor.execute(*record._insert_sql(context, dialect))
 
             for recordlist_name in self._recordlists:
                 recordlist = getattr(self, recordlist_name)
-                cursor.executemany(recordlist._record_type._insert_sql(dialect),
-                                   recordlist._values_sql_repr(context, dialect))
+                if hasattr(recordlist._record_type, '_insert_sql'):
+                    cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
+                                       recordlist._values_sql_repr(context, dialect))
 
     def _insert_new(self, cursor, dialect=None):
-        '''Insert the contents of the SQLTransaction into the database. This
-        method will update any values that are linked to sequences or queries
-        in the database and then check that the verify method returns True
-        before proceeding.'''
+        '''Insert the contents of the SQLTransaction into the database. This method will update any
+        values that are linked to sequences or queries in the database and then check that the
+        verify method returns True before proceeding.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -331,19 +329,21 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if not self._verify():
                 raise VerificationError
 
-            for table_name in self._tables:
-                table = getattr(self, table_name)
-                cursor.execute(*table._insert_sql(context, dialect))
+            for record_name in self._records:
+                record = getattr(self, record_name)
+                if hasattr(record, '_insert_sql'):
+                    cursor.execute(*record._insert_sql(context, dialect))
 
             for recordlist_name in self._recordlists:
                 recordlist = getattr(self, recordlist_name)
-                cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
-                                   recordlist._values_sql_repr(context, dialect))
+                if hasattr(recordlist._record_type, '_insert_sql'):
+                    cursor.executemany(recordlist._record_type._insert_sql_command(dialect),
+                                       recordlist._values_sql_repr(context, dialect))
 
     def _update(self, cursor, dialect=None):
-        '''Insert the contents of the SQLTransaction into the database. This
-        method stores only the existing data and will not update any values
-        that are linked to sequences in the database.'''
+        '''Insert the contents of the SQLTransaction into the database. This method stores only the
+        existing data and will not update any values that are linked to sequences in the
+        database.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -356,24 +356,24 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if not self._verify():
                 raise VerificationError
 
-            for table_name in self._tables:
-                table = getattr(self, table_name)
-                cursor.execute(*(table._update_sql(context, dialect)))
+            for record_name in self._records:
+                record = getattr(self, record_name)
+                if hasattr(record, '_update_sql'):
+                    cursor.execute(*(record._update_sql(context, dialect)))
 
             for recordlist_name in self._recordlists:
                 recordlist = getattr(self, recordlist_name)
-                for record in recordlist:
-                    cursor.execute(*(record._update_sql(context, dialect)))
+                if hasattr(recordlist._record_type, '_update_sql'):
+                    for record in recordlist:
+                        cursor.execute(*(record._update_sql(context, dialect)))
 
-
-    def _context_select(self, cursor, dialect=None):
-        '''This method extracts the values stored in SQLField directly attached
-        to the SQLTransaction and stored them in a context dictionary under the
-        name of the attribute. It then attempts to use this dictionary to
-        retrieve all of the SQLTable and SQLRecordList objects stored in
-        SQLTransactionField attributes. The post_select_hook method is then
-        called, followed by the verify method to check that the result meets
-        internal consistency requirements.'''
+    def _context_select(self, cursor, dialect=None, allow_unlimited=False):
+        '''This method extracts the values stored in SQLField directly attached to the
+        SQLTransaction and stored them in a context dictionary under the name of the attribute. It
+        then attempts to use this dictionary to retrieve all of the SQLRecord and SQLRecordList
+        objects stored in SQLTransactionField attributes. The post_select_hook method is then
+        called, followed by the verify method to check that the result meets internal consistency
+        requirements.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -381,22 +381,27 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         with dialect.begin_transaction(cursor, self._isolation_level):
             context = self._get_refreshed_context(cursor, dialect)
 
-            for table_name, table_field in self._tables.items():
-                table_type = table_field._record_type
+            for record_name, record_field in self._records.items():
+                record_type = record_field._record_type
 
-                table = getattr(self, table_name)
-                if table is None:
-                    table = table_type()
-                    setattr(self, table_name, table)
+                record = getattr(self, record_name)
+                if record is None:
+                    record = record_type()
+                    setattr(self, record_name, record)
 
-                cursor.execute(*table_type._context_select_sql(context,
-                                                               dialect,
-                                                               allow_unlimited=False))
-                nextrow = cursor.fetchone()
-                if nextrow:
-                    table._set_values(nextrow)
+                if hasattr(record_type, '_context_select_sql'):
+                    cursor.execute(*record_type._context_select_sql(context,
+                                                                    dialect,
+                                                                    allow_unlimited=allow_unlimited)
+                                                                    )
+                    nextrow = cursor.fetchone()
+                    if nextrow:
+                        record._set_values(nextrow)
+                    else:
+                        record._clear()
                 else:
-                    table._clear()
+                    record._clear()
+
 
             for recordlist_name, recordlist_field in self._recordlists.items():
                 recordlist_type = recordlist_field._record_type
@@ -409,13 +414,15 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
                 recordlist._clear()
 
-                cursor.execute(*record_type._context_select_sql(context,
-                                                                dialect,
-                                                                allow_unlimited=False))
-                nextrow = cursor.fetchone()
-                while nextrow:
-                    recordlist._append(record_type(*nextrow))
+                if hasattr(record_type, '_context_select_sql'):
+                    cursor.execute(*record_type._context_select_sql(context,
+                                                                    dialect,
+                                                                    allow_unlimited=allow_unlimited)
+                                                                    )
                     nextrow = cursor.fetchone()
+                    while nextrow:
+                        recordlist._append(record_type(*nextrow))
+                        nextrow = cursor.fetchone()
 
             self._post_select_hook(context, cursor, dialect)
 

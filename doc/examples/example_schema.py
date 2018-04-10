@@ -120,8 +120,8 @@ FROM {accounting.transactions} AS t JOIN {accounting.journals} AS j ON t.tid = j
 # names are specified surrounded by braces. This allows pyxact to re-write the table names as
 # 'accounting_transactions' (etc.) if the database in use does not handle user-defined schema.
 
-class SimpleView(views.SQLView, view_name='simple_view', query=SIMPLEVIEW_QUERY, schema=accounting):
-    tid = fields.IntField()
+class SimpleTransactionView(views.SQLView, view_name='simple_view', query=SIMPLEVIEW_QUERY, schema=accounting):
+    tid = fields.IntField(context_used='tid')
     creator = fields.CharField(max_length=3)
     creation_ts = fields.TimestampField(tz=False)
     t_rev = fields.BooleanField()
@@ -130,9 +130,13 @@ class SimpleView(views.SQLView, view_name='simple_view', query=SIMPLEVIEW_QUERY,
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
 
+class SimpleTransactionViewList(recordlists.SQLRecordList, record_type=SimpleTransactionView):
+    pass
+
 # This looks superficially similar to an SQLTable. Once again, class attributes which are SQLField
 # are used to define the names and types of the values that are expected to be returned from the
-# view. As the view is not writable, we do not bother using the context-sensitive field types.
+# view. We use a context_used parameter to make it easier to select records when SimpleView is
+# embedded in a transaction.
 
 class AccountingTransaction(transactions.SQLTransaction):
     tid = sequences.SequenceIntField(sequence=tid_seq)

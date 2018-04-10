@@ -3,7 +3,7 @@
 import sqlite3
 import sys
 
-from pyxact import dialects, fields, loggingdb, queries, records, recordlists
+from pyxact import dialects, fields, loggingdb, queries, records, recordlists, transactions
 
 import example_schema
 
@@ -65,6 +65,18 @@ class JournalRowCountQuery(queries.SQLQuery,
 # The SQLQuery has a single context field. On instances of SQLQuery, the value this contains will
 # used to parametise the query.
 
+class QueryTransaction(transactions.SQLTransaction):
+    tid = fields.IntField()
+    total_transaction_count = fields.IntField(query=TransactionCountQuery)
+    simple_view = transactions.SQLTransactionField(example_schema.SimpleTransactionViewList)
+
+# The QueryTransaction class combines a query embedded in an IntField and an SQLView. When the tid
+# context field is set and the _context_select_sql method is called on the transaction, the query
+# will be updated and the appropriate records from the view will be retrieved. (Note that in this
+# case the TransactionCountQuery doesn't actually depend on the tid set). The purpose of being able
+# to do this is that all of the queries and view retrieval will happen in a single transaction, so
+# consistent results will be obtained even in a situation with concurrent writes to the database.
+
 if __name__ == '__main__':
 
     # You can see what SQL commands are being issued by specifying a log file name on the command
@@ -102,4 +114,12 @@ if __name__ == '__main__':
     # SQLQuery instances have a result_records generator method that returns one SQLRecord for each
     # row returned by the cursor, assuming this follows the use of the execute method to actually
     # call the query. The SQLRecord types have a suitable __str__ method defined, so they will print
-    # their contents susefully, if somewhat verbosely.
+    # their contents usefully, if somewhat verbosely.
+
+    query_transaction = QueryTransaction(tid=2)
+    query_transaction._context_select(cursor)
+
+    print('SimpleView stype journal rows for transaction 2:\n')
+
+    for i in query_transaction.simple_view._values():
+        print(i)
