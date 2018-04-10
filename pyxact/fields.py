@@ -89,13 +89,15 @@ class SQLField:
         raise ContextRequiredError('''Required context '{0}' is not provided'''
                                    .format(self.context_used))
 
-    def update(self, instance, context, cursor, dialect=None):
+    def refresh(self, instance, context, cursor, dialect=None):
         '''Given a (possibly partially-completed) context dictionary, a database cursor and a
         database dialect object, this method may retrieve data or do some other calculation in
-        order to update the value in the SQLField instance. It should also return the value. The
-        default action where the query parameter was set is to execute that query and update and
-        return the single-value result. The default action where no query parameter was supplied is
-        to simply return the existing value unchanged.'''
+        order to find the value in the SQLField instance and also return that value. The refresh
+        method should not modify the database in any way or generate new values, so sequences
+        should not be incremented and timestamps not updated. The default action where the query
+        parameter was set is to execute that query and update and return the single-value result.
+        The default action where no query parameter was supplied is to simply return the existing
+        value unchanged.'''
 
         if self.query is None:
             return instance.__getattribute__(self.slot_name)
@@ -106,6 +108,16 @@ class SQLField:
         value = query._result_singlevalue(cursor)
         self.__set__(instance, value)
         return value
+
+    def update(self, instance, context, cursor, dialect=None):
+        '''Given a (possibly partially-completed) context dictionary, a database cursor and a
+        database dialect object, this method may retrieve data or do some other calculation in
+        order to update the value in the SQLField instance and also return the value. Unlike the
+        refresh method, the update method may modify the database in some way (such as for
+        sequences) or generate a 'new' value (such as for timestamps). The default action is to
+        simply call the refresh method.'''
+
+        return self.refresh(instance, context, cursor, dialect)
 
     def sql_type(self, dialect=None):
         '''Returns the SQL definition of the data type of the field in the

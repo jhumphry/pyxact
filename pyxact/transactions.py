@@ -232,11 +232,27 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 result[i] = tmp
         return result
 
+    def _get_refreshed_context(self, cursor, dialect=None):
+        '''Return a context dictionary created from any non-None values of the SQLField objects
+        directly attached as attributes to the SQLTransaction. This method will call the refresh
+        method on each of the SQLField objects.'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        result = {'__name__' : self.__class__.__name__}
+
+        for field_name, field in self._context_fields.items():
+            tmp = field.refresh(instance=self, context=result, cursor=cursor, dialect=dialect)
+            if tmp:
+                result[field_name] = tmp
+        return result
+
     def _get_updated_context(self, cursor, dialect=None):
-        '''Return a context dictionary created from any non-None values of the
-        SQLField objects directly attached as attributes to the SQLTransaction.
-        This method will call the update() method on each of the SQLField
-        objects.'''
+        '''Return a context dictionary created from any non-None values of the SQLField objects
+        directly attached as attributes to the SQLTransaction. This method will call the update
+        method on each of the SQLField objects, so may use the cursor to make changes to the
+        database.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -363,7 +379,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         with dialect.begin_transaction(cursor, self._isolation_level):
-            context = self._get_context()
+            context = self._get_refreshed_context(cursor, dialect)
 
             for table_name, table_field in self._tables.items():
                 table_type = table_field._record_type
