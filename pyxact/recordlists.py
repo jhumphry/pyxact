@@ -5,6 +5,8 @@ import collections.abc
 
 from . import records
 
+INVALID_SQLRECORDLIST_NAMES = None
+
 class SQLRecordListField:
     '''SQLRecordListField is a special descriptor which is created for each of
     the SQLField attributes of the SQLRecord subclass that parametises the
@@ -35,34 +37,38 @@ class SQLRecordListField:
         for record in instance._records:
             yield record._get(self.field, context)
 
-class SQLRecordMetaClass(type):
-    '''This metaclass ensures that SQLRecordList is only subclassed with a
-    valid SQLRecord subclass as the record_type parameter. It also adds
-    SQLRecordListField attributes for each of the SQLField attributes on the
-    SQLRecord subclass.'''
+class SQLRecordListMetaClass(type):
+    '''This metaclass ensures that SQLRecordList is only subclassed with a valid SQLRecord subclass
+    as the record_type parameter. It also adds SQLRecordListField attributes for each of the
+    SQLField attributes on the SQLRecord subclass.'''
 
     def __new__(mcs, name, bases, namespace, record_type=None, **kwds):
+
+        mcs.prepare_sqlrecordlist_namespace(mcs, namespace, INVALID_SQLRECORDLIST_NAMES, record_type)
+        return type.__new__(mcs, name, bases, namespace)
+
+    def prepare_sqlrecordlist_namespace(mcs, namespace, forbidden_names, record_type):
+        '''This method receives an ordered dictionary of attributes attached to the new subclass
+        and checks, indexes and processes them appropriately, adding additional items where
+        necessary.'''
 
         if not issubclass(record_type, records.SQLRecord):
             raise ValueError('record_type parameter must refer to an SQLRecord subclass.')
 
         for field in record_type._fields:
-            if field in INVALID_SQLRECORDLIST_NAMES:
-                raise AttributeError('SQLField {} has the same name as an SQLRecordList'
-                                     ' method or internal attribute'.format(field))
+            if field in forbidden_names:
+                raise AttributeError('SQLField {} has the same name as a method or internal '
+                                     'attribute'.format(field))
             namespace[field] = SQLRecordListField(field)
 
         namespace['_record_type'] = record_type
         namespace['__slots__'] = ('_records',)
 
-        return type.__new__(mcs, name, bases, namespace)
-
-class SQLRecordList(metaclass=SQLRecordMetaClass, record_type=records.SQLRecord):
-    '''SQLRecordList subclasses hold ordered lists of SQLRecord subclasses of a
-    specified type. They implement many of the methods of the builtin list type
-    and allow values to be retrieved in bulk. The metaclass creates attributes
-    on the SQLRecordList subclass that match those on the underlying
-    SQLRecord.'''
+class SQLRecordList(metaclass=SQLRecordListMetaClass, record_type=records.SQLRecord):
+    '''SQLRecordList subclasses hold ordered lists of SQLRecord subclasses of a specified type.
+    They implement many of the methods of the builtin list type and allow values to be retrieved in
+    bulk. The metaclass creates attributes on the SQLRecordList subclass that match those on the
+    underlying SQLRecord.'''
 
     def __init__(self, *args):
         self._records = []
