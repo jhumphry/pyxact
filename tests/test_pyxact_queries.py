@@ -19,6 +19,9 @@ class StaticQuery(queries.SQLQuery,
                   recordlist_type=SingleIntRowLists):
     pass
 
+class StaticQueryResult(queries.SQLQueryResult, query=StaticQuery):
+    pass
+
 class SimpleQuery(queries.SQLQuery,
                   query='SELECT {alpha}+{beta} AS answer;',
                   record_type=SingleIntRow):
@@ -29,6 +32,9 @@ class MultiValueQuery(queries.SQLQuery,
                       query='VALUES (1),(2),(3),(4)',
                       record_type=SingleIntRow,
                       recordlist_type=SingleIntRowLists):
+    pass
+
+class MultiValueQueryResult(queries.SQLQueryResult, query=MultiValueQuery):
     pass
 
 class Holder:
@@ -50,8 +56,8 @@ def test_static_query(sqlitecur):
     assert len(result_list) == 1
     assert result_list[0].answer == 4
 
-    static_query._execute(sqlitecur, sqliteDialect)
-    result_recordlist = static_query._result_recordlist(sqlitecur)
+    result_recordlist = StaticQueryResult()
+    result_recordlist._refresh(sqlitecur, sqliteDialect)
     assert len(result_recordlist) == 1
     assert result_recordlist[0].answer == 4
 
@@ -93,8 +99,8 @@ def test_multivalue_query(sqlitecur):
     assert len(result_list) == 4
     assert result_list[2].answer == 3
 
-    mv_query._execute(sqlitecur, sqliteDialect)
-    result_recordlist = mv_query._result_recordlist(sqlitecur)
+    result_recordlist = MultiValueQueryResult()
+    result_recordlist._refresh(sqlitecur, sqliteDialect)
     assert len(result_recordlist) == 4
     assert result_recordlist[3].answer == 4
 

@@ -19,7 +19,7 @@ class SQLRecordMetaClass(type):
 
         return type.__new__(mcs, name, bases, namespace)
 
-    def prepare_sqlrecord_namespace(cls, namespace, forbidden_names):
+    def prepare_sqlrecord_namespace(mcs, namespace, forbidden_names):
         '''This method receives an ordered dictionary of attributes attached to
         the new subclass and checks, indexes and processes them appropriately,
         adding additional items where necessary.'''

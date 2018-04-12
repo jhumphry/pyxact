@@ -379,6 +379,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             dialect = dialects.DefaultDialect
 
         with dialect.begin_transaction(cursor, self._isolation_level):
+
             context = self._get_refreshed_context(cursor, dialect)
 
             for record_name, record_field in self._records.items():
@@ -392,8 +393,9 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 if hasattr(record_type, '_context_select_sql'):
                     cursor.execute(*record_type._context_select_sql(context,
                                                                     dialect,
-                                                                    allow_unlimited=allow_unlimited)
-                                                                    )
+                                                                    allow_unlimited=allow_unlimited
+                                                                   )
+                                  )
                     nextrow = cursor.fetchone()
                     if nextrow:
                         record._set_values(nextrow)
@@ -414,11 +416,23 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
                 recordlist._clear()
 
-                if hasattr(record_type, '_context_select_sql'):
+                if hasattr(recordlist, '_context_select_sql'):
+                    cursor.execute(*recordlist._context_select_sql(context,
+                                                                   dialect,
+                                                                   allow_unlimited=allow_unlimited
+                                                                  )
+                                  )
+                    nextrow = cursor.fetchone()
+                    while nextrow:
+                        recordlist._append(record_type(*nextrow))
+                        nextrow = cursor.fetchone()
+
+                elif hasattr(record_type, '_context_select_sql'):
                     cursor.execute(*record_type._context_select_sql(context,
                                                                     dialect,
-                                                                    allow_unlimited=allow_unlimited)
-                                                                    )
+                                                                    allow_unlimited=allow_unlimited
+                                                                   )
+                                  )
                     nextrow = cursor.fetchone()
                     while nextrow:
                         recordlist._append(record_type(*nextrow))
