@@ -8,8 +8,6 @@ import pyxact.tables as tables
 import pyxact.views as views
 from pyxact.dialects import sqliteDialect
 
-from test_pyxact_tables import sample_table_class, sample_table, sample_table_rows
-
 @pytest.fixture('module')
 def sample_view_class():
     class SampleView(views.SQLView, view_name='sample_view',
