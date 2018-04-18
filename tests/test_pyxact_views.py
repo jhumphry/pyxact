@@ -2,29 +2,8 @@
 
 import pytest
 import pyxact.fields as fields
-import pyxact.constraints as constraints
-import pyxact.sequences as sequences
-import pyxact.tables as tables
 import pyxact.views as views
 from pyxact.dialects import sqliteDialect
-
-@pytest.fixture('module')
-def sample_view_class():
-    class SampleView(views.SQLView, view_name='sample_view',
-                     query='SELECT trans_id AS tid, amount AS amount FROM sample_table'):
-        tid=fields.IntField()
-        amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
-
-    return SampleView
-
-@pytest.fixture('module')
-def sample_view(sqlitedb, sample_view_class, sample_table):
-
-    sqlitedb.execute(sample_view_class._create_view_sql())
-
-    # This will raise an OperationalError if the view doesn't exist or the
-    # names of the columns are wrong
-    sqlitedb.execute('SELECT tid, amount FROM sample_view;')
 
 def test_colliding_field_names():
 

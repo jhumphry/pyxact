@@ -3,7 +3,7 @@
 import pytest
 import sqlite3
 
-from pyxact import tables, fields, constraints
+from pyxact import tables, fields, constraints, views
 
 @pytest.fixture(scope="module")
 def sqlitedb():
@@ -53,3 +53,29 @@ def sample_table(sqlitedb, sample_table_class):
     # This will raise an OperationalError if the table doesn't exist or the
     # names of the columns are wrong
     sqlitedb.execute('SELECT trans_id, flag, amount, narrative FROM sample_table;')
+
+@pytest.fixture('module')
+def populated_sample_table(sqlitedb, sample_table_class, sample_table, sample_table_rows):
+
+    cursor = sqlite.cursor()
+    for i in sample_table_rows:
+        tmp = sample_table_class(*i)
+        sqlitedb.execute(tmp._insert_sql(cursor))
+
+@pytest.fixture('session')
+def sample_view_class():
+    class SampleView(views.SQLView, view_name='sample_view',
+                     query='SELECT trans_id AS tid, amount AS amount FROM sample_table'):
+        tid=fields.IntField()
+        amount=fields.NumericField(precision=6, scale=2, allow_floats=True)
+
+    return SampleView
+
+@pytest.fixture('module')
+def sample_view(sqlitedb, sample_view_class, sample_table):
+
+    sqlitedb.execute(sample_view_class._create_view_sql())
+
+    # This will raise an OperationalError if the view doesn't exist or the
+    # names of the columns are wrong
+    sqlitedb.execute('SELECT tid, amount FROM sample_view;')
