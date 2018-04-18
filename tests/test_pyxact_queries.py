@@ -10,35 +10,13 @@ from pyxact.dialects import sqliteDialect
 class SingleIntRow(records.SQLRecord):
     answer=fields.IntField()
 
-class SingleIntRowLists(recordlists.SQLRecordList, record_type=SingleIntRow):
-    pass
-
 class StaticQuery(queries.SQLQuery,
                   query='SELECT 2+2 AS answer;',
-                  record_type=SingleIntRow,
-                  recordlist_type=SingleIntRowLists):
+                  record_type=SingleIntRow):
     pass
 
 class StaticQueryResult(queries.SQLQueryResult, query=StaticQuery):
     pass
-
-class SimpleQuery(queries.SQLQuery,
-                  query='SELECT {alpha}+{beta} AS answer;',
-                  record_type=SingleIntRow):
-    alpha=fields.IntField()
-    beta=fields.IntField()
-
-class MultiValueQuery(queries.SQLQuery,
-                      query='VALUES (1),(2),(3),(4)',
-                      record_type=SingleIntRow,
-                      recordlist_type=SingleIntRowLists):
-    pass
-
-class MultiValueQueryResult(queries.SQLQueryResult, query=MultiValueQuery):
-    pass
-
-class Holder:
-    query_field = fields.IntField(query=SimpleQuery)
 
 def test_static_query(sqlitecur):
 
@@ -61,6 +39,14 @@ def test_static_query(sqlitecur):
     assert len(result_recordlist) == 1
     assert result_recordlist[0].answer == 4
 
+######
+
+class SimpleQuery(queries.SQLQuery,
+                  query='SELECT {alpha}+{beta} AS answer;',
+                  record_type=SingleIntRow):
+    alpha=fields.IntField()
+    beta=fields.IntField()
+
 def test_simple_query(sqlitecur):
 
     simple_query=SimpleQuery()
@@ -75,6 +61,16 @@ def test_simple_query(sqlitecur):
     assert simple_query._result_singlevalue(sqlitecur) == -2
 
     assert simple_query._query_values() == [2, -4]
+
+######
+
+class MultiValueQuery(queries.SQLQuery,
+                      query='VALUES (1),(2),(3),(4)',
+                      record_type=SingleIntRow):
+    pass
+
+class MultiValueQueryResult(queries.SQLQueryResult, query=MultiValueQuery):
+    pass
 
 def test_multivalue_query(sqlitecur):
 
@@ -104,6 +100,11 @@ def test_multivalue_query(sqlitecur):
     assert len(result_recordlist) == 4
     assert result_recordlist[3].answer == 4
 
+######
+
+class Holder:
+    query_field = fields.IntField(query=SimpleQuery)
+
 def test_queryintfield(sqlitecur):
 
     test_holder = Holder()
@@ -115,3 +116,60 @@ def test_queryintfield(sqlitecur):
     Holder.query_field.update(test_holder, context, sqlitecur, sqliteDialect)
 
     assert test_holder.query_field == 13
+
+######
+
+complex_query_text = '''
+SELECT x AS x, x*{alpha} AS x_alpha, y AS y, y*{beta} AS y_beta
+FROM (SELECT 1 AS x, 2 AS y UNION VALUES (3, 4), (5,6));'''
+
+class ComplexQueryRecord(records.SQLRecord):
+    x=fields.IntField()
+    x_alpha=fields.IntField()
+    y=fields.IntField()
+    y_beta=fields.IntField()
+
+class ComplexQuery(queries.SQLQuery,
+                   query=complex_query_text,
+                   record_type=ComplexQueryRecord):
+    alpha=fields.IntField()
+    beta=fields.IntField()
+
+class ComplexQueryResult(queries.SQLQueryResult, query=ComplexQuery):
+    pass
+
+def test_complexquery(sqlitecur):
+
+    cq = ComplexQueryResult()
+
+    cq._query.alpha = 2
+    cq._query.beta = 3
+    cq._refresh(sqlitecur)
+
+    assert list(cq.x) == [1, 3, 5]
+    assert list(cq.x_alpha) == [2, 6, 10]
+    assert list(cq.y) == [2, 4, 6]
+    assert list(cq.y_beta) == [6, 12, 18]
+
+    cq._query.beta=4
+    cq._refresh(sqlitecur)
+
+    assert list(cq.x) == [1, 3, 5]
+    assert list(cq.x_alpha) == [2, 6, 10]
+    assert list(cq.y) == [2, 4, 6]
+    assert list(cq.y_beta) == [8, 16, 24]
+
+    assert cq._get_context() == {'alpha' : 2, 'beta' : 4}
+
+    cq._set_context({'alpha' : -1, 'beta' : -2})
+    cq._refresh(sqlitecur)
+
+    assert list(cq.x) == [1, 3, 5]
+    assert list(cq.x_alpha) == [-1, -3, -5]
+    assert list(cq.y) == [2, 4, 6]
+    assert list(cq.y_beta) == [-4, -8, -12]
+
+    sqlitecur.execute(*cq._context_select_sql({'alpha' : 2, 'beta' : 1}))
+    nextrow = sqlitecur.fetchone()
+    assert nextrow == (1 , 2, 2, 2)
+
