@@ -17,7 +17,7 @@ class SQLIndex:
 
         self.unique = unique
 
-        if not issubclass(table, tables.SQLTable):
+        if not isinstance(table, type) or not issubclass(table, tables.SQLTable):
             raise TypeError('Must provide an SQLTable to index')
         self.table = table
 
