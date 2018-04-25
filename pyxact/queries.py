@@ -12,8 +12,7 @@ class SQLQueryMetaClass(type):
     '''This metaclass ensures that SQLQuery is only subclassed with a
     valid SQLRecord subclass as the record_type parameter.'''
 
-    def __new__(mcs, name, bases, namespace, query='',
-                record_type=None, recordlist_type=None, **kwds):
+    def __new__(mcs, name, bases, namespace, query='', record_type=None, **kwds):
 
         if record_type:
             if not isinstance(record_type, type):
@@ -21,16 +20,6 @@ class SQLQueryMetaClass(type):
             if not issubclass(record_type, records.SQLRecord):
                 raise ValueError('record_type must refer to an SQLRecord subclass.')
         namespace['_record_type'] = record_type
-
-        if recordlist_type:
-            if not isinstance(recordlist_type, type):
-                raise ValueError('recordlist_type must refer to an SQLRecordList subclass.')
-            if not issubclass(recordlist_type, recordlists.SQLRecordList):
-                raise ValueError('recordlist_type must refer to an SQLRecordList subclass.')
-            if not issubclass(record_type, recordlist_type._record_type):
-                raise ValueError('recordlist_type must be able to hold instances of the '
-                                 'record_type parameter.')
-        namespace['_recordlist_type'] = recordlist_type
 
         # Now identify the SQLField attached to the new class to form the context for
         # the query
