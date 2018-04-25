@@ -162,19 +162,16 @@ class AccountingTransaction(transactions.SQLTransaction):
 # internal consistency - in this case checking that the accounting journal balances and is valid for
 # double-entry book-keeping.
 
+test_transaction1 = AccountingTransaction()
 
-sample_transaction = TransactionTable(creator='ABC',
-                                      t_rev=False,
-                                      narrative='Example usage of pyxact')
-
-sample_journals = JournalList(JournalTable(None, None, 1000, D('10.5')),
-                              JournalTable(None, None, 1001, D('-5.5')),
-                              JournalTable(None, None, 1002, D('-5.0'))
-                             )
-
-test_transaction1 = AccountingTransaction(transaction=sample_transaction,
-                                          journal_list=sample_journals)
-
+test_transaction1.transaction = TransactionTable(creator='ABC',
+                                                 t_rev=False,
+                                                 narrative='Example usage of pyxact'
+                                                )
+test_transaction1.journal_list = JournalList(JournalTable(None, None, 1000, D('10.5')),
+                                             JournalTable(None, None, 1001, D('-5.5')),
+                                             JournalTable(None, None, 1002, D('-5.0'))
+                                            )
 
 # Now we create an instance of an AccountingTransaction. Note that we do not specify values for
 # certain fields where we expect them to be completed from the context dictionary, or automatically
