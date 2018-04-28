@@ -1,4 +1,8 @@
-# Test SQLTable behaviours that need a sqlite database to demonstrate
+'''Test SQLTable behaviours that need a sqlite database to demonstrate'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 import pytest
 import pyxact.fields as fields

@@ -3,6 +3,10 @@ classes that represent an associated set of database objects. These can be
 mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 from . import SQLSchemaBase
 from . import dialects, indexes, sequences, tables, views
 

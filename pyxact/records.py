@@ -1,5 +1,9 @@
 '''This module defines Python types that map to SQL database tables.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 from . import fields, dialects
 
 INVALID_SQLRECORD_NAMES = None

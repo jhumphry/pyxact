@@ -1,5 +1,9 @@
 '''An example of using SQLTransaction hooks.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 import decimal
 import random
 import sqlite3

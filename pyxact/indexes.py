@@ -1,5 +1,9 @@
 '''This module defines types that represent indexes in a database.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 from collections import namedtuple
 
 from . import SQLSchemaBase

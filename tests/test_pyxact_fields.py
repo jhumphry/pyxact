@@ -1,4 +1,8 @@
-# Test pyxact.fields
+'''Test pyxact.fields'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 from decimal import Decimal, Inexact, InvalidOperation
 import datetime

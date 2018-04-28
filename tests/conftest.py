@@ -1,4 +1,8 @@
-# Some common fixtures for pytest tests of pyxact modules
+'''Some common fixtures for pytest tests of pyxact modules'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 import pytest
 import sqlite3

@@ -1,5 +1,9 @@
-'''This module defines SQLField and subclasses - the class hierarchy that
-defines and maps SQL types and values to Python types and values.'''
+'''This module defines SQLField and subclasses - the class hierarchy that defines and maps SQL
+types and values to Python types and values.'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 import datetime
 import decimal

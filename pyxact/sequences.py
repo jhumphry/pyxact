@@ -1,6 +1,10 @@
-'''This module defines types that represent sequences in a database. These may
-be used where it is necessary to acquire values that will be unique within the
-database (such as for transaction IDs).'''
+'''This module defines types that represent sequences in a database. These may be used where it is
+necessary to acquire values that will be unique within the database (such as for transaction
+IDs).'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 from . import SQLSchemaBase
 from . import dialects, fields

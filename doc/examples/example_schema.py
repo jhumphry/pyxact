@@ -1,5 +1,9 @@
 '''An example of defining a simple database schema using pyxact.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 import sqlite3
 import sys
 from decimal import Decimal as D

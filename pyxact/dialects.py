@@ -1,6 +1,10 @@
 '''This module defines classes that are used as singleton objects to define the
 various flavours of SQL used by different database adaptors.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 import datetime
 import decimal
 import re

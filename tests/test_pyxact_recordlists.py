@@ -1,4 +1,8 @@
-# Test pyxact.recordlists
+'''Test pyxact.recordlists'''
+
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
 
 import pytest
 import pyxact.fields as fields

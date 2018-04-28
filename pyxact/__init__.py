@@ -9,6 +9,10 @@ classes that have type-enforced attributes and have a fixed list of attributes
 frozen at the point of class definition. Python 3.6+ is currently required for
 correct operation.'''
 
+# Copyright 2018, James Humphry
+# This work is released under the ISC license - see LICENSE for details
+# SPDX-License-Identifier: ISC
+
 from enum import Enum
 
 class IsolationLevel(Enum):
