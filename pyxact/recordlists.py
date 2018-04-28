@@ -51,7 +51,7 @@ class SQLRecordListMetaClass(type):
         mcs.prepare_sqlrecordlist_namespace(mcs, namespace, INVALID_SQLRECORDLIST_NAMES, record_type)
         return type.__new__(mcs, name, bases, namespace)
 
-    def prepare_sqlrecordlist_namespace(mcs, namespace, forbidden_names, record_type):
+    def prepare_sqlrecordlist_namespace(cls, namespace, forbidden_names, record_type):
         '''This method receives an ordered dictionary of attributes attached to the new subclass
         and checks, indexes and processes them appropriately, adding additional items where
         necessary.'''
