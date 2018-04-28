@@ -225,16 +225,15 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         pass
 
     def _get_context(self):
-        '''Return a context dictionary created from any non-None values stored
-        under the names of the SQLField objects directly attached as attributes
-        to the SQLTransaction. This does not update sequences or perform any
-        database access.'''
+        '''Return a context dictionary created from any non-None values stored under the names of
+        the SQLField objects directly attached as attributes to the SQLTransaction. This does not
+        perform any database access or recalculate any data.'''
 
         result = {'__name__' : self.__class__.__name__}
-        for i in self._context_fields:
-            tmp = getattr(self, i)
+        for field_name, field in self._context_fields.items():
+            tmp = field.get_context(instance=self, context=result)
             if tmp:
-                result[i] = tmp
+                result[field_name] = tmp
         return result
 
     def _get_refreshed_context(self, cursor, dialect=None):
