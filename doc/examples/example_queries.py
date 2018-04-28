@@ -42,7 +42,7 @@ class JournalRowCount(records.SQLRecord):
 JOURNAL_ROW_COUNT_QUERY_BY_CREATOR = '''
 SELECT transactions.creator, transactions.tid, COUNT(*) AS row_count
 FROM {accounting.journals} AS journals
-JOIN {accounting.transactions} as transactions ON journals.tid = transactions.tid
+JOIN {accounting.transactions} AS transactions ON journals.tid = transactions.tid
 WHERE transactions.creator LIKE {creator_pattern}
 GROUP BY transactions.creator, transactions.tid;
 '''
@@ -74,7 +74,7 @@ class JournalRowCountResultCreator(queries.SQLQueryResult, query=JournalRowCount
 JOURNAL_ROW_COUNT_QUERY_BY_TID = '''
 SELECT transactions.creator, transactions.tid, COUNT(*) AS row_count
 FROM {accounting.journals} AS journals
-JOIN {accounting.transactions} as transactions ON journals.tid = transactions.tid
+JOIN {accounting.transactions} AS transactions ON journals.tid = transactions.tid
 WHERE transactions.tid = {tid}
 GROUP BY transactions.creator, transactions.tid;
 '''
@@ -86,7 +86,9 @@ class JournalRowCountQueryTID(queries.SQLQuery,
 class JournalRowCountResultTID(queries.SQLQueryResult, query=JournalRowCountQueryTID):
     pass
 
-# This is another example of a parametised query.
+# This is another example of a parametised query. Like the previous query, it fetches row count by
+# journal information, but this time the journal is specified by the 'tid' column rather than by
+# the 'creator' column.
 
 class QueryTransaction(transactions.SQLTransaction):
     tid = fields.IntField()
