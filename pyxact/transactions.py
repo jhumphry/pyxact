@@ -96,7 +96,7 @@ class SQLTransactionMetaClass(type):
 
         namespace['_isolation_level'] = isolation_level
         namespace['__slots__'] = tuple(slots)
-        namespace['_fields_count'] = len(_fields)
+        namespace['_field_count'] = len(_fields)
         namespace['_fields'] = _fields
         namespace['_context_fields'] = _context_fields
         namespace['_records'] = _records
