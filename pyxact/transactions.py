@@ -46,6 +46,8 @@ class SQLTransactionField:
             raise ValueError('Value must be an instance of {0}'
                              .format(str(self._record_type.__name__)))
 
+INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES = frozenset()
+
 class SQLTransactionMetaClass(type):
     '''This metaclass identifies all of the special attributes created in an
     SQLTransaction subclass and creates various internal dictionaries and
@@ -74,18 +76,17 @@ class SQLTransactionMetaClass(type):
 
         for k in namespace:
 
+            if isinstance(namespace[k], (fields.SQLField,  SQLTransactionField)) and \
+                    k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
+                raise AttributeError('Attribute {} has the same name as an SQLTransaction '
+                                     'method or internal attribute'.format(k))
+
             if isinstance(namespace[k], fields.SQLField):
-                if k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLField {} has the same name as an SQLTransaction'
-                                         ' method or internal attribute'.format(k))
                 slots.append('_'+k)
                 _context_fields[k] = namespace[k]
                 _fields[k] = namespace[k]
 
             elif isinstance(namespace[k], SQLTransactionField):
-                if k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
-                    raise AttributeError('SQLTransactionField {} has the same name as an '
-                                         'SQLTransaction method or internal attribute'.format(k))
                 if issubclass(namespace[k]._record_type, records.SQLRecord):
                     _records[k] = namespace[k]
                 elif issubclass(namespace[k]._record_type, recordlists.SQLRecordList):
