@@ -28,21 +28,23 @@ class Cursor:
 
         self.log_file.write("Executed SQL: '{}' with params '{}'\n"
                             .format(sql, repr(params)))
+        self.log_file.flush()
         if params:
-            self.inner_cursor.execute(sql, params)
+            return self.inner_cursor.execute(sql, params)
         else:
-            self.inner_cursor.execute(sql)
+            return self.inner_cursor.execute(sql)
 
     def executemany(self, sql, params=None):
         '''Log a request to execute some SQL with multiple sets of parameters'''
 
         self.log_file.write("Executed SQL: '{}' with params:\n"
                             .format(sql))
+        self.log_file.flush()
         for i in params:
             self.log_file.write(repr(i))
             self.log_file.write('\n')
         self.log_file.write('\n')
-        self.inner_cursor.executemany(sql, params)
+        return self.inner_cursor.executemany(sql, params)
 
     def fetchone(self):
         '''Log a request to return a single result row'''
@@ -144,6 +146,7 @@ class Connection:
 
         self.log_file.write("Executed SQL: '{}' with params '{}'\n"
                             .format(sql, repr(params)))
+        self.log_file.flush()
         if params:
             self.inner_connection.execute(sql, params)
         else:
