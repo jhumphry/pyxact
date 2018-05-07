@@ -228,6 +228,14 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
         pass
 
+    def _pre_delete_hook(self, context, cursor, dialect):
+        '''This method is called shortly before the records associated with the transaction are
+        deleted. After a call to this method, the a call to the _verify() method should return True
+        if this is possible to achieve. The use of this hook is dependent on the domain for which
+        SQLTransaction has been subclassed. The default implementation does nothing.'''
+
+        pass
+
     def _get_context(self):
         '''Return a context dictionary created from any non-None values stored under the names of
         the SQLField objects directly attached as attributes to the SQLTransaction. This does not
@@ -374,6 +382,33 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                 if hasattr(recordlist._record_type, '_update_sql'):
                     for record in recordlist:
                         cursor.execute(*(record._update_sql(context, dialect)))
+
+    def _delete(self, cursor, dialect=None):
+        '''Delete the records corresponding to the contents of the SQLTransaction into the
+        database. This method assumes sufficient context has been completed to specify the primary
+        keys of the records to be deleted..'''
+
+        if not dialect:
+            dialect = dialects.DefaultDialect
+
+        with dialect.begin_transaction(cursor, self._isolation_level):
+            context = self._get_context()
+
+            self._pre_delete_hook(context, cursor, dialect)
+
+            if not self._verify():
+                raise VerificationError
+
+            for record_name in self._records:
+                record = getattr(self, record_name)
+                if hasattr(record, '_delete_sql'):
+                    cursor.execute(*(record._delete_sql(context, dialect)))
+
+            for recordlist_name in self._recordlists:
+                recordlist = getattr(self, recordlist_name)
+                if hasattr(recordlist._record_type, '_delete_sql'):
+                    for record in recordlist:
+                        cursor.execute(*(record._delete_sql(context, dialect)))
 
     def _context_select(self, cursor, dialect=None, allow_unlimited=False):
         '''This method extracts the values stored in SQLField directly attached to the
