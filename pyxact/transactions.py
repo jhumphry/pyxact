@@ -125,6 +125,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         for i in self.__slots__:
             setattr(self, i, None)
 
+        for recordlist_name, recordlist_field in self._recordlists.items():
+            recordlist_type = recordlist_field._record_type
+            setattr(self, recordlist_name, recordlist_field._record_type())
+
         if args:
             if len(args) != self._field_count:
                 raise ValueError('{0} values required, {1} supplied.'
