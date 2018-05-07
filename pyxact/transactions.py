@@ -76,7 +76,7 @@ class SQLTransactionMetaClass(type):
 
         for k in namespace:
 
-            if isinstance(namespace[k], (fields.SQLField,  SQLTransactionField)) and \
+            if isinstance(namespace[k], (fields.SQLField, SQLTransactionField)) and \
                     k in INVALID_SQLTRANSACTION_ATTRIBUTE_NAMES:
                 raise AttributeError('Attribute {} has the same name as an SQLTransaction '
                                      'method or internal attribute'.format(k))

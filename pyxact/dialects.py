@@ -83,7 +83,7 @@ class SQLDialect:
 
     foreign_key_match_sql = FOREIGN_KEY_MATCH_SQL
     foreign_key_action_sql = FOREIGN_KEY_ACTION_SQL
-    constraint_deferrable_sql =  CONSTRAINT_DEFERRABLE_SQL
+    constraint_deferrable_sql = CONSTRAINT_DEFERRABLE_SQL
 
     truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
 
@@ -140,7 +140,7 @@ class sqliteDialect(SQLDialect):
 
     foreign_key_match_sql = FOREIGN_KEY_MATCH_SQL
     foreign_key_action_sql = FOREIGN_KEY_ACTION_SQL
-    constraint_deferrable_sql =  CONSTRAINT_DEFERRABLE_SQL
+    constraint_deferrable_sql = CONSTRAINT_DEFERRABLE_SQL
 
     truncate_table_sql = '''DELETE FROM {table_name} WHERE 1=1;'''
 

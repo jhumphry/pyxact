@@ -31,8 +31,7 @@ class Cursor:
         self.log_file.flush()
         if params:
             return self.inner_cursor.execute(sql, params)
-        else:
-            return self.inner_cursor.execute(sql)
+        return self.inner_cursor.execute(sql)
 
     def executemany(self, sql, params=None):
         '''Log a request to execute some SQL with multiple sets of parameters'''

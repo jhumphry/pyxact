@@ -48,7 +48,8 @@ class SQLRecordListMetaClass(type):
 
     def __new__(mcs, name, bases, namespace, record_type=None, **kwds):
 
-        mcs.prepare_sqlrecordlist_namespace(mcs, namespace, INVALID_SQLRECORDLIST_NAMES, record_type)
+        mcs.prepare_sqlrecordlist_namespace(mcs, namespace,
+                                            INVALID_SQLRECORDLIST_NAMES, record_type)
         return type.__new__(mcs, name, bases, namespace)
 
     def prepare_sqlrecordlist_namespace(cls, namespace, forbidden_names, record_type):
