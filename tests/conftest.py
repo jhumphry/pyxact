@@ -7,7 +7,7 @@
 import pytest
 import sqlite3
 
-from pyxact import tables, fields, constraints, views
+from pyxact import tables, fields, constraints, views, loggingdb
 
 @pytest.fixture(scope="module")
 def sqlitedb():
@@ -23,6 +23,7 @@ def sqlitedb():
 @pytest.fixture()
 def sqlitecur(sqlitedb):
     cur = sqlitedb.cursor()
+    # yield loggingdb.Cursor(cur)
     yield cur
     cur.close()
 
@@ -57,6 +58,7 @@ def sample_table(sqlitedb, sample_table_class):
     # This will raise an OperationalError if the table doesn't exist or the
     # names of the columns are wrong
     sqlitedb.execute('SELECT trans_id, flag, amount, narrative FROM sample_table;')
+    sqlitedb.commit()
 
 @pytest.fixture('module')
 def populated_sample_table(sqlitedb, sample_table_class, sample_table, sample_table_rows):

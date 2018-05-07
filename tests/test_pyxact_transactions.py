@@ -6,7 +6,9 @@
 
 import pytest
 import pyxact.fields as fields
+import pyxact.tables as tables
 import pyxact.transactions as transactions
+import pyxact.constraints as constraints
 from pyxact.dialects import sqliteDialect
 
 class SpecialTextField(fields.TextField):
@@ -21,13 +23,33 @@ class SpecialTextField(fields.TextField):
         return 'update'
 
 @pytest.fixture('session')
-def sample_transaction_class(sample_table_class, sample_view_class):
+def sample_special_table_class():
+    class SampleSpecialTable(tables.SQLTable, table_name='sample_special_table'):
+        trans_id=fields.IntField(context_used='trans_id')
+        narrative=fields.TextField(context_used='special_text')
+        pk=constraints.PrimaryKeyConstraint(column_names=('trans_id'))
+
+    return SampleSpecialTable
+
+@pytest.fixture('module')
+def sample_special_table(sqlitedb, sample_special_table_class):
+
+    sqlitedb.execute(sample_special_table_class._create_table_sql())
+    sqlitedb.execute(sample_special_table_class._truncate_table_sql())
+
+    # This will raise an OperationalError if the table doesn't exist or the
+    # names of the columns are wrong
+    sqlitedb.execute('SELECT trans_id, narrative FROM sample_special_table;')
+    sqlitedb.commit()
+
+@pytest.fixture('session')
+def sample_transaction_class(sample_special_table_class, sample_view_class):
 
     class SampleTransaction(transactions.SQLTransaction):
         trans_id = fields.IntField()
         special_text = SpecialTextField()
         view = transactions.SQLTransactionField(sample_view_class)
-        data = transactions.SQLTransactionField(sample_table_class)
+        data = transactions.SQLTransactionField(sample_special_table_class)
 
     return SampleTransaction
 
@@ -51,7 +73,7 @@ def test_colliding_field_names(sample_table_class, sample_transaction_class):
             ok_name = fields.IntField()
             _isolation_level = transactions.SQLTransactionField(sample_table_class)
 
-def test_init(sample_table_class, sample_view_class, sample_transaction_class):
+def test_init(sample_special_table_class, sample_view_class, sample_transaction_class):
 
     tmp1 = sample_transaction_class()
     assert tmp1.trans_id is None
@@ -59,7 +81,7 @@ def test_init(sample_table_class, sample_view_class, sample_transaction_class):
     tmp2 = sample_transaction_class(1,
                                     'foo',
                                     sample_view_class(),
-                                    sample_table_class(1, True, '3.4', 'Line 1')
+                                    sample_special_table_class(1, 'Line 1')
                                     )
 
     with pytest.raises(TypeError, message='SQLTransaction should require positional attributes to be provided in a '
@@ -67,7 +89,7 @@ def test_init(sample_table_class, sample_view_class, sample_transaction_class):
         tmp3 = sample_transaction_class(sample_view_class(),
                                         'foo',
                                         1,
-                                        sample_table_class(1, True, '3.4', 'Line 1')
+                                        sample_special_table_class(1, 'Line 1')
                                         )
 
     with pytest.raises(ValueError, message='SQLTransaction should reject init by positional args if the wrong number are specified.'):
@@ -79,22 +101,22 @@ def test_init(sample_table_class, sample_view_class, sample_transaction_class):
     tmp5 = sample_transaction_class(trans_id=1,
                                     special_text='foo',
                                     view=sample_view_class(),
-                                    data=sample_table_class(1, True, '3.4', 'Line 1')
+                                    data=sample_special_table_class(1, 'Line 1')
                                     )
 
     with pytest.raises(ValueError, message='SQLTransaction should reject init by incorrectly named args.'):
         tmp6 = sample_transaction_class(trans_id=1,
                                         special_text='foo',
                                         views=sample_view_class(),
-                                        data=sample_table_class(1, True, '3.4', 'Line 1')
+                                        data=sample_special_table_class(1, 'Line 1')
                                         )
 
-def test_copy(sample_table_class, sample_view_class, sample_transaction_class):
+def test_copy(sample_special_table_class, sample_view_class, sample_transaction_class):
 
     tmp1 = sample_transaction_class(1,
                                     'foo',
                                     sample_view_class(),
-                                    sample_table_class(2, True, '3.4', 'Line 1')
+                                    sample_special_table_class(2, 'Line 1')
                                     )
     tmp2 = tmp1
     tmp3 = tmp1._copy()
@@ -107,12 +129,12 @@ def test_copy(sample_table_class, sample_view_class, sample_transaction_class):
     assert tmp2.data.trans_id == 888
     assert tmp3.data.trans_id == 2
 
-def test_get_context(sample_table_class, sample_view_class, sample_transaction_class):
+def test_get_context(sample_special_table_class, sample_view_class, sample_transaction_class):
 
     tmp1 = sample_transaction_class(1,
                                     'foo',
                                     sample_view_class(),
-                                    sample_table_class(2, True, '3.4', 'Line 1')
+                                    sample_special_table_class(2, 'Line 1')
                                     )
     assert tmp1.special_text == 'foo'
 
@@ -134,3 +156,25 @@ def test_get_context(sample_table_class, sample_view_class, sample_transaction_c
     tmp1.trans_id = None
     ctxt = tmp1._get_context()
     assert 'trans_id' not in ctxt
+
+def test_insert(sample_special_table_class, sample_special_table, sample_transaction_class, sqlitecur):
+
+    tmp = sample_transaction_class()
+    tmp.trans_id = 42
+    tmp.special_text = 'Special Text'
+    tmp.data = sample_special_table_class(None, 'Narrative')
+
+    sqlitecur.execute('DELETE FROM sample_special_table WHERE 1=1;')
+    sqlitecur.execute('COMMIT;')
+    tmp._insert_existing(sqlitecur)
+
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table;').fetchone() == (1, )
+    assert sqlitecur.execute('SELECT trans_id FROM sample_special_table;').fetchone() == (42, )
+    assert sqlitecur.execute('SELECT narrative FROM sample_special_table;').fetchone() == ('get_context', )
+
+    tmp.trans_id = 43
+    tmp._insert_new(sqlitecur)
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table;').fetchone() == (2, )
+    assert sqlitecur.execute('SELECT MAX(trans_id) FROM sample_special_table;').fetchone() == (43, )
+    assert sqlitecur.execute('SELECT narrative FROM sample_special_table WHERE trans_id=43;').fetchone() == ('update', )
+
