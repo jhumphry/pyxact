@@ -4,7 +4,7 @@
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-from . import SQLSchemaBase
+from . import SQLSchemaBase, FKMatch, FKAction, ConstraintDeferrable
 
 class SQLConstraint:
     '''This abstract base class is the root of the class hierarchy for table
@@ -97,11 +97,23 @@ class ForeignKeyConstraint(ColumnsConstraint):
     sql_reference_names is None then it is assumed the referenced columns have
     the same names as the columns in the current table.'''
 
-    def __init__(self, foreign_table, foreign_schema=None, sql_reference_names=None, **kwargs):
+    def __init__(self, foreign_table, foreign_schema=None, sql_reference_names=None,
+                 match=FKMatch.SIMPLE, on_update=FKAction.NO_ACTION, on_delete=FKAction.NO_ACTION,
+                 deferrable=ConstraintDeferrable.DEFERRABLE_INITIALLY_DEFERRED, **kwargs):
 
         super().__init__(**kwargs)
 
         self.foreign_table = foreign_table
+        self.match = match
+
+        # Note that by default operations that affect FK constraints in other tables will not be
+        # permitted (as is usual in SQL) but that FK constraints will be deferred by default to the
+        # end of the transaction. This allows SQLTransaction to delete all rows in all tables
+        # associated with the transaction without having to first do a topological sort to work out
+        # what ordering of deletions will avoid spurious FK constraint errors.
+        self.on_update = on_update
+        self.on_delete = on_delete
+        self.deferrable = deferrable
 
         # Note that we cannot type-check the foreign_schema to avoid circular dependencies
         if foreign_schema is None:
@@ -128,5 +140,10 @@ class ForeignKeyConstraint(ColumnsConstraint):
         result += ', '.join(self.sql_column_names)
         result += ') REFERENCES ' + foreign_table + ' ('
         result += ', '.join(self.sql_reference_names)
-        result += ') ' + self.sql_options
+        result += ') '
+        result += 'ON DELETE ' + dialect.foreign_key_action_sql[self.on_delete] + ' '
+        result += 'ON UPDATE ' + dialect.foreign_key_action_sql[self.on_update] + ' '
+        result += dialect.foreign_key_match_sql[self.match] + ' '
+        result += dialect.constraint_deferrable_sql[self.deferrable] + ' '
+        result += self.sql_options
         return result

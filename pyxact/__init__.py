@@ -27,6 +27,31 @@ class IsolationLevel(Enum):
     REPEATABLE_READ = 3
     SERIALIZABLE = 4
 
+class FKAction(Enum):
+    '''This enumeration is used to specify what should happen when a value of a column used in a
+    foreign key constraint is changed.'''
+
+    NO_ACTION = 1
+    RESTRICT = 2
+    CASCADE = 3
+    SET_NULL = 4
+    SET_DEFAULT = 5
+
+class FKMatch(Enum):
+    '''This enumeration is used to specify how the match to the foreign key columns should be
+    performed.'''
+
+    SIMPLE = 1
+    PARTIAL = 2
+    FULL = 3
+
+class ConstraintDeferrable(Enum):
+    '''This enumeration is used to specify when constraints should be tested.'''
+
+    NOT_DEFERRABLE = 1
+    DEFERRABLE_INITIALLY_DEFERRED = 2
+    DEFERRABLE_INITIALLY_IMMEDIATE = 3
+
 class PyxactError(Exception):
     '''Base class for exceptions defined by pyxact.'''
 
