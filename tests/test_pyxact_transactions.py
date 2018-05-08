@@ -201,3 +201,27 @@ def test_update(sample_special_table_class, sample_special_table, sample_transac
     assert sqlitecur.execute('SELECT MAX(trans_id) FROM sample_special_table;').fetchone() == (42, )
     assert sqlitecur.execute('SELECT value FROM sample_special_table;').fetchone() == (88, )
     assert sqlitecur.execute('SELECT narrative FROM sample_special_table;').fetchone() == ('get_context', )
+
+def test_delete(sample_special_table_class, sample_special_table, sample_transaction_class, sqlitecur):
+
+    tmp = sample_transaction_class()
+    tmp.trans_id = 42
+    tmp.special_text = 'Special Text'
+    tmp.data = sample_special_table_class(None, 99, 'Narrative')
+
+    sqlitecur.execute('DELETE FROM sample_special_table WHERE 1=1;')
+    sqlitecur.execute('COMMIT;')
+    tmp._insert_existing(sqlitecur)
+    tmp.trans_id = 43
+    tmp._insert_new(sqlitecur)
+    tmp.trans_id = 44
+    tmp._insert_new(sqlitecur)
+
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table;').fetchone() == (3, )
+
+    tmp.trans_id = 43
+    tmp._delete(sqlitecur)
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table;').fetchone() == (2, )
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table WHERE trans_id=42;').fetchone() == (1, )
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table WHERE trans_id=43;').fetchone() == (0, )
+    assert sqlitecur.execute('SELECT COUNT(*) FROM sample_special_table WHERE trans_id=44;').fetchone() == (1, )
