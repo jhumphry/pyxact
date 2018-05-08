@@ -304,8 +304,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
     def _insert_existing(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This method stores only the
-        existing data and will not update any values that are linked to sequences in the
-        database.'''
+        existing data and will not update any values that are linked to sequences in the database.
+        First SQLTable directly attached to the SQLTransaction are inserted in order of definition
+        in the SQLTransaction subclass, followed by SQLTable held in SQLRecordList attached to the
+        SQLTransaction, again in the order they were defined.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -332,7 +334,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
     def _insert_new(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This method will update any
         values that are linked to sequences or queries in the database and then check that the
-        verify method returns True before proceeding.'''
+        verify method returns True before proceeding. First SQLTable directly attached to the
+        SQLTransaction are inserted in order of definition in the SQLTransaction subclass, followed
+        by SQLTable held in SQLRecordList attached to the SQLTransaction, again in the order they
+        were defined.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -358,8 +363,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
 
     def _update(self, cursor, dialect=None):
         '''Insert the contents of the SQLTransaction into the database. This method stores only the
-        existing data and will not update any values that are linked to sequences in the
-        database.'''
+        existing data and will not update any values that are linked to sequences in the database.
+        SQLTable held in SQLRecordList attached to the SQLTransaction are deleted first in reverse
+        order of definition in the SQLTransaction subclass, followed by SQLTable directly attached
+        to the SQLTransaction, again in reverse order of definition.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -372,21 +379,24 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if not self._verify():
                 raise VerificationError
 
-            for record_name in self._records:
-                record = getattr(self, record_name)
-                if hasattr(record, '_update_sql'):
-                    cursor.execute(*(record._update_sql(context, dialect)))
-
-            for recordlist_name in self._recordlists:
+            for recordlist_name in reversed(list(self._recordlists)):
                 recordlist = getattr(self, recordlist_name)
                 if hasattr(recordlist._record_type, '_update_sql'):
                     for record in recordlist:
                         cursor.execute(*(record._update_sql(context, dialect)))
 
+            for record_name in reversed(list(self._records)):
+                record = getattr(self, record_name)
+                if hasattr(record, '_update_sql'):
+                    cursor.execute(*(record._update_sql(context, dialect)))
+
     def _delete(self, cursor, dialect=None):
         '''Delete the records corresponding to the contents of the SQLTransaction into the
         database. This method assumes sufficient context has been completed to specify the primary
-        keys of the records to be deleted..'''
+        keys of the records to be deleted. SQLTable held in SQLRecordList attached to the
+        SQLTransaction are deleted first in reverse order of definition in the SQLTransaction
+        subclass, followed by SQLTable directly attached to the SQLTransaction, again in reverse
+        order of definition.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
@@ -399,16 +409,20 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if not self._verify():
                 raise VerificationError
 
-            for record_name in self._records:
-                record = getattr(self, record_name)
-                if hasattr(record, '_delete_sql'):
-                    cursor.execute(*(record._delete_sql(context, dialect)))
+            # Deletions are done in reverse order compared with insertion to try to minimise the
+            # number of constraint violations generated even when the constraint is set to NOT
+            # DEFERRABLE.
 
-            for recordlist_name in self._recordlists:
+            for recordlist_name in reversed(list(self._recordlists)):
                 recordlist = getattr(self, recordlist_name)
                 if hasattr(recordlist._record_type, '_delete_sql'):
                     for record in recordlist:
                         cursor.execute(*(record._delete_sql(context, dialect)))
+
+            for record_name in reversed(list(self._records)):
+                record = getattr(self, record_name)
+                if hasattr(record, '_delete_sql'):
+                    cursor.execute(*(record._delete_sql(context, dialect)))
 
     def _context_select(self, cursor, dialect=None, allow_unlimited=False):
         '''This method extracts the values stored in SQLField directly attached to the
