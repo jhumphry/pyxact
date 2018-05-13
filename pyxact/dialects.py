@@ -171,7 +171,7 @@ class sqliteDialect(SQLDialect):
         elif isinstance(value, datetime.time):
             return value.strftime('%H:%M:%S.%f')
 
-        raise ValueError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
+        raise TypeError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 
     @classmethod
     def begin_transaction(cls, cursor, isolation_level=None):
