@@ -91,6 +91,8 @@ class SQLDialect:
     nextval_sequence_sql = ('',)
     reset_sequence_sql = ('',)
 
+    create_view_sql = '''CREATE VIEW IF NOT EXISTS'''
+
     index_specifies_schema = True
 
     @classmethod
@@ -155,6 +157,8 @@ class sqliteDialect(SQLDialect):
     nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
                             '''SELECT lastval FROM {qualified_name};''')
     reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
+
+    create_view_sql = '''CREATE VIEW IF NOT EXISTS'''
 
     index_specifies_schema = True
 

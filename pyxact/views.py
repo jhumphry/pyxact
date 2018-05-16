@@ -70,7 +70,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = 'CREATE VIEW IF NOT EXISTS ' + cls._qualified_view_name(dialect) + ' ('
+        result = dialect.create_view_sql + ' ' + cls._qualified_view_name(dialect) + ' ('
         result += ', '.join(cls._fields.keys())
         if dialect.schema_support:
             result += ') AS \n' + dialects.convert_schema_sep(cls._query, '.')  + ';'
