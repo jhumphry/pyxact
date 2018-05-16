@@ -40,7 +40,7 @@ class TransactionTable(tables.SQLTable, table_name='transactions', schema=accoun
     creation_ts = fields.TimestampField(tz=False, context_used='creation_ts')
     t_rev = fields.BooleanField(sql_name='t_rev')
     narrative = fields.TextField()
-    cons_pk = constraints.PrimaryKeyConstraint(column_names=('tid'))
+    transactions_cons_pk = constraints.PrimaryKeyConstraint(column_names=('tid'))
 
 # It should be relatively simple to see what is going on here if you are familiar with SQL. An
 # instance of TransactionTable represents a row in the SQL table 'transactions'. It has attributes
@@ -70,10 +70,10 @@ class JournalTable(tables.SQLTable, table_name='journals', schema=accounting):
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
     amount = fields.NumericField(precision=8, scale=2, allow_floats=True)
-    cons_pk = constraints.PrimaryKeyConstraint(column_names=('tid', 'row_id'))
-    cons_fk = constraints.ForeignKeyConstraint(column_names=('tid',),
-                                               foreign_table='transactions',
-                                               foreign_schema=accounting)
+    journals_cons_pk = constraints.PrimaryKeyConstraint(column_names=('tid', 'row_id'))
+    journals_cons_fk = constraints.ForeignKeyConstraint(column_names=('tid',),
+                                                        foreign_table='transactions',
+                                                        foreign_schema=accounting)
 
 # This table shows a few more features. The 'fields.RowEnumIntField' is another context-sensitive
 # field. It retrieves (or creates) a counter in the context dictionary (if passed) and increments it.
