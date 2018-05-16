@@ -134,7 +134,7 @@ class ForeignKeyConstraint(ColumnsConstraint):
         if self.foreign_schema is None:
             foreign_table = self.foreign_table
         else:
-            foreign_table = self.foreign_schema.qualified_name(self.foreign_table)
+            foreign_table = self.foreign_schema.qualified_name(self.foreign_table, dialect=dialect)
 
         result = 'CONSTRAINT ' + self.sql_name + ' FOREIGN KEY ('
         result += ', '.join(self.sql_column_names)

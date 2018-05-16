@@ -43,7 +43,7 @@ class SQLSequence:
         if self.schema is None:
             return self.sql_name
 
-        return self.schema.qualified_name(self.sql_name)
+        return self.schema.qualified_name(self.sql_name, dialect=dialect)
 
     def create(self, cursor, dialect=None):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
