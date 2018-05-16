@@ -141,9 +141,9 @@ class ForeignKeyConstraint(ColumnsConstraint):
         result += ') REFERENCES ' + foreign_table + ' ('
         result += ', '.join(self.sql_reference_names)
         result += ') '
+        result += dialect.foreign_key_match_sql[self.match] + ' '
         result += 'ON DELETE ' + dialect.foreign_key_action_sql[self.on_delete] + ' '
         result += 'ON UPDATE ' + dialect.foreign_key_action_sql[self.on_update] + ' '
-        result += dialect.foreign_key_match_sql[self.match] + ' '
         result += dialect.constraint_deferrable_sql[self.deferrable] + ' '
         result += self.sql_options
         return result
