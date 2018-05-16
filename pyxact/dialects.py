@@ -11,6 +11,28 @@ import re
 
 from . import IsolationLevel, FKAction, FKMatch, ConstraintDeferrable
 
+# These are the default SQL strings that correspond to enumerations in the package
+
+ISOLATION_LEVEL_SQL = {IsolationLevel.MANUAL_TRANSACTIONS : 'ERROR',
+                       IsolationLevel.READ_UNCOMMITTED : 'READ UNCOMMITTED',
+                       IsolationLevel.READ_COMMITTED : 'READ COMMITTED',
+                       IsolationLevel.REPEATABLE_READ : 'REPEATABLE READ',
+                       IsolationLevel.SERIALIZABLE : 'SERIALIZABLE'}
+
+FOREIGN_KEY_MATCH_SQL = {FKMatch.SIMPLE : 'MATCH SIMPLE',
+                         FKMatch.PARTIAL : 'MATCH PARTIAL',
+                         FKMatch.FULL : 'MATCH FULL'}
+
+FOREIGN_KEY_ACTION_SQL = {FKAction.NO_ACTION : 'NO ACTION',
+                          FKAction.RESTRICT : 'RESTRICT',
+                          FKAction.CASCADE : 'CASCADE',
+                          FKAction.SET_NULL : 'SET NULL',
+                          FKAction.SET_DEFAULT : 'SET DEFAULT'}
+
+CONSTRAINT_DEFERRABLE_SQL = {ConstraintDeferrable.NOT_DEFERRABLE : 'NOT DEFERRABLE',
+                             ConstraintDeferrable.DEFERRABLE_INITIALLY_DEFERRED : 'DEFERRABLE INITIALLY DEFERRED',
+                             ConstraintDeferrable.DEFERRABLE_INITIALLY_IMMEDIATE : 'DEFERRABLE INITIALLY IMMEDIATE'}
+
 SCHEMA_SEPARATOR_REGEXP = re.compile(r'\{([^\}\.]+)\.([^\}\.]+)\}', re.UNICODE)
 
 def convert_schema_sep(sql_text, separator='.'):
@@ -55,20 +77,7 @@ class TransactionContext:
                 self.cursor.execute(self.on_exception)
         return False
 
-# These are the default SQL strings to set different characteristics of constraints
-FOREIGN_KEY_MATCH_SQL = {FKMatch.SIMPLE : 'MATCH SIMPLE',
-                         FKMatch.PARTIAL : 'MATCH PARTIAL',
-                         FKMatch.FULL : 'MATCH FULL'}
 
-FOREIGN_KEY_ACTION_SQL = {FKAction.NO_ACTION : 'NO ACTION',
-                          FKAction.RESTRICT : 'RESTRICT',
-                          FKAction.CASCADE : 'CASCADE',
-                          FKAction.SET_NULL : 'SET NULL',
-                          FKAction.SET_DEFAULT : 'SET DEFAULT'}
-
-CONSTRAINT_DEFERRABLE_SQL = {ConstraintDeferrable.NOT_DEFERRABLE : 'NOT DEFERRABLE',
-                             ConstraintDeferrable.DEFERRABLE_INITIALLY_DEFERRED : 'DEFERRABLE INITIALLY DEFERRED',
-                             ConstraintDeferrable.DEFERRABLE_INITIALLY_IMMEDIATE : 'DEFERRABLE INITIALLY IMMEDIATE'}
 
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes
