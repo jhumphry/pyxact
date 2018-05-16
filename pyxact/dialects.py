@@ -91,6 +91,8 @@ class SQLDialect:
     nextval_sequence_sql = ('',)
     reset_sequence_sql = ('',)
 
+    index_specifies_schema = True
+
     @classmethod
     def sql_repr(cls, value):
         '''This method returns the value in the form expected by the particular
@@ -153,6 +155,8 @@ class sqliteDialect(SQLDialect):
     nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
                             '''SELECT lastval FROM {qualified_name};''')
     reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
+
+    index_specifies_schema = True
 
     @classmethod
     def sql_repr(cls, value):

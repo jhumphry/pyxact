@@ -75,7 +75,10 @@ class SQLIndex:
         if self.unique:
             result += 'UNIQUE '
         result += 'INDEX IF NOT EXISTS '
-        result += self.qualified_name(dialect)
+        if dialect.index_specifies_schema:
+            result += self.qualified_name(dialect)
+        else:
+            result += self.sql_name
         result += ' ON ' + self.table._qualified_table_name(dialect)
 
         column_exprs_clauses = []
