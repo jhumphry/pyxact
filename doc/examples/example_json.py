@@ -5,7 +5,6 @@
 # SPDX-License-Identifier: ISC
 
 import json
-import sqlite3
 import sys
 
 from pyxact import serialize_json
@@ -35,18 +34,7 @@ custom_decoder.register_sqltransaction(example_schema.AccountingTransaction)
 
 if __name__ == '__main__':
 
-    # You can see what SQL commands are being issued by specifying a log file name on the command
-    # line, or you can specify STDOUT to get them printed out on the console.
-    if len(sys.argv) == 1:
-        conn = sqlite3.connect(':memory:')
-    elif sys.argv[1].upper() == 'STDOUT':
-        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'))
-    else:
-        log_file = open(sys.argv[1], 'a')
-        conn = loggingdb.Connection(inner_connection=sqlite3.connect(':memory:'),
-                                    log_file=log_file)
-
-    conn.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
+    conn = example_schema.process_command_line('Demonstrate usage of pyxact JSON serialisation')
 
     cursor = conn.cursor()
     example_schema.create_example_schema(cursor)
