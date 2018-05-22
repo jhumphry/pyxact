@@ -22,7 +22,8 @@ class PostgreSQLDialect(dialects.SQLDialect):
     foreign_key_action_sql = dialects.FOREIGN_KEY_ACTION_SQL
     constraint_deferrable_sql = dialects.CONSTRAINT_DEFERRABLE_SQL
 
-    truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
+    truncate_table_sql = '''TRUNCATE TABLE {table_name} RESTRICT;'''
+    truncate_table_cascade_sql = '''TRUNCATE TABLE {table_name} CASCADE;'''
 
     create_sequence_sql = ('''CREATE SEQUENCE IF NOT EXISTS {qualified_name} AS {index_type} START {start}''',)
     nextval_sequence_sql = ('''SELECT nextval('{qualified_name}');''',)

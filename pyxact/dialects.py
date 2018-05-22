@@ -95,6 +95,7 @@ class SQLDialect:
     constraint_deferrable_sql = CONSTRAINT_DEFERRABLE_SQL
 
     truncate_table_sql = '''TRUNCATE TABLE {table_name};'''
+    truncate_table_cascade_sql = '''TRUNCATE TABLE {table_name} CASCADE;'''
 
     create_sequence_sql = ('',)
     nextval_sequence_sql = ('',)
@@ -155,7 +156,8 @@ class sqliteDialect(SQLDialect):
     foreign_key_action_sql = FOREIGN_KEY_ACTION_SQL
     constraint_deferrable_sql = CONSTRAINT_DEFERRABLE_SQL
 
-    truncate_table_sql = '''DELETE FROM {table_name} WHERE 1=1;'''
+    truncate_table_sql = '''DELETE FROM {table_name};'''
+    truncate_table_cascade_sql = truncate_table_sql
 
     create_sequence_sql = ('''
             CREATE TABLE IF NOT EXISTS {qualified_name}    (start {index_type},

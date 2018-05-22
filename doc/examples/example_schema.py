@@ -209,6 +209,10 @@ def create_example_schema(cursor, dialect=None):
     accounting.create_schema(cursor=cursor, dialect=dialect)
     accounting.create_schema_objects(cursor=cursor, dialect=dialect)
 
+    cursor.execute(JournalTable._truncate_table_sql(cascade=True, dialect=dialect))
+    cursor.execute(TransactionTable._truncate_table_sql(cascade=True, dialect=dialect))
+    tid_seq.reset(cursor=cursor, dialect=dialect)
+
     cursor.execute('COMMIT TRANSACTION;')
 
 def populate_example_schema(cursor, dialect=None):

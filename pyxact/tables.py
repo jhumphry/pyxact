@@ -155,13 +155,18 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return result
 
     @classmethod
-    def _truncate_table_sql(cls, dialect=None):
+    def _truncate_table_sql(cls, cascade=False, dialect=None):
         '''Return an SQL string that will truncate this table.'''
 
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        return dialect.truncate_table_sql.format(table_name=cls._qualified_table_name(dialect))
+        if cascade:
+            cmd = dialect.truncate_table_cascade_sql
+        else:
+            cmd = dialect.truncate_table_sql
+
+        return cmd.format(table_name=cls._qualified_table_name(dialect))
 
     @classmethod
     def _insert_sql_command(cls, dialect=None):
