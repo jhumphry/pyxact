@@ -7,6 +7,7 @@ various flavours of SQL used by different database adaptors.'''
 
 import datetime
 import decimal
+import enum
 import re
 
 from . import IsolationLevel, FKAction, FKMatch, ConstraintDeferrable
@@ -89,6 +90,7 @@ class SQLDialect:
 
     store_decimal_as_text = False
     store_date_time_datetime_as_text = False
+    enum_support = False
 
     foreign_key_match_sql = FOREIGN_KEY_MATCH_SQL
     foreign_key_action_sql = FOREIGN_KEY_ACTION_SQL
@@ -151,6 +153,7 @@ class sqliteDialect(SQLDialect):
 
     store_decimal_as_text = False
     store_date_time_datetime_as_text = True
+    enum_support = False
 
     foreign_key_match_sql = FOREIGN_KEY_MATCH_SQL
     foreign_key_action_sql = FOREIGN_KEY_ACTION_SQL
@@ -189,6 +192,8 @@ class sqliteDialect(SQLDialect):
             return value.strftime('%Y-%m-%d')
         elif isinstance(value, datetime.time):
             return value.strftime('%H:%M:%S.%f')
+        elif isinstance(value, enum.Enum):
+            return value.value
 
         raise TypeError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
 

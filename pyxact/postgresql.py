@@ -4,6 +4,8 @@
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
+import enum
+
 from . import dialects
 from . import IsolationLevel
 
@@ -17,6 +19,7 @@ class PostgreSQLDialect(dialects.SQLDialect):
 
     store_decimal_as_text = False
     store_date_time_datetime_as_text = False
+    enum_support = True
 
     foreign_key_match_sql = dialects.FOREIGN_KEY_MATCH_SQL
     foreign_key_action_sql = dialects.FOREIGN_KEY_ACTION_SQL
@@ -38,7 +41,8 @@ class PostgreSQLDialect(dialects.SQLDialect):
         '''This method returns the value in the form expected by the particular database and
         database adaptor specified by the dialect parameter. The psycopg2 adaptor handles most
         Python types transparently, so this function does not have to do anything.'''
-
+        if isinstance(value, enum.Enum):
+            return value.name
         return value
 
     @classmethod
@@ -66,3 +70,15 @@ class PostgreSQLDialect(dialects.SQLDialect):
     def rollback_transaction(cls, cursor, isolation_level=None):
         if isolation_level != IsolationLevel.MANUAL_TRANSACTIONS:
             cursor.execute('ROLLBACK;')
+
+def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
+    '''Create an enum type in the PostgreSQL database for the given py_type under the name sql_name
+    in the sql_schema (if given).'''
+
+    if sql_schema:
+        qual_sql_name = sql_schema + '.' + sql_name
+    else:
+        qual_sql_name = sql_name
+    enum_values = ', '.join(["'" + x.name + "'" for x in py_type])
+
+    cursor.execute('CREATE TYPE {} AS ENUM ({});'.format(qual_sql_name, enum_values))
