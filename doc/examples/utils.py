@@ -17,8 +17,12 @@ except:
 
 from pyxact import dialects, loggingdb, loggingdb, postgresql
 
+DATABASE_USED = None
+
 def process_command_line(description='Demonstrate pyxact'):
     '''Process the command line arguments and return a functioning DB-API connection'''
+
+    global DATABASE_USED
 
     parser = argparse.ArgumentParser(description=description)
 
@@ -57,11 +61,13 @@ def process_command_line(description='Demonstrate pyxact'):
         dialects.DefaultDialect = postgresql.PostgreSQLDialect
         # By changing DefaultDialect we change the default SQL dialect used whenever no specific
         # dialect parameter is passed to a relevant pyxact method.
+        DATABASE_USED = 'PostgreSQL'
 
     else:
         connection = sqlite3.connect(':memory:')
         connection.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
         dialects.DefaultDialect = dialects.sqliteDialect
+        DATABASE_USED = 'SQLite'
 
     if args.log:
         if args.log == 'STDOUT':
