@@ -10,7 +10,7 @@ import sys
 
 from pyxact import fields, queries, records, transactions
 from pyxact import loggingdb
-import example_schema
+import example_schema, utils
 
 class ReverseTransaction(example_schema.AccountingTransaction):
 
@@ -91,7 +91,7 @@ def generate_transactions(cursor, n=100):
 
 if __name__ == '__main__':
 
-    conn = example_schema.process_command_line('Demonstrate pyxact transactions with hooks')
+    conn = utils.process_command_line('Demonstrate pyxact transactions with hooks')
 
     cursor = conn.cursor()
     example_schema.create_example_schema(cursor)

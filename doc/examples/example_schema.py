@@ -4,20 +4,12 @@
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-import argparse
 from decimal import Decimal as D
-import os
-import sqlite3
-import sys
 
-try:
-    import psycopg2
-    POSTGRESQL_AVAILABLE = True
-except:
-    POSTGRESQL_AVAILABLE = False
-
-from pyxact import constraints, dialects, fields, indexes, loggingdb, postgresql
+from pyxact import constraints, fields, indexes
 from pyxact import recordlists, schemas, sequences, tables, transactions, views
+
+import utils
 
 # These examples are going to sketch out a very simplistic version of an accounting application. All
 # of the objects will be held in a schema called 'accounting'. In some databases this will map to an
@@ -223,67 +215,9 @@ def populate_example_schema(cursor, dialect=None):
     test_transaction1._insert_new(cursor, dialect)
     test_transaction2._insert_new(cursor, dialect)
 
-def process_command_line(description='Demonstrate pyxact'):
-    '''Process the command line arguments and return a functioning DB-API connection'''
-
-    parser = argparse.ArgumentParser(description=description)
-
-    parser.add_argument('--log', help='Dump SQL commands to a file before executing them',
-                        action='store', default=None)
-    parser.add_argument('--postgresql', help='Whether to use PostgreSQL instead of SQLite',
-                        action='store_true')
-    parser.add_argument('--database',
-                        help='PostgreSQL database to use (default pyxact)',
-                        action='store', default='pyxact')
-    parser.add_argument('--user', help='PostgreSQL user for upload',
-                        action='store',
-                        default=os.environ.get('USER', 'postgres'))
-    parser.add_argument('--password', help='PostgreSQL user password',
-                        action='store', default='')
-    parser.add_argument('--host', help='PostgreSQL host (if using TCP/IP)',
-                        action='store', default=None)
-    parser.add_argument('--port', help='PostgreSQL port (if required)',
-                        action='store', type=int, default=5432)
-    args = parser.parse_args()
-
-    if args.postgresql:
-        if not POSTGRESQL_AVAILABLE:
-            raise RuntimeError('PostgreSQL support not available')
-
-        if args.host:
-            connection = psycopg2.connect(database=args.database,
-                                          user=args.user,
-                                          password=args.password,
-                                          host=args.host,
-                                          port=args.post)
-        else:
-            connection = psycopg2.connect(database=args.database,
-                                          user=args.user,
-                                          password=args.password)
-        dialects.DefaultDialect = postgresql.PostgreSQLDialect
-        # By changing DefaultDialect we change the default SQL dialect used whenever no specific
-        # dialect parameter is passed to a relevant pyxact method.
-
-    else:
-        connection = sqlite3.connect(':memory:')
-        connection.execute('PRAGMA foreign_keys = ON;') # We need SQLite foreign key support
-        dialects.DefaultDialect = dialects.sqliteDialect
-
-    if args.log:
-        if args.log == 'STDOUT':
-            conn = loggingdb.Connection(inner_connection=connection)
-        else:
-            conn = loggingdb.Connection(inner_connection=connection, log_file=open(args.log, 'a'))
-    else:
-        conn = connection
-    # pyxact.loggingdb is a facade that can save the SQL commands being executing and the parameters
-    # used to a file for use in debugging.
-
-    return conn
-
 if __name__ == '__main__':
 
-    conn = process_command_line('Demonstrate usage of pyxact with a simple example schema')
+    conn = utils.process_command_line('Demonstrate usage of pyxact with a simple example schema')
 
     cursor = conn.cursor()
     create_example_schema(cursor)

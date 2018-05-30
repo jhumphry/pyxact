@@ -9,7 +9,7 @@ import sys
 
 from pyxact import serialize_json
 from pyxact import loggingdb
-import example_schema
+import example_schema, utils
 
 record_json = json.dumps(example_schema.test_transaction1.transaction,
                          cls=serialize_json.PyxactEncoder,
@@ -34,7 +34,7 @@ custom_decoder.register_sqltransaction(example_schema.AccountingTransaction)
 
 if __name__ == '__main__':
 
-    conn = example_schema.process_command_line('Demonstrate usage of pyxact JSON serialisation')
+    conn = utils.process_command_line('Demonstrate usage of pyxact JSON serialisation')
 
     cursor = conn.cursor()
     example_schema.create_example_schema(cursor)

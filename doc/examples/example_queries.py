@@ -8,7 +8,7 @@ import sys
 
 from pyxact import dialects, fields, loggingdb, queries, records, recordlists, transactions
 
-import example_schema
+import example_schema, utils
 
 # This module relies on the 'accounting' schema created and populated in the example_schema.py
 # file. It will define various queries and demonstrate their use.
@@ -104,7 +104,7 @@ class QueryTransaction(transactions.SQLTransaction):
 
 if __name__ == '__main__':
 
-    conn = example_schema.process_command_line('Demonstrate usage of pyxact with simple queries')
+    conn = utils.process_command_line('Demonstrate usage of pyxact with simple queries')
 
     cursor = conn.cursor()
     example_schema.create_example_schema(cursor)
