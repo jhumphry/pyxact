@@ -31,8 +31,10 @@ FOREIGN_KEY_ACTION_SQL = {FKAction.NO_ACTION : 'NO ACTION',
                           FKAction.SET_DEFAULT : 'SET DEFAULT'}
 
 CONSTRAINT_DEFERRABLE_SQL = {ConstraintDeferrable.NOT_DEFERRABLE : 'NOT DEFERRABLE',
-                             ConstraintDeferrable.DEFERRABLE_INITIALLY_DEFERRED : 'DEFERRABLE INITIALLY DEFERRED',
-                             ConstraintDeferrable.DEFERRABLE_INITIALLY_IMMEDIATE : 'DEFERRABLE INITIALLY IMMEDIATE'}
+                             ConstraintDeferrable.DEFERRABLE_INITIALLY_DEFERRED :
+                                 'DEFERRABLE INITIALLY DEFERRED',
+                             ConstraintDeferrable.DEFERRABLE_INITIALLY_IMMEDIATE :
+                                 'DEFERRABLE INITIALLY IMMEDIATE'}
 
 SCHEMA_SEPARATOR_REGEXP = re.compile(r'\{([^\}\.]+)\.([^\}\.]+)\}', re.UNICODE)
 
@@ -174,8 +176,10 @@ class sqliteDialect(SQLDialect):
                                                             interval {index_type},
                                                             lastval {index_type},
                                                             nextval {index_type});''',
-                           '''INSERT INTO {qualified_name} VALUES ({start},{interval},{start},{start});''')
-    nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, nextval=nextval+interval;''',
+                           '''INSERT INTO {qualified_name} VALUES '''
+                           '''({start},{interval},{start},{start});''')
+    nextval_sequence_sql = ('''UPDATE {qualified_name} SET lastval=nextval, '''
+                            '''nextval=nextval+interval;''',
                             '''SELECT lastval FROM {qualified_name};''')
     reset_sequence_sql = ('''UPDATE {qualified_name} SET lastval=start, nextval=start;''',)
 

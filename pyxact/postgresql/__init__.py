@@ -28,7 +28,8 @@ class PostgreSQLDialect(dialects.SQLDialect):
     truncate_table_sql = '''TRUNCATE TABLE {table_name} RESTRICT;'''
     truncate_table_cascade_sql = '''TRUNCATE TABLE {table_name} CASCADE;'''
 
-    create_sequence_sql = ('''CREATE SEQUENCE IF NOT EXISTS {qualified_name} AS {index_type} START {start}''',)
+    create_sequence_sql = ('''CREATE SEQUENCE IF NOT EXISTS {qualified_name} AS {index_type} '''
+                           '''START {start}''',)
     nextval_sequence_sql = ('''SELECT nextval('{qualified_name}');''',)
     reset_sequence_sql = ('''ALTER SEQUENCE {qualified_name} RESTART''',)
 

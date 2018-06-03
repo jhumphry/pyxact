@@ -35,7 +35,7 @@ class SQLSchema(SQLSchemaBase):
         self.commands_after = []
 
     def create_schema(self, cursor, dialect=None):
-        '''Execute a suitable CREATE SCEHMA command (in the given
+        '''Execute a suitable CREATE SCHEMA command (in the given
         SQL dialect) that will create the database schema defined by the
         SQLSchema. If the given database dialect (or the default dialect if
         appropriate) does not support the necessary schema features then
@@ -113,9 +113,9 @@ class SQLSchema(SQLSchemaBase):
         self.enums[sql_name] = enum_type
 
     def register_sequence(self, sequence):
-        '''Register an SQLSequence isntance as the definition of a database
-        sequence. If the schema class parameter was used on creating the
-        sequence then this will have already been called.'''
+        '''Register an SQLSequence instance as the definition of a database sequence. If the schema
+        class parameter was used on creating the sequence then this will have already been
+        called.'''
 
         if not isinstance(sequence, sequences.SQLSequence):
             raise TypeError('Only SQLSequence instances can be registered to a schema.')
@@ -135,6 +135,8 @@ class SQLSchema(SQLSchemaBase):
         self.indexes[index.sql_name] = index
 
     def _run_commands(self, commands, cursor, dialect):
+        '''Receives a list of tuples containing dialect/command pairs. For each tuple in turn, if
+        the dialect matches the current dialect in use, or is None, the command is executed.'''
 
         for i in commands:
             if i[0] is None or i[0] == dialect:
@@ -143,7 +145,6 @@ class SQLSchema(SQLSchemaBase):
                 else:
                     command = i[1]
                 cursor.execute(command)
-
 
     def create_schema_objects(self, cursor, dialect=None):
         '''Create all of the registered objects in the schema.'''

@@ -4,7 +4,6 @@
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-from . import SQLSchemaBase
 from . import dialects, fields
 
 class EnumField(fields.SQLField):
