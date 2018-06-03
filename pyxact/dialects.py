@@ -142,6 +142,13 @@ class SQLDialect:
 
         raise NotImplementedError
 
+    @staticmethod
+    def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
+        '''Create an enum type in the database for the given py_type under the name sql_name
+        in the sql_schema (if given).'''
+
+        raise NotImplementedError
+
 class sqliteDialect(SQLDialect):
     '''This class contains information used internally to generate suitable SQL
     for use with the standard library interface to SQLite3, the embedded
@@ -218,6 +225,12 @@ class sqliteDialect(SQLDialect):
     def rollback_transaction(cls, cursor, isolation_level=None):
         if isolation_level != IsolationLevel.MANUAL_TRANSACTIONS:
             cursor.execute('ROLLBACK;')
+
+    @staticmethod
+    def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
+        '''Enum are not supported natively in SQLite, so nothing is necessary to create them.'''
+
+        pass
 
 # This will be used by routines when no dialect is specified. It is not a
 # constant as it is intended that it may be over-ridden by package users

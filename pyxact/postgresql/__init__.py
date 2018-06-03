@@ -71,14 +71,15 @@ class PostgreSQLDialect(dialects.SQLDialect):
         if isolation_level != IsolationLevel.MANUAL_TRANSACTIONS:
             cursor.execute('ROLLBACK;')
 
-def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
-    '''Create an enum type in the PostgreSQL database for the given py_type under the name sql_name
-    in the sql_schema (if given).'''
+    @staticmethod
+    def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
+        '''Create an enum type in the PostgreSQL database for the given py_type under the name
+        sql_name in the sql_schema (if given).'''
 
-    if sql_schema:
-        qual_sql_name = sql_schema + '.' + sql_name
-    else:
-        qual_sql_name = sql_name
-    enum_values = ', '.join(["'" + x.name + "'" for x in py_type])
+        if sql_schema:
+            qual_sql_name = sql_schema + '.' + sql_name
+        else:
+            qual_sql_name = sql_name
+        enum_values = ', '.join(["'" + x.name + "'" for x in py_type])
 
-    cursor.execute('CREATE TYPE {} AS ENUM ({});'.format(qual_sql_name, enum_values))
+        cursor.execute('CREATE TYPE {} AS ENUM ({});'.format(qual_sql_name, enum_values))
