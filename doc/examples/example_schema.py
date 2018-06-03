@@ -6,7 +6,7 @@
 
 from decimal import Decimal as D
 
-from pyxact import constraints, fields, indexes
+from pyxact import constraints, dialects, fields, indexes
 from pyxact import recordlists, schemas, sequences, tables, transactions, views
 
 import utils
@@ -196,7 +196,10 @@ def create_example_schema(cursor, dialect=None):
     database and its Python database adaptor. Most methods will use the variable
     dialects.DefaultDialect if no dialect parameter is set. By default this is set for SQLite.'''
 
-    cursor.execute('BEGIN TRANSACTION;')
+    if dialect == None:
+        dialect = dialects.DefaultDialect
+
+    dialect.begin_transaction(cursor)
 
     accounting.create_schema(cursor=cursor, dialect=dialect)
     accounting.create_schema_objects(cursor=cursor, dialect=dialect)
@@ -205,7 +208,7 @@ def create_example_schema(cursor, dialect=None):
     cursor.execute(TransactionTable._truncate_table_sql(cascade=True, dialect=dialect))
     tid_seq.reset(cursor=cursor, dialect=dialect)
 
-    cursor.execute('COMMIT TRANSACTION;')
+    dialect.commit_transaction(cursor)
 
 def populate_example_schema(cursor, dialect=None):
     '''Add some sample data to the example 'accounting' schema.'''
