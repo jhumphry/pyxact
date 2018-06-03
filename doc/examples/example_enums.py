@@ -34,6 +34,6 @@ if __name__ == '__main__':
     # example_schema.populate_example_schema(cursor)
 
     if utils.DATABASE_USED == 'PostgreSQL':
-        cursor.execute('DROP TYPE IF EXISTS trafficlight;')
-        pyxact.postgresql.create_enum_type(cursor, TrafficLight, 'trafficlight')
+        cursor.execute('DROP TYPE IF EXISTS trafficlight CASCADE;')
+        pyxact.postgresql.PostgreSQLDialect.create_enum_type(cursor, TrafficLight, 'trafficlight')
         cursor.execute('COMMIT;')
