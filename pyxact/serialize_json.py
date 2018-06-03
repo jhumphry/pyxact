@@ -6,6 +6,7 @@
 
 import datetime
 import decimal
+import enum
 import json
 
 from . import records
@@ -40,6 +41,8 @@ class PyxactEncoder(json.JSONEncoder):
             return value.strftime('%Y-%m-%d')
         elif isinstance(value, datetime.time):
             return value.strftime('%H:%M:%S.%f')
+        elif isinstance(value, enum.Enum):
+            return value.name
         raise TypeError('Unable to serialize type {} for JSON'.format(str(type(value))))
 
     @classmethod
