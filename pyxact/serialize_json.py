@@ -51,7 +51,7 @@ class PyxactEncoder(json.JSONEncoder):
         result = dict()
         if details:
             result['__SQLRecord__'] = obj.__class__.__name__
-            if hasattr(obj, '_schema'):
+            if hasattr(obj, '_schema') and obj._schema is not None:
                 result['__SQLSchema__'] = obj._schema.name
         for field_name in obj._fields:
             result[field_name] = cls.serialize_sqlfield_value(getattr(obj, field_name))
