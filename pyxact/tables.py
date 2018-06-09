@@ -113,6 +113,10 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
     def _qualified_table_name(cls, dialect=None):
         '''The (possibly schema-qualified) name of the table used in SQL.'''
 
+        if cls._table_name is None:
+            raise RuntimeError('No table_name was set when the class was created, so it is not '
+                               'possible to link the class to a table in the database.')
+
         if cls._schema is None:
             return cls._table_name
 
