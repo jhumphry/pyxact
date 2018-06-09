@@ -46,10 +46,10 @@ class LTreeField(fields.SQLField):
     the relevant operators in queries.'''
 
     def __init__(self, store_as_text=False, **kwargs):
-
         if store_as_text:
             super().__init__(py_type=None, sql_type='TEXT', **kwargs)
-        super().__init__(py_type=None, sql_type='LTREE', **kwargs)
+        else:
+            super().__init__(py_type=None, sql_type='LTREE', **kwargs)
 
     def convert(self, value):
         if isinstance(value, LTree):
