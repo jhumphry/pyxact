@@ -63,12 +63,15 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
             setattr(self, i, None)
 
         if args:
-            if len(args) != self._field_count:
+            if len(args) == 1 and hasattr(args[0], 'fetchone'):
+                for field, value in zip(self._fields.keys(), args[0].fetchone()):
+                    setattr(self, field, value)
+            elif len(args) != self._field_count:
                 raise ValueError('{0} values needed to initialise a {1}, {2} supplied.'
                                  .format(self._field_count, self.__class__.__name__, len(args)))
-
-            for field, value in zip(self._fields.keys(), args):
-                setattr(self, field, value)
+            else:
+                for field, value in zip(self._fields.keys(), args):
+                    setattr(self, field, value)
 
         elif kwargs:
             for key, value in kwargs.items():
