@@ -16,11 +16,6 @@ class EnumField(fields.SQLField):
     enum_sql = ''
     fallback_sql_type = 'SMALLINT'
 
-    def __str__(self):
-        return '{0} ({1} {2})'.format(self.__class__.__name__,
-                                      self.sql_name,
-                                      self.sql_type())
-
     def convert(self, value):
         if isinstance(value, self.enum_type):
             return value

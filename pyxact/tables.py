@@ -106,7 +106,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if self._primary_key:
             result += 'Primary key ('
             result += ', '.join(self._primary_key.column_names)
-            result += ')\n'
+            result += ')'
         return result
 
     @classmethod
