@@ -34,7 +34,7 @@ tid_seq = sequences.SQLSequence(name='tid_seq', schema=accounting)
 # 'table_name' parameter gives the SQL table name, and the use of the optional 'schema' parameter
 # means that the table is automatically registered in the 'accounting' schema.
 
-class TransactionTable(tables.SQLTable, table_name='transactions', schema=accounting):
+class TransactionTable(tables.SQLTable, table_name='transactions', version='2', schema=accounting):
     tid = fields.IntField(context_used='tid')
     creator = fields.CharField(max_length=3)
     creation_ts = fields.TimestampField(tz=False, context_used='creation_ts')
@@ -65,7 +65,7 @@ class TransactionTable(tables.SQLTable, table_name='transactions', schema=accoun
 # parameter should be passed a sequence of names of SQLField attributes that have been added to the
 # SQLTable subclass.
 
-class JournalTable(tables.SQLTable, table_name='journals', schema=accounting):
+class JournalTable(tables.SQLTable, table_name='journals', version='11.0', schema=accounting):
     tid = fields.IntField(context_used='tid')
     row_id = fields.RowEnumIntField(context_used='row_id', starting_number=1)
     account = fields.IntField()
@@ -124,7 +124,8 @@ FROM {accounting.transactions} AS t JOIN {accounting.journals} AS j ON t.tid = j
 # names are specified surrounded by braces. This allows pyxact to re-write the table names as
 # 'accounting_transactions' (etc.) if the database in use does not handle user-defined schema.
 
-class SimpleTransactionView(views.SQLView, view_name='simple_view', query=SIMPLEVIEW_QUERY, schema=accounting):
+class SimpleTransactionView(views.SQLView, view_name='simple_view', version='0.0.1',
+                            query=SIMPLEVIEW_QUERY, schema=accounting):
     tid = fields.IntField(context_used='tid')
     creator = fields.CharField(max_length=3)
     creation_ts = fields.TimestampField(tz=False)
@@ -199,16 +200,21 @@ def create_example_schema(cursor, dialect=None):
     if dialect == None:
         dialect = dialects.DefaultDialect
 
-    dialect.begin_transaction(cursor)
+    with dialect.begin_transaction(cursor):
 
-    accounting.create_schema(cursor=cursor, dialect=dialect)
-    accounting.create_schema_objects(cursor=cursor, dialect=dialect)
+        accounting.create_schema(cursor=cursor, dialect=dialect)
+        accounting.create_schema_objects(cursor=cursor, dialect=dialect)
 
-    cursor.execute(JournalTable._truncate_table_sql(cascade=True, dialect=dialect))
-    cursor.execute(TransactionTable._truncate_table_sql(cascade=True, dialect=dialect))
-    tid_seq.reset(cursor=cursor, dialect=dialect)
+        cursor.execute(JournalTable._truncate_table_sql(cascade=True, dialect=dialect))
+        cursor.execute(TransactionTable._truncate_table_sql(cascade=True, dialect=dialect))
+        tid_seq.reset(cursor=cursor, dialect=dialect)
 
-    dialect.commit_transaction(cursor)
+    accounting.create_version_table(cursor)
+    # The create_version_table method of a schema creates an addition table 'version_info' and
+    # populates it with the name, type ('table' or 'view') and version string given when the
+    # schema object was created. This may help to track what version of a schema is installed in a
+    # database. The check_version_info method of a schema will do this and raise an exception if
+    # there is a version mis-match.
 
 def populate_example_schema(cursor, dialect=None):
     '''Add some sample data to the example 'accounting' schema.'''

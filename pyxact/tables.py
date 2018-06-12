@@ -17,12 +17,14 @@ class SQLTableMetaClass(records.SQLRecordMetaClass):
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
 
-    def __new__(mcs, name, bases, namespace, table_name=None, schema=None, **kwds):
+    def __new__(mcs, name, bases, namespace,
+                table_name=None, version=None, schema=None, **kwds):
 
         mcs.prepare_sqlrecord_namespace(mcs, namespace, INVALID_SQLTABLE_NAMES)
         mcs.prepare_sqltable_namespace(mcs, namespace)
 
         namespace['_table_name'] = table_name
+        namespace['_version'] = version
 
         if not ((schema is None) or isinstance(schema, SQLSchemaBase)):
             raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')

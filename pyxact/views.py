@@ -17,11 +17,13 @@ class SQLViewMetaClass(records.SQLRecordMetaClass):
     # Note - needs Python 3.6+ in order for the namespace dict to be ordered by
     # default
 
-    def __new__(mcs, name, bases, namespace, view_name=None, schema=None, query=None, **kwds):
+    def __new__(mcs, name, bases, namespace, view_name=None,
+                version=None, schema=None, query=None, **kwds):
 
         mcs.prepare_sqlrecord_namespace(mcs, namespace, INVALID_SQLVIEW_NAMES)
 
         namespace['_view_name'] = view_name
+        namespace['_version'] = version
 
         if not ((schema is None) or isinstance(schema, SQLSchemaBase)):
             raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')

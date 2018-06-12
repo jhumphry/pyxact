@@ -9,7 +9,7 @@ implement a flexible schema concept.'''
 
 import enum
 
-from . import SQLSchemaBase
+from . import SQLSchemaBase, IsolationLevel
 from . import dialects, indexes, sequences, tables, views
 
 class SQLSchema(SQLSchemaBase):
@@ -171,3 +171,62 @@ class SQLSchema(SQLSchemaBase):
             i.create(cursor, dialect)
 
         self._run_commands(self.commands_after, cursor, dialect)
+
+    def create_version_table(self, cursor, dialect=None):
+        '''Create a table called 'version_info' in the schema that contains schema object, type and
+        version info.'''
+
+        if dialect is None:
+            dialect = dialects.DefaultDialect
+
+        version_table_name = self.qualified_name('version_info', dialect)
+
+        command = 'CREATE TABLE IF NOT EXISTS ' + version_table_name + ' (\n'
+        command += '    name TEXT,\n    type TEXT,\n    version TEXT\n    );'
+        cursor.execute(command)
+
+        command = 'INSERT INTO ' + version_table_name + ' (name, type, version) VALUES ('
+        command += dialect.placeholder + ','  + dialect.placeholder + ',' +dialect.placeholder
+        command += ');'
+
+        with dialect.begin_transaction(cursor):
+
+            for key, value in self.tables.items():
+                cursor.execute(command, (key, 'table', value._version))
+            for key, value in self.views.items():
+                cursor.execute(command, (key, 'view', value._version))
+
+    def check_version_info(self, cursor, dialect=None):
+        '''Check a table called 'version_info' in the schema that contains schema object, type and
+        version info to make sure that the Python versions of objects match the versions in the
+        database.'''
+
+        if dialect is None:
+            dialect = dialects.DefaultDialect
+
+        version_table_name = self.qualified_name('version_info', dialect)
+
+        command = 'SELECT type, version FROM ' + version_table_name
+        command += ' WHERE name=' + dialect.placeholder +';'
+
+        with dialect.begin_transaction(cursor, IsolationLevel.READ_COMMITTED):
+
+            for key, value in self.tables.items():
+                cursor.execute(command, (key,))
+                result = cursor.fetchone()
+                if result[0] != 'table':
+                    raise RuntimeError('''Schema '{}' has '{}' as a '{}' instead of 'table'.'''
+                                       .format(self.name, key, result[0]))
+                if result[1] != value._version:
+                    raise RuntimeError('''Schema '{}' has '{}' version '{}' instead of '{}'.'''
+                                       .format(self.name, key, result[1], value._version))
+
+            for key, value in self.views.items():
+                cursor.execute(command, (key,))
+                result = cursor.fetchone()
+                if result[0] != 'view':
+                    raise RuntimeError('''Schema '{}' has '{}' as a '{}' instead of 'view'.'''
+                                       .format(self.name, key, result[0]))
+                if result[1] != value._version:
+                    raise RuntimeError('''Schema '{}' has '{}' version '{}' instead of '{}'.'''
+                                       .format(self.name, key, result[1], value._version))
