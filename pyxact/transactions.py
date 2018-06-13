@@ -53,7 +53,7 @@ class SQLTransactionMetaClass(type):
     SQLTransaction subclass and creates various internal dictionaries and
     indexes to them.'''
 
-    def __new__(mcs, name, bases, namespace, isolation_level=None, **kwds):
+    def __new__(mcs, name, bases, namespace, version=None, isolation_level=None, **kwds):
 
         slots = []
         _fields = dict()
@@ -95,6 +95,7 @@ class SQLTransactionMetaClass(type):
                 slots.append('_'+k)
                 _fields[k] = namespace[k]
 
+        namespace['_version'] = version
         namespace['_isolation_level'] = isolation_level
         namespace['__slots__'] = tuple(slots)
         namespace['_field_count'] = len(_fields)
@@ -241,7 +242,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         the SQLField objects directly attached as attributes to the SQLTransaction. This does not
         perform any database access or recalculate any data.'''
 
-        result = {'__name__' : self.__class__.__name__}
+        result = {'__name__' : self.__class__.__name__, '__version__' : self.__class__._version}
         for field_name, field in self._context_fields.items():
             tmp = field.get_context(instance=self, context=result)
             if tmp:
@@ -256,7 +257,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = {'__name__' : self.__class__.__name__}
+        result = {'__name__' : self.__class__.__name__, '__version__' : self.__class__._version}
 
         for field_name, field in self._context_fields.items():
             tmp = field.refresh(instance=self, context=result, cursor=cursor, dialect=dialect)
@@ -273,7 +274,7 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         if not dialect:
             dialect = dialects.DefaultDialect
 
-        result = {'__name__' : self.__class__.__name__}
+        result = {'__name__' : self.__class__.__name__, '__version__' : self.__class__._version}
 
         for field_name, field in self._context_fields.items():
             tmp = field.update(instance=self, context=result, cursor=cursor, dialect=dialect)
