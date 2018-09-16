@@ -59,16 +59,29 @@ class TransactionContext:
     '''This is a small helper context manager class that allows the dialect.transaction method to
     be used in a 'with' statement. A transaction will have been begun, and at the end of the 'with'
     block or when an exception occurs the transaction will be committed or rolled-back as
-    appropriate.'''
+    appropriate.
 
-    def __init__(self, cursor, on_success='COMMIT;',
+    This can also be used as an async context manager. This will assume that the cursor provided
+    has coroutines for its cursor.execute method rather than regular methods.'''
+
+    def __init__(self, cursor,
+                 on_entry='BEGIN TRANSACTION;',
+                 on_success='COMMIT;',
                  on_exception='ROLLBACK;'):
 
         self.cursor = cursor
+        self.on_entry = on_entry
         self.on_success = on_success
         self.on_exception = on_exception
 
     def __enter__(self):
+        if self.on_entry:
+            self.cursor.execute(self.on_entry)
+        return self
+
+    async def __aenter__(self):
+        if self.on_entry:
+            await self.cursor.execute(self.on_entry)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -80,6 +93,14 @@ class TransactionContext:
                 self.cursor.execute(self.on_exception)
         return False
 
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            if self.on_success:
+                await self.cursor.execute(self.on_success)
+        else:
+            if self.on_exception:
+                await self.cursor.execute(self.on_exception)
+        return False
 
 class SQLDialect:
     '''This is an abstract base class from which concrete dialect classes should be derived.'''
@@ -138,7 +159,7 @@ class SQLDialect:
     def begin_transaction(cls, cursor, isolation_level=None):
         '''This method starts a new transaction using the database cursor and the (optional)
         isolation level specified, which should be one of the IsolationLevel enum values. It
-        returns a context manager so can be used in a 'with' statement.'''
+        returns a context manager so must be used in a 'with' statement.'''
 
         raise NotImplementedError
 
@@ -224,13 +245,12 @@ class sqliteDialect(SQLDialect):
     def begin_transaction(cls, cursor, isolation_level=None):
 
         if isolation_level == IsolationLevel.MANUAL_TRANSACTIONS:
-            return TransactionContext(cursor, None, None)
+            return TransactionContext(cursor, None, None, None)
 
         # Note that while SQLite does support READ_UNCOMMITTED, it is a per-session pragma and not
         # per-transaction, which makes it harder to use reliably. We always leave the setting on
         # the default, which is the maximalist SERIALIZABLE isolation level.
-        cursor.execute('BEGIN TRANSACTION;')
-        return TransactionContext(cursor)
+        return TransactionContext(cursor, 'BEGIN TRANSACTION;', 'COMMIT;', 'ROLLBACK;')
 
     @classmethod
     def commit_transaction(cls, cursor, isolation_level=None):

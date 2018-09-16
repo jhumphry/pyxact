@@ -68,8 +68,7 @@ class Psycopg2Dialect(dialects.SQLDialect):
         else:
             cmd = 'BEGIN TRANSACTION;'
 
-        cursor.execute(cmd)
-        return dialects.TransactionContext(cursor)
+        return dialects.TransactionContext(cursor, cmd, 'COMMIT;', 'ROLLBACK;')
 
     @classmethod
     def commit_transaction(cls, cursor, isolation_level=None):
