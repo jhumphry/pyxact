@@ -1,4 +1,4 @@
-'''This package defines the flavour of SQL used by PostgreSQL and pyscopg2.'''
+'''This module defines the flavour of SQL used by PostgreSQL and pyscopg2.'''
 
 # Copyright 2018, James Humphry
 # This work is released under the ISC license - see LICENSE for details
@@ -6,8 +6,8 @@
 
 import enum
 
-from .. import dialects
-from .. import IsolationLevel
+from . import dialects
+from . import IsolationLevel
 
 class Psycopg2Dialect(dialects.SQLDialect):
     '''This is a singleton class that defines the variant of SQL supported by PostgreSQL and the
