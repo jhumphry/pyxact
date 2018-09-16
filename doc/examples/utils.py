@@ -15,7 +15,8 @@ try:
 except:
     POSTGRESQL_AVAILABLE = False
 
-from pyxact import dialects, loggingdb, loggingdb, postgresql
+from pyxact import dialects, loggingdb, loggingdb
+import pyxact.psycopg2
 
 DATABASE_USED = None
 
@@ -58,7 +59,7 @@ def process_command_line(description='Demonstrate pyxact'):
             connection = psycopg2.connect(database=args.database,
                                           user=args.user,
                                           password=args.password)
-        dialects.DefaultDialect = postgresql.PostgreSQLDialect
+        dialects.DefaultDialect = pyxact.psycopg2.Psycopg2Dialect
         # By changing DefaultDialect we change the default SQL dialect used whenever no specific
         # dialect parameter is passed to a relevant pyxact method.
         DATABASE_USED = 'PostgreSQL'
