@@ -187,7 +187,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         result += cls._column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
-            result += (dialect.placeholder+', ')*(cls._field_count-1)+dialect.placeholder
+            result += dialect.parameter(cls._field_count)
         result += ');'
         return result
 
@@ -231,10 +231,9 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
                     update_values.append(dialect.sql_repr(field_obj.get(self)))
 
         result = 'UPDATE ' + self._qualified_table_name(dialect) + ' SET '
-        result += ', '.join(['{0} = {1}'.format(i, dialect.placeholder) for i in update_sql_names])
+        result += dialect.parameter_values(update_sql_names, 1)
         result += ' WHERE '
-        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
-                                for i in pk_columns_sql_names])
+        result += dialect.parameter_values(pk_columns_sql_names, len(update_sql_names)+1, 'AND')
         result += ';'
 
         return (result, update_values + pk_sql_values)
@@ -258,8 +257,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
         result = 'DELETE FROM ' + self._qualified_table_name(dialect) + ' WHERE '
-        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
-                                for i in pk_columns_sql_names])
+        result += dialect.parameter_values(pk_columns_sql_names, 1, 'AND')
         result += ';'
 
         return (result, pk_sql_values)
@@ -283,8 +281,8 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
         if kwargs:
             result += ' WHERE '
-            result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
-                                    for field in kwargs))
+            field_sql_names = [cls._fields[field].sql_name for field in kwargs]
+            result += dialect.parameters(field_sql_names, 1, 'AND')
         result += ';'
 
         values = [dialect.sql_repr(x) for x in kwargs.values()]
@@ -308,8 +306,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         result = 'SELECT ' + self._column_names_sql()
         result += ' FROM ' + self._qualified_table_name(dialect) + ' WHERE '
-        result += ' AND '.join(['{0} = {1}'.format(i, dialect.placeholder)
-                                for i in pk_columns_sql_names])
+        result += dialect.parameter_values(pk_columns_sql_names, 1, 'AND')
         result += ';'
 
         return (result, pk_sql_values)
@@ -344,7 +341,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         if column_sql_names:
             result += ' WHERE '
-            result += ' AND '.join((column+'='+dialect.placeholder for column in column_sql_names))
+            result += dialect.parameter_values(column_sql_names, 1, 'AND')
 
         result += ';'
         return (result, column_values)

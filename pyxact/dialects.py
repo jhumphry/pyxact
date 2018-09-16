@@ -81,12 +81,26 @@ class TransactionContext:
         return False
 
 
-
 class SQLDialect:
-    '''This is an abstract base class from which concrete dialect classes
-    should be derived.'''
+    '''This is an abstract base class from which concrete dialect classes should be derived.'''
 
-    placeholder = '?'
+    @classmethod
+    def parameter(cls, number=1, start=1):
+        '''Return a string that represents a parameter placeholder in the query strings in the
+        format required by the database adaptor.'''
+
+        return '?, '*(number-1) + '?'
+
+    @classmethod
+    def parameter_values(cls, names, start=1, concat=','):
+        '''Return a string of the pattern 'name1=$1, name2=$2' etc. for the names contained in the
+        list 'names', starting with parameter number 'start' (where appropriate). The 'concat'
+        parameter is used to separate the pairs.'''
+
+        result = ''
+        for name in names[:-1]:
+            result += name + '=? ' + concat + ' '
+        return result + names[-1]+'=?'
 
     schema_support = True
 
@@ -155,8 +169,6 @@ class sqliteDialect(SQLDialect):
     '''This class contains information used internally to generate suitable SQL
     for use with the standard library interface to SQLite3, the embedded
     database engine that usually comes supplied with Python.'''
-
-    placeholder = '?' # The placeholder to use for parametised queries
 
     schema_support = False
 

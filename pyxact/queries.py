@@ -145,9 +145,15 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
         if dialect is None:
             dialect = dialects.DefaultDialect
-        if dialect.schema_support:
-            return dialect.placeholder.join(cls._segmented_query)
-        return dialect.placeholder.join(cls._segmented_query_noschema)
+
+        query = (cls._segmented_query if dialect.schema_support else cls._segmented_query_noschema)
+
+        idx = 1
+        result = ""
+        for frag in query[:-1]:
+            result += frag + dialect.parameter(1, idx)
+            idx += 1
+        return result + query[-1]
 
     def _execute(self, cursor, dialect=None):
         '''Execute the query using the cursor.'''

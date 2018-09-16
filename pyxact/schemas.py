@@ -186,7 +186,7 @@ class SQLSchema(SQLSchemaBase):
         cursor.execute(command)
 
         command = 'INSERT INTO ' + version_table_name + ' (name, type, version) VALUES ('
-        command += dialect.placeholder + ','  + dialect.placeholder + ',' +dialect.placeholder
+        command += dialect.parameter(3)
         command += ');'
 
         with dialect.begin_transaction(cursor):
@@ -207,7 +207,7 @@ class SQLSchema(SQLSchemaBase):
         version_table_name = self.qualified_name('version_info', dialect)
 
         command = 'SELECT type, version FROM ' + version_table_name
-        command += ' WHERE name=' + dialect.placeholder +';'
+        command += ' WHERE name=' + dialect.parameter() +';'
 
         with dialect.begin_transaction(cursor, IsolationLevel.READ_COMMITTED):
 

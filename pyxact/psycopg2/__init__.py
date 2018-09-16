@@ -13,7 +13,16 @@ class Psycopg2Dialect(dialects.SQLDialect):
     '''This is a singleton class that defines the variant of SQL supported by PostgreSQL and the
     pyscopg2 database adaptor.'''
 
-    placeholder = '%s'
+    @classmethod
+    def parameter(cls, number=1, start=1):
+        return '%s, '*(number-1) + '%s'
+
+    @classmethod
+    def parameter_values(cls, names: list, start=1, concat=','):
+        result = ''
+        for name in names[:-1]:
+            result += name + '=%s ' + concat + ' '
+        return result + names[-1]+'=%s'
 
     schema_support = True
 
