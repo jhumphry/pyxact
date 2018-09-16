@@ -207,7 +207,8 @@ generated-members=_fields,
                   _tables,
                   _query,
                   _view_name,
-                  _isolation_level
+                  _isolation_level,
+                  _version
 
 # Tells whether missing members accessed in mixin class should be ignored. A
 # mixin class is detected if its name ends with "mixin" (case insensitive).

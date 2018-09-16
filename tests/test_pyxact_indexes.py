@@ -15,9 +15,11 @@ def test_index_creation(sqlitecur, sample_table_class):
     with pytest.raises(TypeError):
         tmp = indexes.SQLIndex('test_index', None, None)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         tmp = indexes.SQLIndex('test_index', sample_table_class, None)
 
+    with pytest.raises(TypeError):
+        tmp = indexes.SQLIndex('test_index', sample_table_class, 'narrative')
 
     sample_index = indexes.SQLIndex(name='test_index',
                                     table=sample_table_class,

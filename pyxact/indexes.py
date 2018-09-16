@@ -25,7 +25,7 @@ class SQLIndex:
             raise TypeError('Must provide an SQLTable to index')
         self.table = table
 
-        if len(column_exprs) < 1:
+        if not column_exprs:
             raise ValueError('At least one column or expression must be specified')
 
         self.column_exprs = []

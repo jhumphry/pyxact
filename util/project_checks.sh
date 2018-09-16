@@ -8,7 +8,7 @@
 # Intended to be run with the working directory in the root of the project
 
 echo "Checking for Python files lacking an SPDX identifier:"
-grep -r -L --include='*.py' --exclude-dir=tmp 'SPDX\-License\-Identifier'
+grep -r -L --include='*.py' --exclude-dir=tmp --exclude-dir=venv 'SPDX\-License\-Identifier'
 echo
 
 echo "Pytest results:"
