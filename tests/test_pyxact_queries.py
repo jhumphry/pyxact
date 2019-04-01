@@ -1,6 +1,6 @@
 '''Test pyxact.queries'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -86,7 +86,8 @@ def test_multivalue_query(sqlitecur):
     assert mv_query._result_singlevalue(sqlitecur) == 3
     assert mv_query._result_singlevalue(sqlitecur) == 4
 
-    with pytest.raises(ValueError, message='Should not have returned another result'):
+    # Should not have returned another result
+    with pytest.raises(ValueError):
         assert mv_query._result_singlevalue(sqlitecur) == 5
 
     mv_query._execute(sqlitecur, sqliteDialect)

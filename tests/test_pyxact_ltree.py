@@ -1,6 +1,6 @@
 '''Test pyxact.postgresql.ltree'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -26,10 +26,12 @@ def test_ltree_type():
 
     lt4 = ltree.LTree('this.is.a.unīcodé.tęst')
 
-    with pytest.raises(TypeError, message='LTree should only take a string-like object'):
+    # LTree should only take a string-like object.
+    with pytest.raises(TypeError):
         tmp = ltree.LTree(3)
 
-    with pytest.raises(ValueError, message='LTree should only accept valid ltree paths'):
+    # LTree should only accept valid ltree paths
+    with pytest.raises(ValueError):
         tmp = ltree.LTree('delta epsilon')
 
     assert lt1+lt2 == 'alpha.beta.gamma'
@@ -53,9 +55,11 @@ def test_ltree_field(ltree_holder_class):
     lth.lt_text = 'beta.gamma'
     lth.lt_text = ltree.LTree('delta.epsilon')
 
-    with pytest.raises(TypeError, message='LTreeField should only take a string-like object'):
+    # LTreeField should only take a string-like object
+    with pytest.raises(TypeError):
         lth.lt = 3
 
-    with pytest.raises(ValueError, message='LTreeField should only accept valid ltree paths'):
+    # LTreeField should only accept valid ltree paths
+    with pytest.raises(ValueError):
         lth.lt = ltree.LTree('delta epsilon')
 

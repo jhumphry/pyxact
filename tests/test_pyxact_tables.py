@@ -1,6 +1,6 @@
 '''Test SQLTable behaviours that need a sqlite database to demonstrate'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -13,14 +13,16 @@ from pyxact.dialects import sqliteDialect
 
 def test_colliding_field_names():
 
-    with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
-                                               ' with names that collide with built-in methods/attributes.'):
+    # SQLTableMetaClass should not allow subclasses of SQLTable with names that collide with
+    # built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord(tables.SQLTable, table_name='sample_table_class'):
             ok_name = fields.IntField()
             _insert_sql = fields.IntField()
 
-    with pytest.raises(AttributeError, message='SQLTableMetaClass should not allow subclasses of SQLTable'
-                                               ' with names that collide with built-in methods/attributes.'):
+    # SQLTableMetaClass should not allow subclasses of SQLTable with names that collide with
+    # built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord2(tables.SQLTable, table_name='sample_table_class'):
             ok_name = fields.IntField()
             _schema = fields.IntField()

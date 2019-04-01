@@ -1,6 +1,6 @@
 '''Test pyxact.fields'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -74,11 +74,12 @@ def test_int(context, holder, holder_class):
     holder.int_field = '4'
     assert holder.int_field == 4
 
-    with pytest.raises(ValueError, message='IntField should not have accepted a float '
-                                           'in a string value'):
+    # IntField should not have accepted a float in a string value
+    with pytest.raises(ValueError):
         holder.int_field = '1.2'
 
-    with pytest.raises(TypeError, message='SQLField should not have accepted a None value'):
+    # SQLField should not have accepted a None value.
+    with pytest.raises(TypeError):
         holder.int_field = None
 
     holder.int_field_nullable = None
@@ -107,14 +108,14 @@ def test_contextintfield(context, holder, holder_class):
 
     null_context = {}
 
-    with pytest.raises(ContextRequiredError, message='IntField.get_context should complain '
-                                                     'if required context is missing'):
+    # IntField.get_context should complain if required context is missing
+    with pytest.raises(ContextRequiredError):
         holder_class.context_int_field.get_context(holder, null_context)
 
     silly_context = {'int_context' : 'not_a_number', 'row_context' : 7}
 
-    with pytest.raises(ValueError, message='IntField.get_context should complain if it is'
-                                                     'given a context value of the wrong type'):
+    # IntField.get_context should complain if it is given a context value of the wrong type
+    with pytest.raises(ValueError):
         holder_class.context_int_field.get_context(holder, silly_context)
 
 def test_sequenceintfield(holder_class):
@@ -147,15 +148,16 @@ def test_numericfield(holder):
     holder.numeric_field = Decimal('1.23')
     assert holder.numeric_field == Decimal('1.23')
 
-    with pytest.raises(TypeError, message='NumericField should not have accepted a float'):
+    # NumericField should not have accepted a float
+    with pytest.raises(TypeError):
         holder.numeric_field = 1.25
 
-    with pytest.raises(Inexact, message='NumericField should not have accepted a decimal '
-                                        'with inexact quantization'):
+    # NumericField should not have accepted a decimal with inexact quantization
+    with pytest.raises(Inexact):
         holder.numeric_field = Decimal('1.234')
 
-    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a '
-                                                 'decimal too large for the quantization/precision'):
+    # NumericField should not have accepted a decimal too large for the quantization/precision
+    with pytest.raises(InvalidOperation):
         holder.numeric_field = Decimal('12345')
 
     holder.numeric_field_from_floats = 1.5
@@ -173,7 +175,8 @@ def test_numericfield(holder):
     holder.numeric_field_inexact_quantize = Decimal('1.234')
     assert holder.numeric_field_inexact_quantize == Decimal('1.23')
 
-    with pytest.raises(InvalidOperation, message='NumericField should not have accepted a decimal too large for the quantization/precision'):
+    # NumericField should not have accepted a decimal too large for the quantization/precision
+    with pytest.raises(InvalidOperation):
         holder.numeric_field_inexact_quantize = Decimal('12345')
 
 def test_realfield(holder, holder_class):
@@ -211,8 +214,8 @@ def test_char_varcharfield(holder):
     holder.char_field = "ABC"
     assert holder.char_field == "ABC"
 
-    with pytest.raises(ValueError,
-                       message='VarChar field with silent_truncate=False should reject long string'):
+    # VarChar field with silent_truncate=False should reject long string
+    with pytest.raises(ValueError):
         holder.varchar_field = "Lorem Ipsum"
 
     holder.varchar_field_truncate = "Lorem Ipsum"
@@ -231,20 +234,22 @@ def test_datetime(holder, holder_class):
     holder.timestamp_notz_field = timestamp1
     assert holder.timestamp_notz_field == timestamp1
 
-    with pytest.raises(ValueError, message='A timestamp field that requires a time zone should '
-                                           'have rejected an input value without one.'):
+    # A timestamp field that requires a time zone should have rejected an input value without one.
+    with pytest.raises(ValueError):
         holder.timestamp_field = timestamp2
 
     holder.timestamp_field = '2010-06-30T09:30:52.6541+0100'
 
-    with pytest.raises(ValueError, message='A timestamp field that requires a time zone should have '
-                                           'rejected an input value without one.'):
+    # A timestamp field that requires a time zone should have rejected an input value without one.
+    with pytest.raises(ValueError):
         holder.timestamp_field = '2010-06-30T09:30:52.5434'
 
 
     holder.timestamp_notz_field = '2010-06-30T09:30:52.5434'
-    with pytest.raises(ValueError, message='A timestamp field that does not require a time zone should '
-                                           'have rejected an input value with one.'):
+
+    # A timestamp field that does not require a time zone should have rejected an input value with
+    # one.
+    with pytest.raises(ValueError):
         holder.timestamp_notz_field = '2010-06-30T09:30:52.5434+0530'
 
 
@@ -271,15 +276,23 @@ def test_date_time(holder, holder_class):
     assert (date2 == date1 and time2 > time1) or (date2 > date1 and time2 < time1)
 
     holder.time_field = '13:45:54.123456'
-    with pytest.raises(ValueError, message='TimeField should reject invalid time strings.'):
+
+    # TimeField should reject invalid time strings.
+    with pytest.raises(ValueError):
         holder.time_field = 'Hello, World!'
-    with pytest.raises(ValueError, message='TimeField should reject impossible times.'):
+
+    # TimeField should reject impossible times
+    with pytest.raises(ValueError):
         holder.time_field = '25:45:54.12344'
 
     holder.date_field = '1956-08-14'
-    with pytest.raises(ValueError, message='DateField should reject invalid date strings.'):
+
+    # DateField should reject invalid date strings.
+    with pytest.raises(ValueError):
         holder.date_field = 'Hello, World!'
-    with pytest.raises(ValueError, message='DateField should reject impossible dates.'):
+
+    # DateField should reject impossible dates.
+    with pytest.raises(ValueError):
         holder.date_field = '1999-06-31'
 
 def test_blobfield(holder):

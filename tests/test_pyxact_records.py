@@ -1,6 +1,6 @@
 '''Test SQLRecord'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -43,14 +43,16 @@ def test_colliding_field_names():
             ok_name = fields.IntField()
             insert_sql = fields.IntField()
 
-    with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'
-                                               ' with names that collide with built-in methods/attributes.'):
+    # SQLRecordMetaClass should not allow subclasses of SQLRecord with names that collide with
+    # built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord(records.SQLRecord):
             ok_name = fields.IntField()
             _context_values_stored = fields.IntField()
 
-    with pytest.raises(AttributeError, message='SQLRecordMetaClass should not allow subclasses of SQLRecord'
-                                               ' with names that collide with built-in methods/attributes.'):
+    # SQLRecordMetaClass should not allow subclasses of SQLRecord with names that collide with
+    # built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord2(records.SQLRecord):
             ok_name = fields.IntField()
             _fields = fields.IntField()

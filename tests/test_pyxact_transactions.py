@@ -1,6 +1,6 @@
 '''Test pyxact.transactions'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -56,20 +56,23 @@ def sample_transaction_class(sample_special_table_class, sample_view_class):
 
 def test_colliding_field_names(sample_table_class, sample_transaction_class):
 
-    with pytest.raises(AttributeError, message='SQLTransactionMetaClass should not allow subclasses of SQLTransaction'
-                                               ' with attribute names that collide with built-in methods/attributes.'):
+    # SQLTransactionMetaClass should not allow subclasses of SQLTransaction with attribute names
+    # that collide with built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord(transactions.SQLTransaction):
             ok_name = fields.IntField()
             _insert_new = fields.IntField()
 
-    with pytest.raises(AttributeError, message='SQLTransactionMetaClass should not allow subclasses of SQLTransaction'
-                                               ' with attribute names that collide with built-in methods/attributes.'):
+    # SQLTransactionMetaClass should not allow subclasses of SQLTransaction with attribute names
+    # that collide with built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord2(transactions.SQLTransaction):
             ok_name = fields.IntField()
             _isolation_level = transactions.SQLTransactionField(sample_table_class)
 
-    with pytest.raises(AttributeError, message='SQLTransactionMetaClass should not allow subclasses of SQLTransaction'
-                                               ' with attribute names that collide with built-in methods/attributes.'):
+    # SQLTransactionMetaClass should not allow subclasses of SQLTransaction with attribute names
+    # that collide with built-in methods/attributes.
+    with pytest.raises(AttributeError):
         class FailRecord2(sample_transaction_class):
             ok_name = fields.IntField()
             _isolation_level = transactions.SQLTransactionField(sample_table_class)
@@ -85,15 +88,16 @@ def test_init(sample_special_table_class, sample_view_class, sample_transaction_
                                     sample_special_table_class(1, 99, 'Line 1')
                                     )
 
-    with pytest.raises(TypeError, message='SQLTransaction should require positional attributes to be provided in a '
-                                           'type-compliant order.'):
+    # SQLTransaction should require positional attributes to be provided in a type-compliant order.
+    with pytest.raises(TypeError):
         tmp3 = sample_transaction_class(sample_view_class(),
                                         'foo',
                                         1,
                                         sample_special_table_class(1, 99, 'Line 1')
                                         )
 
-    with pytest.raises(ValueError, message='SQLTransaction should reject init by positional args if the wrong number are specified.'):
+    # SQLTransaction should reject init by positional args if the wrong number are specified.
+    with pytest.raises(ValueError):
         tmp4 = sample_transaction_class(1,
                                         'foo',
                                         sample_view_class()
@@ -105,7 +109,8 @@ def test_init(sample_special_table_class, sample_view_class, sample_transaction_
                                     data=sample_special_table_class(1, 99, 'Line 1')
                                     )
 
-    with pytest.raises(ValueError, message='SQLTransaction should reject init by incorrectly named args.'):
+    # SQLTransaction should reject init by incorrectly named args.
+    with pytest.raises(ValueError):
         tmp6 = sample_transaction_class(trans_id=1,
                                         special_text='foo',
                                         views=sample_view_class(),

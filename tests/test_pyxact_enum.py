@@ -1,6 +1,6 @@
 '''Test pyxact.enums'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -57,20 +57,20 @@ def test_ltree_field(enum_field_holder_class):
     eh.tl1 = TrafficLight.RED
     eh.tl2 = TrafficLight.GREEN
 
-    with pytest.raises(TypeError, message='EnumField should not take a valid value of a different '
-                                          'Enum class to that it was created for.'):
+    # EnumField should not take a valid value of a different Enum class to that it was created for.
+    with pytest.raises(TypeError):
         eh.tl1 = Colours.RED
 
     eh.tl1 = 2
     assert eh.tl1 == TrafficLight.AMBER
 
-    with pytest.raises(ValueError, message='EnumField should only take a valid int values of the '
-                                           'correct underlying Enum subclass.'):
+    # EnumField should only take a valid int values of the correct underlying Enum subclass.
+    with pytest.raises(ValueError):
         eh.tl1 = 99
 
     eh.tl2 = 'RED'
     assert eh.tl2 == TrafficLight.RED
 
-    with pytest.raises(KeyError, message='EnumField should only take a valid str values of the '
-                                           'correct underlying Enum subclass.'):
+    # EnumField should only take a valid str values of the correct underlying Enum subclass.
+    with pytest.raises(KeyError):
         eh.tl1 = 'PURPLE'

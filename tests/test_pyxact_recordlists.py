@@ -1,6 +1,6 @@
 '''Test pyxact.recordlists'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -35,15 +35,17 @@ def test_colliding_field_names():
     # when turned into an SQLRecord
     class CollidingFields(records.SQLRecord):
         _append=fields.IntField()
-    with pytest.raises(AttributeError, message='Should reject a record_type that has a name '
-                                               'that collides with an SQLRecord method/attribute.'):
+
+    # Should reject a record_type that has a name that collides with an SQLRecord method/attribute.
+    with pytest.raises(AttributeError):
         class CollidingFieldsLists(recordlists.SQLRecordList, record_type=CollidingFields):
             pass
 
     class CollidingFields2(records.SQLRecord):
         _records=fields.IntField()
-    with pytest.raises(AttributeError, message='Should reject a record_type that has a name '
-                                               'that collides with an SQLRecord method/attribute.'):
+
+    # Should reject a record_type that has a name that collides with an SQLRecord method/attribute.
+    with pytest.raises(AttributeError):
         class CollidingFieldsLists(recordlists.SQLRecordList, record_type=CollidingFields2):
             pass
 
