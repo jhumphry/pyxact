@@ -11,7 +11,7 @@ import pyxact.sequences as sequences
 import pyxact.records as records
 from pyxact.dialects import sqliteDialect
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def sample_record_class():
     class SampleRecord(records.SQLRecord):
         trans_id=fields.IntField(context_used='trans_id')
@@ -21,7 +21,7 @@ def sample_record_class():
 
     return SampleRecord
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def sample_records(sample_record_class):
 
     result = []

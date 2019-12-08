@@ -1,6 +1,6 @@
 '''Some common fixtures for pytest tests of pyxact modules'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -27,7 +27,7 @@ def sqlitecur(sqlitedb):
     yield cur
     cur.close()
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def sample_table_class():
     class SampleTable(tables.SQLTable, table_name='sample_table'):
         trans_id=fields.IntField(context_used='trans_id')
@@ -38,7 +38,7 @@ def sample_table_class():
 
     return SampleTable
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def sample_table_rows(sample_table_class):
 
     result = []
@@ -49,7 +49,7 @@ def sample_table_rows(sample_table_class):
 
     return result
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def sample_table(sqlitedb, sample_table_class):
 
     sqlitedb.execute(sample_table_class._create_table_sql())
@@ -60,7 +60,7 @@ def sample_table(sqlitedb, sample_table_class):
     sqlitedb.execute('SELECT trans_id, flag, amount, narrative FROM sample_table;')
     sqlitedb.commit()
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def populated_sample_table(sqlitedb, sample_table_class, sample_table, sample_table_rows):
 
     cursor = sqlite.cursor()
@@ -68,7 +68,7 @@ def populated_sample_table(sqlitedb, sample_table_class, sample_table, sample_ta
         tmp = sample_table_class(*i)
         sqlitedb.execute(tmp._insert_sql(cursor))
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def sample_view_class():
     class SampleView(views.SQLView, view_name='sample_view',
                      query='SELECT trans_id AS tid, amount AS amount FROM sample_table'):
@@ -77,7 +77,7 @@ def sample_view_class():
 
     return SampleView
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def sample_view(sqlitedb, sample_view_class, sample_table):
 
     sqlitedb.execute(sample_view_class._create_view_sql())

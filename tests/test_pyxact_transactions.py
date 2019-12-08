@@ -22,7 +22,7 @@ class SpecialTextField(fields.TextField):
     def update(self, instance, context, cursor, dialect=None):
         return 'update'
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def sample_special_table_class():
     class SampleSpecialTable(tables.SQLTable, table_name='sample_special_table'):
         trans_id=fields.IntField(context_used='trans_id')
@@ -32,7 +32,7 @@ def sample_special_table_class():
 
     return SampleSpecialTable
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def sample_special_table(sqlitedb, sample_special_table_class):
 
     sqlitedb.execute(sample_special_table_class._create_table_sql())
@@ -43,7 +43,7 @@ def sample_special_table(sqlitedb, sample_special_table_class):
     sqlitedb.execute('SELECT trans_id, narrative FROM sample_special_table;')
     sqlitedb.commit()
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def sample_transaction_class(sample_special_table_class, sample_view_class):
 
     class SampleTransaction(transactions.SQLTransaction):
