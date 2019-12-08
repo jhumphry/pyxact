@@ -1,6 +1,6 @@
 '''Utility functions for the examples.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -15,15 +15,24 @@ try:
 except:
     POSTGRESQL_AVAILABLE = False
 
+try:
+    import testing.postgresql
+    POSTGRESQL_TESTING = True
+except:
+    POSTGRESQL_TESTING = False
+
+
 from pyxact import dialects, loggingdb, loggingdb
 import pyxact.psycopg2
 
 DATABASE_USED = None
+temp_pg=None
 
 def process_command_line(description='Demonstrate pyxact'):
     '''Process the command line arguments and return a functioning DB-API connection'''
 
     global DATABASE_USED
+    global temp_pg
 
     parser = argparse.ArgumentParser(description=description)
 
@@ -32,8 +41,10 @@ def process_command_line(description='Demonstrate pyxact'):
     parser.add_argument('--postgresql', help='Whether to use PostgreSQL instead of SQLite',
                         action='store_true')
     parser.add_argument('--database',
-                        help='PostgreSQL database to use (default pyxact)',
-                        action='store', default='pyxact')
+                        help='PostgreSQL database to use (default to a temporary db)',
+                        action='store', default='#temp#')
+    parser.add_argument('--base_dir', help='Base directory for PostgreSQL temp db',
+                        action='store', default=None)
     parser.add_argument('--user', help='PostgreSQL user for upload',
                         action='store',
                         default=os.environ.get('USER', 'postgres'))
@@ -49,16 +60,26 @@ def process_command_line(description='Demonstrate pyxact'):
         if not POSTGRESQL_AVAILABLE:
             raise RuntimeError('PostgreSQL support not available')
 
-        if args.host:
+        if args.database == '#temp#':
+            if not POSTGRESQL_AVAILABLE:
+                raise RuntimeError('testing.postgresql module not available')
+
+            temp_pg = testing.postgresql.Postgresql(base_dir=args.base_dir)
+            temp_pg.wait_booting()
+            connection = psycopg2.connect(**temp_pg.dsn())
+
+        elif args.host:
             connection = psycopg2.connect(database=args.database,
                                           user=args.user,
                                           password=args.password,
                                           host=args.host,
                                           port=args.post)
+
         else:
             connection = psycopg2.connect(database=args.database,
                                           user=args.user,
                                           password=args.password)
+
         dialects.DefaultDialect = pyxact.psycopg2.Psycopg2Dialect
         # By changing DefaultDialect we change the default SQL dialect used whenever no specific
         # dialect parameter is passed to a relevant pyxact method.
