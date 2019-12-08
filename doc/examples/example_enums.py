@@ -1,13 +1,13 @@
 '''An example of using Enum support.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
 import enum
 import sys
 
-import pyxact.enums, pyxact.postgresql
+import pyxact.enums, pyxact.psycopg2
 import pyxact.fields as fields
 import pyxact.tables as tables
 import example_schema, utils
@@ -27,7 +27,7 @@ class EnumTestTable(tables.SQLTable, table_name='enum_test'):
 
 if __name__ == '__main__':
 
-    conn = utils.process_command_line('Demonstrate usage of pyxact JSON serialisation')
+    conn = utils.process_command_line('Demonstrate usage of pyxact Enum support')
 
     cursor = conn.cursor()
     # example_schema.create_example_schema(cursor)
@@ -35,5 +35,5 @@ if __name__ == '__main__':
 
     if utils.DATABASE_USED == 'PostgreSQL':
         cursor.execute('DROP TYPE IF EXISTS trafficlight CASCADE;')
-        pyxact.postgresql.PostgreSQLDialect.create_enum_type(cursor, TrafficLight, 'trafficlight')
+        pyxact.psycopg2.Psycopg2Dialect.create_enum_type(cursor, TrafficLight, 'trafficlight')
         cursor.execute('COMMIT;')
