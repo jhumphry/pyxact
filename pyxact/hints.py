@@ -34,11 +34,10 @@ class Hint():
         self.query = dialects.convert_schema_sep(query, '.')
         self.query_noschema = dialects.convert_schema_sep(query, '_')
 
-    def get(self, key, cursor, dialect=None):
+    def get(self, key, cursor):
         '''Return the human-readable value associated with the key value, or return None.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         base_query = (self.query if dialect.schema_support
                       else self.query_noschema)
@@ -53,12 +52,11 @@ class Hint():
             return result[0]
         return None
 
-    def find(self, value, cursor, dialect=None):
+    def find(self, value, cursor):
         '''Find the key value associated with the human-readable value, or return None if this
         fails.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         base_query = (self.query if dialect.schema_support
                       else self.query_noschema)
@@ -73,11 +71,10 @@ class Hint():
             return result[0]
         return None
 
-    def list_values(self, cursor, dialect=None):
+    def list_values(self, cursor):
         '''A generator expression that yields all of the human-readable values in turn.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         base_query = (self.query if dialect.schema_support
                       else self.query_noschema)

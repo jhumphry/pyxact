@@ -1,10 +1,10 @@
 '''This module defines classes that represent tables constraints in SQL.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-from . import SQLSchemaBase, FKMatch, FKAction, ConstraintDeferrable
+from . import SQLSchemaBase, FKMatch, FKAction, ConstraintDeferrable, dialects
 
 class SQLConstraint:
     '''This abstract base class is the root of the class hierarchy for table
@@ -19,7 +19,7 @@ class SQLConstraint:
         if self.sql_name is None:
             self.sql_name = name
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         '''This method returns a string containing suitable SQL DDL
         instructions (in the specified database dialect) that can be inserted
         into a CREATE or ALTER TABLE command to apply the required table
@@ -39,7 +39,7 @@ class CustomConstraint(SQLConstraint):
         super().__init__(**kwargs)
         self.constraint_sql = constraint_sql
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         return 'CONSTRAINT '+self.sql_name+' '+self.constraint_sql
 
 class CheckConstraint(SQLConstraint):
@@ -51,7 +51,7 @@ class CheckConstraint(SQLConstraint):
         super().__init__(**kwargs)
         self.check_sql = check_sql
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         return 'CONSTRAINT '+self.sql_name+' CHECK ('+self.check_sql+')'
 
 class ColumnsConstraint(SQLConstraint):
@@ -72,7 +72,7 @@ class UniqueConstraint(ColumnsConstraint):
     '''This class is used to create UNIQUE constraints. Depending on the
     database, this make automatically create an index covering the columns.'''
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         result = 'CONSTRAINT' + self.sql_name + ' UNIQUE ('
         result += ', '.join(self.sql_column_names)
         result += ') ' + self.sql_options
@@ -85,7 +85,7 @@ class PrimaryKeyConstraint(ColumnsConstraint):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         result = 'CONSTRAINT ' + self.sql_name + ' PRIMARY KEY ('
         result += ', '.join(self.sql_column_names)
         result += ') ' + self.sql_options
@@ -130,11 +130,14 @@ class ForeignKeyConstraint(ColumnsConstraint):
         # If sql_reference_names is None it will be over-ridden by the sql_column_names
         # in SQLRecordMetaClass
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
+
+        dialect = dialects.DefaultDialect
+
         if self.foreign_schema is None:
             foreign_table = self.foreign_table
         else:
-            foreign_table = self.foreign_schema.qualified_name(self.foreign_table, dialect=dialect)
+            foreign_table = self.foreign_schema.qualified_name(self.foreign_table)
 
         result = 'CONSTRAINT ' + self.sql_name + ' FOREIGN KEY ('
         result += ', '.join(self.sql_column_names)

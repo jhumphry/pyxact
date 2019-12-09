@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -112,7 +112,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return result
 
     @classmethod
-    def _qualified_table_name(cls, dialect=None):
+    def _qualified_table_name(cls):
         '''The (possibly schema-qualified) name of the table used in SQL.'''
 
         if cls._table_name is None:
@@ -122,7 +122,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if cls._schema is None:
             return cls._table_name
 
-        return cls._schema.qualified_name(cls._table_name, dialect)
+        return cls._schema.qualified_name(cls._table_name)
 
     def _pk_items(self, context=None):
         '''Returns a tuple containing a list of primary key SQL column names
@@ -147,43 +147,41 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         return (sql_names, values)
 
     @classmethod
-    def _create_table_sql(cls, dialect=None):
-        '''Returns a string containing the CREATE TABLE command (in the given
-        SQL dialect) that will create the table defined by the SQLRecord.'''
+    def _create_table_sql(cls):
+        '''Returns a string containing the CREATE TABLE command that
+        will create the table defined by the SQLRecord.'''
 
-        result = 'CREATE TABLE IF NOT EXISTS ' + cls._qualified_table_name(dialect) + ' (\n    '
-        table_columns = [cls._fields[key].sql_ddl(dialect)
+        result = 'CREATE TABLE IF NOT EXISTS ' + cls._qualified_table_name() + ' (\n    '
+        table_columns = [cls._fields[key].sql_ddl()
                          for key in cls._fields.keys()]
-        table_constraints = [cls._constraints[key].sql_ddl(dialect)
+        table_constraints = [cls._constraints[key].sql_ddl()
                              for key in cls._constraints.keys()]
         result += ',\n    '.join(table_columns+table_constraints)
         result += '\n);'
         return result
 
     @classmethod
-    def _truncate_table_sql(cls, cascade=False, dialect=None):
+    def _truncate_table_sql(cls, cascade=False):
         '''Return an SQL string that will truncate this table.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         if cascade:
             cmd = dialect.truncate_table_cascade_sql
         else:
             cmd = dialect.truncate_table_sql
 
-        return cmd.format(table_name=cls._qualified_table_name(dialect))
+        return cmd.format(table_name=cls._qualified_table_name())
 
     @classmethod
-    def _insert_sql_command(cls, dialect=None):
-        '''Returns a string containing the parametrised INSERT command (in the
-        given SQL dialect) required to insert data into the SQL table
-        represented by the SQLRecord.'''
+    def _insert_sql_command(cls):
+        '''Returns a string containing the parametrised INSERT command
+        required to insert data into the SQL table represented by the
+        SQLRecord.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        result = 'INSERT INTO ' + cls._qualified_table_name(dialect) + ' ('
+        result = 'INSERT INTO ' + cls._qualified_table_name() + ' ('
         result += cls._column_names_sql()
         result += ') VALUES ('
         if cls._field_count > 0:
@@ -191,16 +189,13 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         result += ');'
         return result
 
-    def _insert_sql(self, context=None, dialect=None):
+    def _insert_sql(self, context=None):
         '''This method constructs an SQL INSERT command and returns a tuple
         containing a suitable string and list of values.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        return (self._insert_sql_command(), self._values_sql_repr(context))
 
-        return (self._insert_sql_command(dialect), self._values_sql_repr(context, dialect))
-
-    def _update_sql(self, context=None, dialect=None):
+    def _update_sql(self, context=None):
         '''This method constructs an SQL UDPATE command and returns a tuple
         containing a suitable string and list of values. It identifies the row
         to be updated using the primary key columns, whose associated SQLField
@@ -208,12 +203,11 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         it will be passed to the SQLField attributes and they may use the
         values in it in preference to their existing values.'''
 
+        dialect = dialects.DefaultDialect
+
         if not self._primary_key:
             raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
                                           'can use the update_sql() method.')
-
-        if not dialect:
-            dialect = dialects.DefaultDialect
 
         pk_columns = self._primary_key.column_names
         pk_columns_sql_names, pk_values = self._pk_items(context)
@@ -230,7 +224,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
                 else:
                     update_values.append(dialect.sql_repr(field_obj.get(self)))
 
-        result = 'UPDATE ' + self._qualified_table_name(dialect) + ' SET '
+        result = 'UPDATE ' + self._qualified_table_name() + ' SET '
         result += dialect.parameter_values(update_sql_names, 1)
         result += ' WHERE '
         result += dialect.parameter_values(pk_columns_sql_names, len(update_sql_names)+1, 'AND')
@@ -238,7 +232,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         return (result, update_values + pk_sql_values)
 
-    def _delete_sql(self, context=None, dialect=None):
+    def _delete_sql(self, context=None):
         '''This method constructs an SQL DELETE command and returns a tuple
         containing a suitable string and list of values. It identifies the row
         to be deleted using the primary key columns, whose associated SQLField
@@ -246,24 +240,23 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         it will be passed to the SQLField attributes and they may use the
         values in it in preference to their existing values.'''
 
+        dialect = dialects.DefaultDialect
+
         if not self._primary_key:
             raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
                                           'can use the delete_sql() method.')
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
-        result = 'DELETE FROM ' + self._qualified_table_name(dialect) + ' WHERE '
+        result = 'DELETE FROM ' + self._qualified_table_name() + ' WHERE '
         result += dialect.parameter_values(pk_columns_sql_names, 1, 'AND')
         result += ';'
 
         return (result, pk_sql_values)
 
     @classmethod
-    def _simple_select_sql(cls, dialect=None, **kwargs):
+    def _simple_select_sql(cls, **kwargs):
         '''Returns a tuple of a string containing the parametrised SELECT command (in the
         given SQL dialect) required to retrieve data from the SQL table
         represented by the SQLRecord, and the values to pass as parameters.
@@ -271,14 +264,13 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         values for columns specified in the form of keyword arguments to the
         method.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         for field in kwargs:
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name()
         if kwargs:
             result += ' WHERE '
             field_sql_names = [cls._fields[field].sql_name for field in kwargs]
@@ -289,40 +281,38 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
 
         return (result, values)
 
-    def _pk_select_sql(self, context=None, dialect=None):
+    def _pk_select_sql(self, context=None):
         '''This method returns a tuple containg an SQL SELECT statement that
         would retrieve this record based on the primary key and a list of
         values for the primary key columns.'''
+
+        dialect = dialects.DefaultDialect
 
         if not self._primary_key:
             raise UnconstrainedWhereError('Only SQLRecord subclasses with a primary key constraint '
                                           'can use the pk_select_sql() method.')
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
         pk_columns_sql_names, pk_values = self._pk_items(context)
         pk_sql_values = [dialect.sql_repr(x) for x in pk_values]
 
         result = 'SELECT ' + self._column_names_sql()
-        result += ' FROM ' + self._qualified_table_name(dialect) + ' WHERE '
+        result += ' FROM ' + self._qualified_table_name() + ' WHERE '
         result += dialect.parameter_values(pk_columns_sql_names, 1, 'AND')
         result += ';'
 
         return (result, pk_sql_values)
 
     @classmethod
-    def _context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+    def _context_select_sql(cls, context, allow_unlimited=True):
         '''This method  takes a context dictionary of name:value pairs and identifies those
         SQLFields within the SQLRecord that would use the context values provided by
         any of those names. It then constructs an SQL statement using the column names
         of the identified SQLFields and returns that statement and the list of relevant
         values.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_table_name()
 
         column_sql_names = []
         column_values = []

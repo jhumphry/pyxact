@@ -1,6 +1,6 @@
 '''An example of defining a simple database schema using pyxact.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -191,23 +191,24 @@ test_transaction2.journal_list[2].account = 1003
 # ensure a deep copy is made - otherwise the values stored in one may just be aliases of the values
 # stored in the other.
 
-def create_example_schema(cursor, dialect=None):
-    '''Create the example 'accounting' schema in the database using the cursor and the database
-    dialect supplied. The dialect is an object that defines the peculiarities of a particular
-    database and its Python database adaptor. Most methods will use the variable
-    dialects.DefaultDialect if no dialect parameter is set. By default this is set for SQLite.'''
+def create_example_schema(cursor):
+    '''Create the example 'accounting' schema in the database using the
+    cursor supplied.'''
 
-    if dialect == None:
-        dialect = dialects.DefaultDialect
+    dialect=dialects.DefaultDialect
+    # The dialect object encapsulates all of the peculiarities of the version of SQL supported by the
+    # database and the capacities of the database adaptor. Usually it is appropriate to set the
+    # dialects.DefaultDialect at the start of the program based on the database adaptor selected, and
+    # then all other parts of the program use that global value.
 
     with dialect.begin_transaction(cursor):
 
-        accounting.create_schema(cursor=cursor, dialect=dialect)
-        accounting.create_schema_objects(cursor=cursor, dialect=dialect)
+        accounting.create_schema(cursor=cursor)
+        accounting.create_schema_objects(cursor=cursor)
 
-        cursor.execute(JournalTable._truncate_table_sql(cascade=True, dialect=dialect))
-        cursor.execute(TransactionTable._truncate_table_sql(cascade=True, dialect=dialect))
-        tid_seq.reset(cursor=cursor, dialect=dialect)
+        cursor.execute(JournalTable._truncate_table_sql(cascade=True))
+        cursor.execute(TransactionTable._truncate_table_sql(cascade=True))
+        tid_seq.reset(cursor=cursor)
 
     accounting.create_version_table(cursor)
     # The create_version_table method of a schema creates an addition table 'version_info' and
@@ -216,13 +217,13 @@ def create_example_schema(cursor, dialect=None):
     # database. The check_version_info method of a schema will do this and raise an exception if
     # there is a version mis-match.
 
-def populate_example_schema(cursor, dialect=None):
+def populate_example_schema(cursor):
     '''Add some sample data to the example 'accounting' schema.'''
 
     # Note that SQLTransactions issue 'BEGIN TRANSACTION' and 'COMMIT TRANSACTION' themselves
 
-    test_transaction1._insert_new(cursor, dialect)
-    test_transaction2._insert_new(cursor, dialect)
+    test_transaction1._insert_new(cursor)
+    test_transaction2._insert_new(cursor)
 
 if __name__ == '__main__':
 

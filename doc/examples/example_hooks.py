@@ -1,6 +1,6 @@
 '''An example of using SQLTransaction hooks.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -14,8 +14,8 @@ import example_schema, utils
 
 class ReverseTransaction(example_schema.AccountingTransaction):
 
-    def _post_select_hook(self, context, cursor, dialect):
-        super()._post_select_hook(context, cursor, dialect)
+    def _post_select_hook(self, context, cursor):
+        super()._post_select_hook(context, cursor)
         for i in self.journal_list:
             i.amount = -i.amount
         self.transaction.t_rev = True
@@ -39,8 +39,8 @@ class SetAccountTotal(example_schema.AccountingTransaction):
     current_sum = fields.NumericField(precision=8, scale=2, allow_floats=True,
                                       inexact_quantize=True, query=SumAccountQuery)
 
-    def _pre_insert_hook(self, context, cursor, dialect):
-        super()._pre_insert_hook(context, cursor, dialect)
+    def _pre_insert_hook(self, context, cursor):
+        super()._pre_insert_hook(context, cursor)
 
         if self.transaction is None:
             self.transaction = example_schema.TransactionTable()

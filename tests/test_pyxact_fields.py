@@ -11,12 +11,11 @@ import pytest
 from pyxact import ContextRequiredError
 import pyxact.fields as fields
 import pyxact.sequences as sequences
-from pyxact.dialects import sqliteDialect
 
 @pytest.fixture()
 def field_test_seq(sqlitecur):
     field_test_seq = sequences.SQLSequence(name='field_test_seq')
-    field_test_seq.create(sqlitecur, sqliteDialect)
+    field_test_seq.create(sqlitecur)
     return field_test_seq
 
 @pytest.fixture()
@@ -88,9 +87,9 @@ def test_int(context, holder, holder_class):
     assert holder_class.int_field.sql_name == 'int_field'
     assert holder_class.int_field_sqlname.sql_name == 'not_int_field_sqlname'
 
-    assert holder_class.int_field.sql_type(sqliteDialect) == 'INTEGER'
-    assert holder_class.smallint_field.sql_type(sqliteDialect) == 'SMALLINT'
-    assert holder_class.bigint_field.sql_type(sqliteDialect) == 'BIGINT'
+    assert holder_class.int_field.sql_type() == 'INTEGER'
+    assert holder_class.smallint_field.sql_type() == 'SMALLINT'
+    assert holder_class.bigint_field.sql_type() == 'BIGINT'
 
 def test_contextintfield(context, holder, holder_class):
 
@@ -225,9 +224,9 @@ def test_datetime(holder, holder_class):
     # timestamp_notz_field=fields.TimestampField(tz=False)
     # utcnowtimestamp_field=fields.UTCNowTimestampField()
 
-    holder_class.utcnowtimestamp_field.update(holder, None, None, None)
+    holder_class.utcnowtimestamp_field.update(holder, None, None)
     timestamp1 = holder.utcnowtimestamp_field
-    holder_class.utcnowtimestamp_field.update(holder, None, None, None)
+    holder_class.utcnowtimestamp_field.update(holder, None, None)
     timestamp2 = holder.utcnowtimestamp_field
     assert timestamp2 > timestamp1
 
@@ -259,16 +258,16 @@ def test_date_time(holder, holder_class):
     # date_field=fields.DateField()
     # todaydate_field=fields.TodayDateField()
 
-    holder_class.utcnowtime_field.update(holder, None, None, None)
+    holder_class.utcnowtime_field.update(holder, None, None)
     time1 = holder.utcnowtime_field
     holder.time_field = time1
-    holder_class.todaydate_field.update(holder, None, None, None)
+    holder_class.todaydate_field.update(holder, None, None)
     date1 = holder.todaydate_field
     holder.date_field = date1
 
-    holder_class.utcnowtime_field.update(holder, None, None, None)
+    holder_class.utcnowtime_field.update(holder, None, None)
     time2 = holder.utcnowtime_field
-    holder_class.todaydate_field.update(holder, None, None, None)
+    holder_class.todaydate_field.update(holder, None, None)
     date2 = holder.todaydate_field
 
     # Don't forget people running the test over midnight!

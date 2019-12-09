@@ -1,7 +1,7 @@
 '''This module defines SQLField and subclasses - the class hierarchy that defines and maps SQL
 types and values to Python types and values.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -93,47 +93,45 @@ class SQLField:
         raise ContextRequiredError('''Required context '{0}' is not provided'''
                                    .format(self.context_used))
 
-    def refresh(self, instance, context, cursor, dialect=None):
-        '''Given a (possibly partially-completed) context dictionary, a database cursor and a
-        database dialect object, this method may retrieve data or do some other calculation in
-        order to find the value in the SQLField instance and also return that value. The refresh
-        method should not modify the database in any way or generate new values, so sequences
-        should not be incremented and timestamps not updated. The default action where the query
-        parameter was set is to execute that query and update and return the single-value result.
-        The default action where no query parameter was supplied is to simply return the existing
-        value unchanged.'''
+    def refresh(self, instance, context, cursor):
+        '''Given a (possibly partially-completed) context dictionary and a database cursor, this
+        method may retrieve data or do some other calculation in order to find the value in the
+        SQLField instance and also return that value. The refresh method should not modify the
+        database in any way or generate new values, so sequences should not be incremented and
+        timestamps not updated. The default action where the query parameter was set is to execute
+        that query and update and return the single-value result. The default action where no query
+        parameter was supplied is to simply return the existing value unchanged.'''
 
         if self.query is None:
             return instance.__getattribute__(self.slot_name)
 
         query = self.query()
         query._set_context(context)
-        query._execute(cursor, dialect)
+        query._execute(cursor)
         value = query._result_singlevalue(cursor)
         self.__set__(instance, value)
         return value
 
-    def update(self, instance, context, cursor, dialect=None):
-        '''Given a (possibly partially-completed) context dictionary, a database cursor and a
-        database dialect object, this method may retrieve data or do some other calculation in
-        order to update the value in the SQLField instance and also return the value. Unlike the
-        refresh method, the update method may modify the database in some way (such as for
-        sequences) or generate a 'new' value (such as for timestamps). The default action is to
-        simply call the refresh method.'''
+    def update(self, instance, context, cursor):
+        '''Given a (possibly partially-completed) context dictionary and a database cursor, this
+        method may retrieve data or do some other calculation in order to update the value in the
+        SQLField instance and also return the value. Unlike the refresh method, the update method
+        may modify the database in some way (such as for sequences) or generate a 'new' value (such
+        as for timestamps). The default action is to simply call the refresh method.'''
 
-        return self.refresh(instance, context, cursor, dialect)
+        return self.refresh(instance, context, cursor)
 
-    def sql_type(self, dialect=None):
+    def sql_type(self):
         '''Returns the SQL definition of the data type of the field in the
         appropriate database dialect. It includes parameters (such as NUMERIC
         precision and scale) but not any column constraints such as NOT NULL.'''
 
         return self._sql_type
 
-    def sql_ddl(self, dialect=None):
+    def sql_ddl(self):
         '''Returns the SQL DDL text needed for CREATE TABLE commands'''
 
-        result = self.sql_name + ' ' + self.sql_type(dialect)
+        result = self.sql_name + ' ' + self.sql_type()
         if not self.nullable:
             result += ' NOT NULL'
         if self._sql_ddl_options != '':
@@ -170,11 +168,10 @@ class BigIntField(AbstractIntField):
         super().__init__(py_type=int, sql_type='BIGINT', **kwargs)
 
 class RowEnumIntField(AbstractIntField):
-    '''Represents an INTEGER field in a database. When retrieved via
-    get_context, the value returned will not be that stored in the SQLRecord
-    instance, but will be retrieved from the context dictionary object passed
-    in, under the context_name specified, and the context dictionary will be
-    updated to increment the value. This is intended to enumerate rows where
+    '''Represents an INTEGER field in a database. When retrieved via get_context, the value
+    returned will not be that stored in the SQLRecord instance, but will be retrieved from the
+    context dictionary object passed in, under the context_name specified, and the context
+    dictionary will be updated to increment the value. This is intended to enumerate rows where
     multiple rows are being INSERTED into a table at once.'''
 
     def __init__(self, starting_number=1, **kwargs):
@@ -197,12 +194,11 @@ class RowEnumIntField(AbstractIntField):
         return self._starting_number
 
 class NumericField(SQLField):
-    '''Represents a NUMERIC field in a database, which maps to decimal.Decimal
-    in Python. The scale and precision can be specified. Note that NUMERIC in
-    SQL represents a fixed-point decimal representation, wherease
-    decimal.Decimal in Python is a floating-point decimal representation. This
-    field tries to ensure that any unrepresentable values will be caught before
-    there is an attempt to write them to the database.'''
+    '''Represents a NUMERIC field in a database, which maps to decimal.Decimal in Python. The scale
+    and precision can be specified. Note that NUMERIC in SQL represents a fixed-point decimal
+    representation, wherease decimal.Decimal in Python is a floating-point decimal representation.
+    This field tries to ensure that any unrepresentable values will be caught before there is an
+    attempt to write them to the database.'''
 
     def __init__(self, precision, scale=0,
                  allow_floats=False, inexact_quantize=False, rounding=None,
@@ -235,9 +231,8 @@ class NumericField(SQLField):
         else:
             raise TypeError
 
-    def sql_type(self, dialect=None):
-        if (dialect and dialect.store_decimal_as_text) or \
-            (not dialect and dialects.DefaultDialect.store_decimal_as_text):
+    def sql_type(self):
+        if dialects.DefaultDialect.store_decimal_as_text:
             return 'TEXT'
         return 'NUMERIC({0}, {1})'.format(self.precision, self.scale)
 
@@ -284,7 +279,7 @@ class VarCharField(SQLField):
         else:
             raise TypeError
 
-    def sql_type(self, dialect=None):
+    def sql_type(self):
         return 'CHARACTER VARYING({0})'.format(self._max_length)
 
 class CharField(VarCharField):
@@ -295,7 +290,7 @@ class CharField(VarCharField):
     length are likely to be padded with spaces, but these spaces may not be
     considered significant in SQL expressions.'''
 
-    def sql_type(self, dialect=None):
+    def sql_type(self):
         return 'CHARACTER({0})'.format(self._max_length)
 
 class TextField(SQLField):
@@ -333,9 +328,8 @@ class TimestampField(SQLField):
         else:
             raise TypeError
 
-    def sql_type(self, dialect=None):
-        if (dialect and dialect.store_date_time_datetime_as_text) or \
-            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+    def sql_type(self):
+        if dialects.DefaultDialect.store_date_time_datetime_as_text:
             return 'TEXT'
         return self._sql_type
 
@@ -348,7 +342,7 @@ class UTCNowTimestampField(TimestampField):
     def __init__(self, **kwargs):
         super().__init__(tz=False, **kwargs)
 
-    def update(self, instance, context, cursor, dialect=None):
+    def update(self, instance, context, cursor):
         now_utc = datetime.datetime.utcnow()
         setattr(instance, self.slot_name, now_utc)
         return now_utc
@@ -369,9 +363,8 @@ class DateField(SQLField):
         else:
             raise TypeError
 
-    def sql_type(self, dialect=None):
-        if (dialect and dialect.store_date_time_datetime_as_text) or \
-            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+    def sql_type(self):
+        if dialects.DefaultDialect.store_date_time_datetime_as_text:
             return 'TEXT'
         return self._sql_type
 
@@ -379,7 +372,7 @@ class TodayDateField(DateField):
     '''Represents a DATE. If update() is called on this class, the stored value
     will be set to the current date, according to the local system clock.'''
 
-    def update(self, instance, context, cursor, dialect=None):
+    def update(self, instance, context, cursor):
         today = datetime.date.today()
         setattr(instance, self.slot_name, today)
         return today
@@ -406,9 +399,8 @@ class TimeField(SQLField):
         else:
             raise TypeError
 
-    def sql_type(self, dialect=None):
-        if (dialect and dialect.store_date_time_datetime_as_text) or \
-            (not dialect and dialects.DefaultDialect.store_date_time_datetime_as_text):
+    def sql_type(self):
+        if dialects.DefaultDialect.store_date_time_datetime_as_text:
             return 'TEXT'
         return self._sql_type
 
@@ -418,7 +410,7 @@ class UTCNowTimeField(TimeField):
     associated SQLRecord or SQLTransaction will be set to the current time in
     UTC, according to the local system clock.'''
 
-    def update(self, instance, context, cursor, dialect=None):
+    def update(self, instance, context, cursor):
         now_utc = datetime.datetime.utcnow().time()
         setattr(instance, self.slot_name, now_utc)
         return now_utc

@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database tables.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -158,15 +158,13 @@ class SQLRecord(metaclass=SQLRecordMetaClass):
 
         return [field.get(self) for field in self._fields.values()]
 
-    def _values_sql_repr(self, context=None, dialect=None):
+    def _values_sql_repr(self, context=None):
         '''Returns a list of values stored in the SQLField attributes of a
         particular SQLRecord instance. A context dictionary can be provided for
         SQLField types that may update and return a value from it, rather than
-        the previously stored value. The values are in the form required by the
-        SQL database adaptor identified by dialect.'''
+        the previously stored value.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         if context is not None:
             return [dialect.sql_repr(field.get_context(self, context))

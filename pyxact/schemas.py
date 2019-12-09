@@ -3,7 +3,7 @@ classes that represent an associated set of database objects. These can be
 mapped to database schema in database systems such as PostgreSQL which
 implement a flexible schema concept.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -34,34 +34,32 @@ class SQLSchema(SQLSchemaBase):
         self.indexes = {}
         self.commands_after = []
 
-    def create_schema(self, cursor, dialect=None):
-        '''Execute a suitable CREATE SCHEMA command (in the given
-        SQL dialect) that will create the database schema defined by the
-        SQLSchema. If the given database dialect (or the default dialect if
-        appropriate) does not support the necessary schema features then
-        nothing will be done.'''
+    def create_schema(self, cursor):
+        '''Execute a suitable CREATE SCHEMA command that will create
+        the database schema defined by the SQLSchema. If the given
+        database dialect (or the default dialect if appropriate) does
+        not support the necessary schema features then nothing will be
+        done.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         if dialect.schema_support:
             cursor.execute('CREATE SCHEMA IF NOT EXISTS {};'.format(self.name))
 
-    def qualified_name(self, name, dialect=None):
+    def qualified_name(self, name):
         '''Returns an object name qualified by the schema name. This usually
         means that the schema name will be followed by '.' and then the object
         name, but for database dialects that do not support schemas, the schema
         and object names will be separated with a '_'.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         if not dialect.schema_support:
             return self.name + '_' + name
 
         return self.name + '.' + name
 
-    def register_sql_command(self, command, dialect=None, after=True):
+    def register_sql_command(self, command, after=True):
         '''Register a string to execute as an SQL command when creating the
         schema. By default they will be run after the other objects are
         created, unless the after parameter is set to false. If a dialect is
@@ -69,9 +67,9 @@ class SQLSchema(SQLSchemaBase):
         use.'''
 
         if after:
-            self.commands_after.append((dialect, command))
+            self.commands_after.append(command)
         else:
-            self.commands_before.append((dialect, command))
+            self.commands_before.append(command)
 
     def register_table(self, table):
         '''Register an SQLTable subclass as the definition of a database
@@ -134,52 +132,50 @@ class SQLSchema(SQLSchemaBase):
         self.index_types[index.name] = index
         self.indexes[index.sql_name] = index
 
-    def _run_commands(self, commands, cursor, dialect):
-        '''Receives a list of tuples containing dialect/command pairs. For each tuple in turn, if
-        the dialect matches the current dialect in use, or is None, the command is executed.'''
+    def _run_commands(self, commands, cursor):
+        '''Receives a list of commands and execute them.'''
+
+        dialect = dialects.DefaultDialect
 
         for i in commands:
-            if i[0] is None or i[0] == dialect:
-                if i[0] is None or not dialect.schema_support:
-                    command = dialects.convert_schema_sep(i[1], '_')
-                else:
-                    command = i[1]
-                cursor.execute(command)
+            if not dialect.schema_support:
+                command = dialects.convert_schema_sep(i[1], '_')
+            else:
+                command = i[1]
+            cursor.execute(command)
 
-    def create_schema_objects(self, cursor, dialect=None):
+    def create_schema_objects(self, cursor):
         '''Create all of the registered objects in the schema.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        self._run_commands(self.commands_before, cursor, dialect)
+        self._run_commands(self.commands_before, cursor)
 
         for i in self.enums.items():
             dialect.create_enum_type(cursor=cursor, py_type=i[1],
                                      sql_name=i[0], sql_schema=self.name)
 
         for i in self.sequence_types.values():
-            i.create(cursor, dialect)
+            i.create(cursor)
 
         for i in self.table_types.values():
-            cursor.execute(i._create_table_sql(dialect))
+            cursor.execute(i._create_table_sql())
 
         for i in self.view_types.values():
-            cursor.execute(i._create_view_sql(dialect))
+            cursor.execute(i._create_view_sql())
 
         for i in self.index_types.values():
-            i.create(cursor, dialect)
+            i.create(cursor)
 
-        self._run_commands(self.commands_after, cursor, dialect)
+        self._run_commands(self.commands_after, cursor)
 
-    def create_version_table(self, cursor, dialect=None):
+    def create_version_table(self, cursor):
         '''Create a table called 'version_info' in the schema that contains schema object, type and
         version info.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        version_table_name = self.qualified_name('version_info', dialect)
+        version_table_name = self.qualified_name('version_info')
 
         command = 'CREATE TABLE IF NOT EXISTS ' + version_table_name + ' (\n'
         command += '    name TEXT,\n    type TEXT,\n    version TEXT\n    );'
@@ -201,10 +197,9 @@ class SQLSchema(SQLSchemaBase):
         version info to make sure that the Python versions of objects match the versions in the
         database.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        version_table_name = self.qualified_name('version_info', dialect)
+        version_table_name = self.qualified_name('version_info')
 
         command = 'SELECT type, version FROM ' + version_table_name
         command += ' WHERE name=' + dialect.parameter() +';'

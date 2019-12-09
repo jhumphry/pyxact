@@ -1,6 +1,6 @@
 '''This module defines Python types that describe SQL queries.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -128,23 +128,19 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
 
         return [getattr(self, i) for i in self._query_fields]
 
-    def _query_values_sql_repr(self, dialect=None):
+    def _query_values_sql_repr(self):
         '''Return a correctly-ordered list of the values that need to be passed
         to the database to execute the query, using the appropriate SQL adaptor
         dialect.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
-
-        return [dialect.sql_repr(getattr(self, i)) for i in self._query_fields]
+        return [dialects.DefaultDialect.sql_repr(getattr(self, i)) for i in self._query_fields]
 
     @classmethod
-    def _query_sql(cls, dialect=None):
+    def _query_sql(cls):
         '''Return the SQL query text using the correct placeholder for the SQL
         dialect in use.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         query = (cls._segmented_query if dialect.schema_support else cls._segmented_query_noschema)
 
@@ -155,12 +151,10 @@ class SQLQuery(metaclass=SQLQueryMetaClass,
             idx += 1
         return result + query[-1]
 
-    def _execute(self, cursor, dialect=None):
+    def _execute(self, cursor):
         '''Execute the query using the cursor.'''
 
-        if dialect is None:
-            dialect = dialects.DefaultDialect
-        cursor.execute(self._query_sql(dialect), self._query_values_sql_repr())
+        cursor.execute(self._query_sql(), self._query_values_sql_repr())
 
     @classmethod
     def _result_records(cls, cursor):
@@ -239,31 +233,28 @@ class SQLQueryResult(recordlists.SQLRecordList,
         super().__init__(args)
         self._query = self._query_type(**kwds)
 
-    def _refresh(self, cursor, dialect=None):
+    def _refresh(self, cursor):
         '''Clear the existing data, start a new database transaction, call the query associated
         with this SQLQueryResult and stored the returned rows before committing the transaction.'''
 
         self._records.clear()
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        with dialects.DefaultDialect.begin_transaction(cursor, self._isolation_level):
 
-        with dialect.begin_transaction(cursor, self._isolation_level):
-
-            self._query._execute(cursor, dialect)
+            self._query._execute(cursor)
 
             result_row = cursor.fetchone()
             while result_row:
                 self._records.append(self._record_type(*result_row))
                 result_row = cursor.fetchone()
 
-    def _context_select_sql(self, context, dialect=None, allow_unlimited=True):
+    def _context_select_sql(self, context, allow_unlimited=True):
         '''Set the query context to the given context parameter. Return a tuple of the SQL query
         command to execute and the values to pass as parameters.'''
 
         self._query._set_context(context)
 
-        return (self._query._query_sql(dialect), self._query._query_values_sql_repr())
+        return (self._query._query_sql(), self._query._query_values_sql_repr())
 
     def _set_context(self, context):
         '''Set the values stored as SQLField objects directly attached as attributes to the

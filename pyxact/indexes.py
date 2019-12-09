@@ -1,6 +1,6 @@
 '''This module defines types that represent indexes in a database.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -54,32 +54,31 @@ class SQLIndex:
         else:
             raise TypeError('schema must be an instance of pyxact.schemas.SQLSchema')
 
-    def qualified_name(self, dialect=None):
+    def qualified_name(self):
         '''The (possibly schema-qualified) name of the index used in SQL.'''
 
         if self.schema is None:
             return self.sql_name
 
-        return self.schema.qualified_name(self.sql_name, dialect)
+        return self.schema.qualified_name(self.sql_name)
 
-    def create(self, cursor, dialect=None):
+    def create(self, cursor):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         to create the index in the database if it does not already exist.
         The dialect parameter allows the function to identify the correct SQL
         commands to issue.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         result = 'CREATE '
         if self.unique:
             result += 'UNIQUE '
         result += 'INDEX IF NOT EXISTS '
         if dialect.index_specifies_schema:
-            result += self.qualified_name(dialect)
+            result += self.qualified_name()
         else:
             result += self.sql_name
-        result += ' ON ' + self.table._qualified_table_name(dialect)
+        result += ' ON ' + self.table._qualified_table_name()
 
         column_exprs_clauses = []
         for i in self.column_exprs:

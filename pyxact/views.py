@@ -1,6 +1,6 @@
 '''This module defines Python types that map to SQL database views.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -56,23 +56,22 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return self._view_name
 
     @classmethod
-    def _qualified_view_name(cls, dialect=None):
+    def _qualified_view_name(cls):
         '''The (possibly schema-qualified) name of the view used in SQL.'''
 
         if cls._schema is None:
             return cls._view_name
 
-        return cls._schema.qualified_name(cls._view_name, dialect)
+        return cls._schema.qualified_name(cls._view_name)
 
     @classmethod
-    def _create_view_sql(cls, dialect=None):
+    def _create_view_sql(cls):
         '''Returns a string containing the CREATE TABLE command (in the given SQL dialect) that
         will create the table defined by the SQLRecord.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        result = dialect.create_view_sql + ' ' + cls._qualified_view_name(dialect) + ' ('
+        result = dialect.create_view_sql + ' ' + cls._qualified_view_name() + ' ('
         result += ', '.join(cls._fields.keys())
         if dialect.schema_support:
             result += ') AS \n' + dialects.convert_schema_sep(cls._query, '.')  + ';'
@@ -81,20 +80,19 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return result
 
     @classmethod
-    def _simple_select_sql(cls, dialect=None, **kwargs):
-        '''Returns a tuple of a string containing the parametrised SELECT command (in the given SQL
-        dialect) required to retrieve data from the SQL View represented by the SQLView, and the
-        values to pass as parameters. Only the most basic form of WHERE clause is supported, with
-        exact values for columns specified in the form of keyword arguments to the method.'''
+    def _simple_select_sql(cls, **kwargs):
+        '''Returns a tuple of a string containing the parametrised SELECT command required to
+        retrieve data from the SQL View represented by the SQLView, and the values to pass as
+        parameters. Only the most basic form of WHERE clause is supported, with exact values for
+        columns specified in the form of keyword arguments to the method.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         for field in kwargs:
             if not field in cls._fields:
                 raise ValueError('Specified field {0} is not valid'.format(field))
 
-        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name()
         if kwargs:
             result += ' WHERE '
             result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
@@ -106,16 +104,15 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         return (result, values)
 
     @classmethod
-    def _context_select_sql(cls, context, dialect=None, allow_unlimited=True):
+    def _context_select_sql(cls, context, allow_unlimited=True):
         '''This method  takes a context dictionary of name:value pairs and identifies those
         SQLFields within the SQLView that would use the context values provided by any of those
         names. It then constructs an SQL statement using the column names of the identified
         SQLFields and returns that statement and the list of relevant values.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
-        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name(dialect)
+        result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name()
 
         column_sql_names = []
         column_values = []

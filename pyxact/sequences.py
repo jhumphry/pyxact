@@ -2,7 +2,7 @@
 necessary to acquire values that will be unique within the database (such as for transaction
 IDs).'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -37,48 +37,39 @@ class SQLSequence:
         self._nextval_sequence_sql = None
         self._nextval_cached_dialect = None
 
-    def qualified_name(self, dialect=None):
+    def qualified_name(self):
         '''The (possibly schema-qualified) name of the sequence used in SQL.'''
 
         if self.schema is None:
             return self.sql_name
 
-        return self.schema.qualified_name(self.sql_name, dialect=dialect)
+        return self.schema.qualified_name(self.sql_name)
 
-    def create(self, cursor, dialect=None):
+    def create(self, cursor):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         to create the sequence in the database if it does not already exist.
         The dialect parameter allows the function to identify the correct SQL
         commands to issue.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        for sql_string in self.create_sequence_sql(dialect):
+        for sql_string in self.create_sequence_sql():
             cursor.execute(sql_string)
 
-    def nextval(self, cursor, dialect=None):
+    def nextval(self, cursor):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         return the next value in the sequence and update the database. The
         dialect parameter allows the function to identify the correct SQL
         commands to issue.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        for sql_string in self.nextval_sequence_sql(dialect):
+        for sql_string in self.nextval_sequence_sql():
             cursor.execute(sql_string)
         return cursor.fetchone()[0]
 
-    def reset(self, cursor, dialect=None):
+    def reset(self, cursor):
         '''This function takes a DB-API 2.0 cursor and runs the necessary code
         reset the state of the sequence. The dialect parameter allows the
         function to identify the correct SQL commands to issue.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        for sql_string in self.reset_sequence_sql(dialect):
+        for sql_string in self.reset_sequence_sql():
             cursor.execute(sql_string)
 
     def valid(self, value):
@@ -91,52 +82,45 @@ class SQLSequence:
             return True
         return False
 
-    def create_sequence_sql(self, dialect=None):
-        '''This function takes a parameter identifying a dialect of SQL and
-        returns a list of strings containing the SQL commands necessary to
-        create the sequence if it does not already exist in the database.'''
+    def create_sequence_sql(self):
+        '''This function returns a list of strings containing the SQL
+        commands necessary to create the sequence if it does not
+        already exist in the database.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        return [x.format(qualified_name=self.qualified_name(dialect),
+        return [x.format(qualified_name=self.qualified_name(),
                          start=self.start,
                          interval=self.interval,
                          index_type=self.index_type,
                          sql_options=self.sql_options)
-                for x in dialect.create_sequence_sql]
+                for x in dialects.DefaultDialect.create_sequence_sql]
 
-    def nextval_sequence_sql(self, dialect=None):
-        '''This function takes a parameter identifying a dialect of SQL and
-        returns a list of strings containing the SQL commands necessary to
-        return the next value in the sequence, updating the stored parameters
-        as it goes. It should be safe for use by multiple simultaneous database
+    def nextval_sequence_sql(self):
+        '''This function takes a parameter returns a list of strings
+        containing the SQL commands necessary to return the next value
+        in the sequence, updating the stored parameters as it goes. It
+        should be safe for use by multiple simultaneous database
         users.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
+        dialect = dialects.DefaultDialect
 
         if not self._nextval_sequence_sql or dialect != self._nextval_cached_dialect:
-            self._nextval_sequence_sql = [x.format(qualified_name=self.qualified_name(dialect),
+            self._nextval_sequence_sql = [x.format(qualified_name=self.qualified_name(),
                                                    start=self.start,
                                                    interval=self.interval,
                                                    index_type=self.index_type)
                                           for x in dialect.nextval_sequence_sql]
         return self._nextval_sequence_sql
 
-    def reset_sequence_sql(self, dialect=None):
+    def reset_sequence_sql(self):
         '''This function takes a parameter identifying a dialect of SQL and
         returns a list of strings containing the SQL commands necessary to
         return the next value in the sequence, updating the stored parameters
         as it goes. It should be safe for use by multiple simultaneous database
         users.'''
 
-        if not dialect:
-            dialect = dialects.DefaultDialect
-
-        return [x.format(qualified_name=self.qualified_name(dialect), start=self.start,
+        return [x.format(qualified_name=self.qualified_name(), start=self.start,
                          interval=self.interval, index_type=self.index_type)
-                for x in dialect.reset_sequence_sql]
+                for x in dialects.DefaultDialect.reset_sequence_sql]
 
 class SequenceIntField(fields.AbstractIntField):
     '''Represents an integer field in an SQLTransaction that has a link to a
@@ -155,8 +139,8 @@ class SequenceIntField(fields.AbstractIntField):
         super().__init__(py_type=int, sql_type=None,
                          nullable=True, **kwargs)
 
-    def update(self, instance, context, cursor, dialect=None):
+    def update(self, instance, context, cursor):
 
-        value = self.sequence.nextval(cursor, dialect)
+        value = self.sequence.nextval(cursor)
         setattr(instance, self.slot_name, value)
         return value

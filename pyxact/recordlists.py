@@ -1,7 +1,7 @@
 '''This module defines the SQLRecordList class that holds references to multiple SQLRecord
 values'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
@@ -170,14 +170,14 @@ class SQLRecordList(metaclass=SQLRecordListMetaClass, record_type=records.SQLRec
 
         return [x._values(context) for x in self._records]
 
-    def _values_sql_repr(self, context=None, dialect=None):
+    def _values_sql_repr(self, context=None):
         '''Returns a list of lists of values stored in the SQLField attributes
         of the underlying SQLRecord instances. A context dictionary can be
         provided for SQLField types that require one. The values are in the
         form required by the SQL database adaptor identified by the dialect
         parameter.'''
 
-        return [x._values_sql_repr(context, dialect) for x in self._records]
+        return [x._values_sql_repr(context) for x in self._records]
 
 # This constant records all the method and attribute names used in
 # SQLRecordList so that SQLRecordListMetaClass can detect any attempts to
