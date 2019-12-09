@@ -95,8 +95,8 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
         result = 'SELECT ' + cls._column_names_sql() + ' FROM ' + cls._qualified_view_name()
         if kwargs:
             result += ' WHERE '
-            result += ' AND '.join((cls._fields[field].sql_name+'='+dialect.placeholder
-                                    for field in kwargs))
+            field_sql_names = [cls._fields[field].sql_name for field in kwargs]
+            result += dialect.parameter_values(field_sql_names, 1, 'AND')
         result += ';'
 
         values = [dialect.sql_repr(x) for x in kwargs.values()]
@@ -131,7 +131,7 @@ class SQLView(records.SQLRecord, metaclass=SQLViewMetaClass):
 
         if column_sql_names:
             result += ' WHERE '
-            result += ' AND '.join((column+'='+dialect.placeholder for column in column_sql_names))
+            result += dialect.parameter_values(column_sql_names, 1, 'AND')
 
         result += ';'
         return (result, column_values)

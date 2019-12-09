@@ -274,7 +274,7 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         if kwargs:
             result += ' WHERE '
             field_sql_names = [cls._fields[field].sql_name for field in kwargs]
-            result += dialect.parameters(field_sql_names, 1, 'AND')
+            result += dialect.parameter_values(field_sql_names, 1, 'AND')
         result += ';'
 
         values = [dialect.sql_repr(x) for x in kwargs.values()]
