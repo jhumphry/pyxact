@@ -225,11 +225,10 @@ class NumericField(SQLField):
     def convert(self, value):
         if isinstance(value, decimal.Decimal):
             return value.quantize(self.quantization, context=self.decimal_context)
-        elif isinstance(value, (int, str)) or \
+        if isinstance(value, (int, str)) or \
               (isinstance(value, float) and self.allow_floats):
             return decimal.Decimal(value).quantize(self.quantization, context=self.decimal_context)
-        else:
-            raise TypeError
+        raise TypeError
 
     def sql_type(self):
         if dialects.DefaultDialect.store_decimal_as_text:
@@ -273,11 +272,9 @@ class VarCharField(SQLField):
                 else:
                     raise ValueError('''Field '{0}' can not accept strings longer than {1}.'''
                                      .format(self.name, self._max_length))
-            else:
-                return value
+            return value
 
-        else:
-            raise TypeError
+        raise TypeError
 
     def sql_type(self):
         return 'CHARACTER VARYING({0})'.format(self._max_length)
@@ -319,14 +316,14 @@ class TimestampField(SQLField):
                 raise ValueError('''Field '{0}' needs a datetime object without tzinfo.'''
                                  .format(self.name))
             return value
-        elif isinstance(value, str):
+        if isinstance(value, str):
             if self.tz:
                 dt_value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f%z')
             else:
                 dt_value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')
             return dt_value
-        else:
-            raise TypeError
+
+        raise TypeError
 
     def sql_type(self):
         if dialects.DefaultDialect.store_date_time_datetime_as_text:
@@ -358,10 +355,9 @@ class DateField(SQLField):
     def convert(self, value):
         if isinstance(value, datetime.date):
             return value
-        elif isinstance(value, str):
+        if isinstance(value, str):
             return datetime.datetime.strptime(value, '%Y-%m-%d').date()
-        else:
-            raise TypeError
+        raise TypeError
 
     def sql_type(self):
         if dialects.DefaultDialect.store_date_time_datetime_as_text:
@@ -394,10 +390,11 @@ class TimeField(SQLField):
                 raise ValueError('''Field '{0}' needs a time object without tzinfo.'''
                                  .format(self.name))
             return value
-        elif isinstance(value, str):
+
+        if isinstance(value, str):
             return datetime.datetime.strptime(value, '%H:%M:%S.%f').time()
-        else:
-            raise TypeError
+
+        raise TypeError
 
     def sql_type(self):
         if dialects.DefaultDialect.store_date_time_datetime_as_text:

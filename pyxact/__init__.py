@@ -55,29 +55,19 @@ class ConstraintDeferrable(Enum):
 class PyxactError(Exception):
     '''Base class for exceptions defined by pyxact.'''
 
-    pass
-
 class VerificationError(PyxactError):
     '''Transaction failed internal consistency checks at a point when it was
     required to pass.'''
 
-    pass
-
 class UnconstrainedWhereError(PyxactError):
     '''The WHERE clause of an SQL statement would not impose any constraints.'''
-
-    pass
 
 class ContextRequiredError(PyxactError):
     '''An SQLField requires a context dictionary to be passed in order to
     retrieve values.'''
-
-    pass
 
 class SQLSchemaBase:
     '''This serves as a base class for pyxact.schemas.SQLSchema. It is used in
     the modules of pyxact to check if an SQLSchema has been passed in as a
     parameter, without needing to import the 'schemas' module itself, which
     could create circular dependencies. It is not intended for end-user use.'''
-
-    pass

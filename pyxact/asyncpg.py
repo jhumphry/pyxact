@@ -1,13 +1,9 @@
 '''This module defines the flavour of SQL used by PostgreSQL and asyncpg.'''
 
-# Copyright 2018, James Humphry
+# Copyright 2018-2019, James Humphry
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-import enum
-
-from . import dialects
-from . import IsolationLevel
 from . import psycopg2
 
 class AsyncpgDialect(psycopg2.Psycopg2Dialect):

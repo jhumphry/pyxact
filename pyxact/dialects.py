@@ -224,19 +224,19 @@ class sqliteDialect(SQLDialect):
     def sql_repr(cls, value):
         if isinstance(value, bool):
             return 1 if value else 0
-        elif isinstance(value, (int, float, str, bytes)) or value is None:
+        if isinstance(value, (int, float, str, bytes)) or value is None:
             return value
-        elif isinstance(value, decimal.Decimal):
+        if isinstance(value, decimal.Decimal):
             return str(value)
-        elif isinstance(value, datetime.datetime):
+        if isinstance(value, datetime.datetime):
             if value.tzinfo:
                 return value.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
             return value.strftime('%Y-%m-%dT%H:%M:%S.%f')
-        elif isinstance(value, datetime.date):
+        if isinstance(value, datetime.date):
             return value.strftime('%Y-%m-%d')
-        elif isinstance(value, datetime.time):
+        if isinstance(value, datetime.time):
             return value.strftime('%H:%M:%S.%f')
-        elif isinstance(value, enum.Enum):
+        if isinstance(value, enum.Enum):
             return value.value
 
         raise TypeError('sqlite3 Python module cannot handle type {}'.format(str(type(value))))
@@ -265,8 +265,6 @@ class sqliteDialect(SQLDialect):
     @staticmethod
     def create_enum_type(cursor, py_type, sql_name, sql_schema=None):
         '''Enum are not supported natively in SQLite, so nothing is necessary to create them.'''
-
-        pass
 
 # This will be used by routines when no dialect is specified. It is not a
 # constant as it is intended that it may be over-ridden by package users

@@ -248,7 +248,7 @@ class SQLQueryResult(recordlists.SQLRecordList,
                 self._records.append(self._record_type(*result_row))
                 result_row = cursor.fetchone()
 
-    def _context_select_sql(self, context, allow_unlimited=True):
+    def _context_select_sql(self, context):
         '''Set the query context to the given context parameter. Return a tuple of the SQL query
         command to execute and the values to pass as parameters.'''
 

@@ -31,17 +31,17 @@ class PyxactEncoder(json.JSONEncoder):
 
         if isinstance(value, (bool, int, float, str, bytes)) or value is None:
             return value
-        elif isinstance(value, decimal.Decimal):
+        if isinstance(value, decimal.Decimal):
             return str(value)
-        elif isinstance(value, datetime.datetime):
+        if isinstance(value, datetime.datetime):
             if value.tzinfo:
                 return value.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
             return value.strftime('%Y-%m-%dT%H:%M:%S.%f')
-        elif isinstance(value, datetime.date):
+        if isinstance(value, datetime.date):
             return value.strftime('%Y-%m-%d')
-        elif isinstance(value, datetime.time):
+        if isinstance(value, datetime.time):
             return value.strftime('%H:%M:%S.%f')
-        elif isinstance(value, enum.Enum):
+        if isinstance(value, enum.Enum):
             return value.name
         raise TypeError('Unable to serialize type {} for JSON'.format(str(type(value))))
 
@@ -144,9 +144,9 @@ class PyxactDecoder():
         obj = json.JSONDecoder().decode(string)
         if '__SQLTransaction__' in obj:
             return self.decode_sqltransaction(obj)
-        elif '__SQLRecordList__' in obj:
+        if '__SQLRecordList__' in obj:
             return self.decode_sqlrecordlist(obj)
-        elif '__SQLRecord__' in obj:
+        if '__SQLRecord__' in obj:
             return self.decode_sqlrecord(obj)
         return obj
 

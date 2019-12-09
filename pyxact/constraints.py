@@ -68,6 +68,9 @@ class ColumnsConstraint(SQLConstraint):
         self.sql_column_names = None # Will be filled out by SQLRecordMetaClass
         self.sql_options = sql_options
 
+    def sql_ddl(self):
+        raise NotImplementedError
+
 class UniqueConstraint(ColumnsConstraint):
     '''This class is used to create UNIQUE constraints. Depending on the
     database, this make automatically create an index covering the columns.'''

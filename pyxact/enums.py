@@ -19,9 +19,9 @@ class EnumField(fields.SQLField):
     def convert(self, value):
         if isinstance(value, self.enum_type):
             return value
-        elif isinstance(value, int):
+        if isinstance(value, int):
             return self.enum_type(value)
-        elif isinstance(value, str):
+        if isinstance(value, str):
             return self.enum_type[value]
         raise TypeError
 

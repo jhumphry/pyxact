@@ -54,7 +54,6 @@ class LTreeField(fields.SQLField):
     def convert(self, value):
         if isinstance(value, LTree):
             return value
-        elif isinstance(value, str):
+        if isinstance(value, str):
             return LTree(value)
-        else:
-            raise TypeError
+        raise TypeError

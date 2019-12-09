@@ -216,8 +216,6 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         SQLTransaction has been subclassed. The default implementation does
         nothing.'''
 
-        pass
-
     def _pre_update_hook(self, context, cursor):
         '''This method is called by routines that update a transaction in the
         database, after a context dictionary has been created but before any
@@ -227,15 +225,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         SQLTransaction has been subclassed. The default implementation does
         nothing.'''
 
-        pass
-
     def _pre_delete_hook(self, context, cursor):
         '''This method is called shortly before the records associated with the transaction are
         deleted. After a call to this method, the a call to the _verify() method should return True
         if this is possible to achieve. The use of this hook is dependent on the domain for which
         SQLTransaction has been subclassed. The default implementation does nothing.'''
-
-        pass
 
     def _get_context(self):
         '''Return a context dictionary created from any non-None values stored under the names of
