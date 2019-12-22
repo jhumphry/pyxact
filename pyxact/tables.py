@@ -106,9 +106,9 @@ class SQLTable(records.SQLRecord, metaclass=SQLTableMetaClass):
         result = 'SQL table "' + self._table_name + '"\n'
         result += super().__str__()
         if self._primary_key:
-            result += 'Primary key ('
+            result += '  Primary key ('
             result += ', '.join(self._primary_key.column_names)
-            result += ')'
+            result += ')\n'
         return result
 
     @classmethod
