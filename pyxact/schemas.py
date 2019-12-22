@@ -139,9 +139,9 @@ class SQLSchema(SQLSchemaBase):
 
         for i in commands:
             if not dialect.schema_support:
-                command = dialects.convert_schema_sep(i[1], '_')
+                command = dialects.convert_schema_sep(i, '_')
             else:
-                command = i[1]
+                command = i
             cursor.execute(command)
 
     def create_schema_objects(self, cursor):
