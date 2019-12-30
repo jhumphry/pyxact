@@ -15,6 +15,7 @@ class EnumField(fields.SQLField):
     enum_type = None
     enum_sql = ''
     fallback_sql_type = 'SMALLINT'
+    schema = None
 
     def convert(self, value):
         if isinstance(value, self.enum_type):
@@ -28,5 +29,7 @@ class EnumField(fields.SQLField):
     def sql_type(self):
 
         if dialects.DefaultDialect.enum_support:
+            if self.schema:
+                return self.schema.qualified_name(self.enum_sql)
             return self.enum_sql
         return self.fallback_sql_type

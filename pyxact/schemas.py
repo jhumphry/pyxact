@@ -7,10 +7,8 @@ implement a flexible schema concept.'''
 # This work is released under the ISC license - see LICENSE for details
 # SPDX-License-Identifier: ISC
 
-import enum
-
 from . import SQLSchemaBase, IsolationLevel
-from . import dialects, indexes, sequences, tables, views
+from . import dialects, indexes, sequences, tables, views, enums
 
 class SQLSchema(SQLSchemaBase):
     '''This class represents a collection of tables, sequenes etc that are all
@@ -102,13 +100,12 @@ class SQLSchema(SQLSchemaBase):
         self.views[view._view_name] = view
 
     def register_enum(self, enum_type, sql_name=None):
-        '''Register an Enum type to be created in the database schema as the definition of a
-        database sequence. '''
+        '''Register an EnumField type to be created in the database schema. '''
 
-        if not issubclass(enum_type, enum.Enum):
-            raise TypeError('Only enum.Enum types can be registered to a schema.')
+        if not issubclass(enum_type, enums.EnumField):
+            raise TypeError('Only pyxactenums.EnumField types can be registered to a schema.')
 
-        self.enums[sql_name] = enum_type
+        self.enums[(sql_name if sql_name else enum_type.enum_sql)] = enum_type
 
     def register_sequence(self, sequence):
         '''Register an SQLSequence instance as the definition of a database sequence. If the schema
@@ -152,7 +149,7 @@ class SQLSchema(SQLSchemaBase):
         self._run_commands(self.commands_before, cursor)
 
         for i in self.enums.items():
-            dialect.create_enum_type(cursor=cursor, py_type=i[1],
+            dialect.create_enum_type(cursor=cursor, py_type=i[1].enum_type,
                                      sql_name=i[0], sql_schema=self.name)
 
         for i in self.sequence_types.values():
