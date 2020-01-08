@@ -91,4 +91,11 @@ class Psycopg2Dialect(dialects.SQLDialect):
             qual_sql_name = sql_name
         enum_values = ', '.join(["'" + x.name + "'" for x in py_type])
 
-        cursor.execute('CREATE TYPE {} AS ENUM ({});'.format(qual_sql_name, enum_values))
+        # Using 'DROP TYPE IF EXISTS ... CASCADE' does not work here, because it will silently alter
+        # existing tables to remove columns using the enum.
+
+        cursor.execute('''DO $$ BEGIN
+                            CREATE TYPE {} AS ENUM ({});
+                          EXCEPTION
+                            WHEN duplicate_object THEN null;
+                          END $$;'''.format(qual_sql_name, enum_values))
