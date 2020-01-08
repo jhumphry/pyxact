@@ -179,27 +179,28 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         return result
 
     def _verify(self):
-        '''Return a boolean indicating whether this SQLTransaction meets
-        internal consistency requirements (i.e. those that do not require
-        database access). If True is returned, the SQLTransaction should be
-        suitable for insertion into the database (although the database may
-        still reject it based on, for example, foreign key violations). For
-        SQLTransaction itself, this method will always return true, but
-        subclasses may add conditions appropriate to the domain for which
-        SQLTransaction has been subclassed.'''
+        '''Indicates whether this SQLTransaction meets internal consistency requirements (i.e.
+        those that do not require database access). If True is returned, the SQLTransaction should
+        be suitable for insertion into the database (although the database may still reject it
+        based on, for example, foreign key violations). For SQLTransaction itself, this method will
+        always return True, but subclasses may add conditions appropriate to the domain for which
+        SQLTransaction has been subclassed. If False or a string is returned, VerificationError
+        will be raised.'''
 
         return True
 
     def _post_select_hook(self, context, cursor):
-        '''This method is called at the end of the context_select method. After
-        a call to this method, the a call to the _verify() method should return
-        True if this is possible to achieve. The use of this hook is dependent
-        on the domain for which SQLTransaction has been subclassed. The default
-        implementation for SQLTransaction retrieves all the context information
-        from the SQLTable attached to the class and updates the context
-        fields. This may be useful where only some of the context fields were
-        necessary to identify the records to retrieve, but having the other
-        context fields completed is useful for further processing.'''
+        '''This method is called at the end of the context_select method and indicates if the
+        record is consistent with the database. If False or a string is returned, VerificationError
+        will be raised. This method is in addition to any internal consistency checks performed by
+        the _verify method.
+
+        The use of this hook is dependent on the domain for which SQLTransaction
+        has been subclassed. The default implementation for SQLTransaction retrieves all the
+        context information from the SQLTable attached to the class and updates the context fields.
+        This may be useful where only some of the context fields were necessary to identify the
+        records to retrieve, but having the other context fields completed is useful for further
+        processing.'''
 
         context = self._get_context_from_records()
 
@@ -207,29 +208,42 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
             if field in context:
                 setattr(self, field, context[field])
 
+        return True
+
     def _pre_insert_hook(self, context, cursor):
-        '''This method is called by routines that insert a transaction into the
-        database, after a context dictionary has been created but before any
-        records have been written. After a call to this method, the a call to
-        the _verify() method should return True if this is possible to achieve.
-        The use of this hook is dependent on the domain for which
-        SQLTransaction has been subclassed. The default implementation does
-        nothing.'''
+        '''This method is called by routines that insert a transaction into the database, after a
+        context dictionary has been created but before any records have been written. It will
+        return a value of True if the transaction can be inserted, or if False or a string is
+        returned, VerificationError will be raised. This method is in addition to any internal
+        consistency checks performed by the _verify method.
+
+        The use of this hook is dependent on the domain for which SQLTransaction has been
+        subclassed. The default implementation returns True.'''
+
+        return True
 
     def _pre_update_hook(self, context, cursor):
-        '''This method is called by routines that update a transaction in the
-        database, after a context dictionary has been created but before any
-        records have been written. After a call to this method, the a call to
-        the _verify() method should return True if this is possible to achieve.
-        The use of this hook is dependent on the domain for which
-        SQLTransaction has been subclassed. The default implementation does
-        nothing.'''
+        '''This method is called by routines that update a transaction in the database, after a
+        context dictionary has been created but before any records have been written. It will
+        return a value of True if the transaction can be updated, or if False or a string is
+        returned, VerificationError will be raised. This method is in addition to any internal
+        consistency checks performed by the _verify method.
+
+        The use of this hook is dependent on the domain for which SQLTransaction has been
+        subclassed. The default implementation returns True.'''
+
+        return True
 
     def _pre_delete_hook(self, context, cursor):
         '''This method is called shortly before the records associated with the transaction are
-        deleted. After a call to this method, the a call to the _verify() method should return True
-        if this is possible to achieve. The use of this hook is dependent on the domain for which
+        deleted. It will return a value of True if the transaction can be deleted, or if False or a
+        string is returned, VerificationError will be raised. This method is in addition to any
+        internal consistency checks performed by the _verify method.
+
+        The use of this hook is dependent on the domain for which
         SQLTransaction has been subclassed. The default implementation does nothing.'''
+
+        return True
 
     def _get_context(self):
         '''Return a context dictionary created from any non-None values stored under the names of
@@ -301,7 +315,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         with dialects.DefaultDialect.begin_transaction(cursor, self._isolation_level):
             context = self._get_context()
 
-            self._pre_insert_hook(context, cursor)
+            status = self._pre_insert_hook(context, cursor)
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
+                raise VerificationError
 
             if not self._verify():
                 raise VerificationError
@@ -328,7 +346,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         with dialects.DefaultDialect.begin_transaction(cursor, self._isolation_level):
             context = self._get_updated_context(cursor)
 
-            self._pre_insert_hook(context, cursor)
+            status = self._pre_insert_hook(context, cursor)
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
+                raise VerificationError
 
             if not self._verify():
                 raise VerificationError
@@ -354,7 +376,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         with dialects.DefaultDialect.begin_transaction(cursor, self._isolation_level):
             context = self._get_context()
 
-            self._pre_update_hook(context, cursor)
+            status = self._pre_update_hook(context, cursor)
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
+                raise VerificationError
 
             if not self._verify():
                 raise VerificationError
@@ -381,7 +407,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
         with dialects.DefaultDialect.begin_transaction(cursor, self._isolation_level):
             context = self._get_context()
 
-            self._pre_delete_hook(context, cursor)
+            status = self._pre_delete_hook(context, cursor)
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
+                raise VerificationError
 
             if not self._verify():
                 raise VerificationError
@@ -466,7 +496,11 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                         recordlist._append(record_type(*nextrow))
                         nextrow = cursor.fetchone()
 
-            self._post_select_hook(context, cursor)
+            status = self._post_select_hook(context, cursor)
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
+                raise VerificationError
 
         if not self._verify():
             raise VerificationError

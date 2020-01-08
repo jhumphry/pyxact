@@ -19,6 +19,7 @@ class ReverseTransaction(example_schema.AccountingTransaction):
         for i in self.journal_list:
             i.amount = -i.amount
         self.transaction.t_rev = True
+        return True
 
 # It is possible to subclass AccountingTransaction from the example_schema module and change the
 # post_select_hook() method which normalizes the data after it has been read in. In this case, it
@@ -56,6 +57,8 @@ class SetAccountTotal(example_schema.AccountingTransaction):
         self.journal_list._clear()
         self.journal_list._append(example_schema.JournalTable(account=self.account, amount=posting_needed))
         self.journal_list._append(example_schema.JournalTable(account=9999, amount=-posting_needed))
+
+        return True
 
 # This more complicated subclass of AccountingTransaction shows how a hook can be used to
 # automatically regenerate some parts of the transaction based on other parts. Here the journals are
