@@ -352,7 +352,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                     raise VerificationError(status)
                 raise VerificationError
 
-            if not self._verify():
+            status = self._verify()
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
                 raise VerificationError
 
             for record_name in self._records:
@@ -382,7 +385,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                     raise VerificationError(status)
                 raise VerificationError
 
-            if not self._verify():
+            status = self._verify()
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
                 raise VerificationError
 
             for recordlist_name in reversed(list(self._recordlists)):
@@ -413,7 +419,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                     raise VerificationError(status)
                 raise VerificationError
 
-            if not self._verify():
+            status = self._verify()
+            if status!=True:
+                if isinstance(status, str):
+                    raise VerificationError(status)
                 raise VerificationError
 
             # Deletions are done in reverse order compared with insertion to try to minimise the
@@ -502,7 +511,10 @@ class SQLTransaction(metaclass=SQLTransactionMetaClass):
                     raise VerificationError(status)
                 raise VerificationError
 
-        if not self._verify():
+        status = self._verify()
+        if status!=True:
+            if isinstance(status, str):
+                raise VerificationError(status)
             raise VerificationError
 
 # This constant records all the method and attribute names used in
